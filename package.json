@@ -1,0 +1,10 @@
+{
+  "name": "vietinsect",
+  "private": true,
+  "scripts": {
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:frontend": "pnpm --filter frontend start",
+    "migrate": "pnpm --filter backend exec knex migrate:latest",
+    "seed": "pnpm --filter backend exec knex seed:run"
+  }
+}

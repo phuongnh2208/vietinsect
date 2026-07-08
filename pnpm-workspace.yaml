@@ -1,0 +1,7 @@
+packages:
+  - "frontend"
+  - "backend"
+  - "packages/*"
+allowBuilds:
+  core-js: set this to true or false
+  core-js-pure: set this to true or false
