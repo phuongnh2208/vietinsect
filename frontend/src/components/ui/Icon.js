@@ -17,6 +17,7 @@ const paths = {
   shield: <><path d="M12 3 20 6v5c0 5.2-3.4 8.8-8 10-4.6-1.2-8-4.8-8-10V6l8-3Z" /><path d="m8.5 12 2.3 2.3 4.8-5" /></>,
   key: <><circle cx="8" cy="15" r="4" /><path d="m11 12 8-8m-2 0 2 2m-5 1 2 2" /></>,
   plus: <><path d="M12 5v14M5 12h14" /></>,
+  minus: <path d="M5 12h14" />,
   edit: <><path d="m4 16-.8 4.8L8 20l11.5-11.5a2.1 2.1 0 0 0-3-3L5 17Z" /><path d="m14.5 7.5 3 3" /></>,
   upload: <><path d="M12 16V4m0 0L7 9m5-5 5 5M4 15v5h16v-5" /></>,
   layers: <><path d="m12 3 9 5-9 5-9-5 9-5Z" /><path d="m3 12 9 5 9-5M3 16l9 5 9-5" /></>,

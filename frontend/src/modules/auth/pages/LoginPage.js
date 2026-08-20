@@ -18,8 +18,8 @@ export default function LoginPage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    await login(username, password);
-    if (error) toast(t("toast.error"), "error");
+    const outcome = await login(username, password);
+    if (!outcome.ok) toast(outcome.error || t("toast.error"), "error");
   }
 
   return (

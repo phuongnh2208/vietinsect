@@ -23,9 +23,7 @@ export default function PublicLayout() {
         <nav className="public-nav" aria-label="Điều hướng công khai">
           {publicLinks.map((item) => <NavLink key={item.path} to={item.path} className={({ isActive }) => isActive ? "active" : ""}>{t(item.labelKey)}</NavLink>)}
         </nav>
-        <div className="public-header-actions">
-          <NavLink to="/login" className="button button-primary button-sm"><Icon name="shield" size={15} />{t("common.admin")}</NavLink>
-        </div>
+        <div className="public-header-actions" aria-hidden="true" />
       </header>
       <Outlet />
       <footer className="public-footer">

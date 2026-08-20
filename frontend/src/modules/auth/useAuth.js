@@ -17,9 +17,11 @@ function useAuth() {
       const result = await authService.login(username, password);
       setAuth(result.user, result.token);
       navigate("/admin/dashboard");
+      return { ok: true, result };
     } catch (err) {
       const message = err.response?.data?.message || "Đăng nhập thất bại";
       setError(message);
+      return { ok: false, error: message };
     } finally {
       setLoading(false);
     }

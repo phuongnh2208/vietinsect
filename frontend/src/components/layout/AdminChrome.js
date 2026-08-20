@@ -2,19 +2,26 @@ import React, { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import i18n from "../../i18n";
-import { adminScreens } from "../../config/screenRegistry";
+import { adminScreens, screenById } from "../../config/screenRegistry";
 import useAuthStore from "../../stores/auth.store";
 import Icon from "../ui/Icon";
 
-const navItems = [
-  { labelKey: "nav.dashboard", path: "/admin/dashboard", icon: "dashboard" },
-  { labelKey: "nav.catalog", path: "/admin/specimens", icon: "database" },
-  { labelKey: "nav.taxonomy", path: "/taxonomy", icon: "tree" },
-  { labelKey: "nav.map", path: "/map", icon: "map" },
-  { labelKey: "nav.dna", path: "/dna", icon: "dna" },
-  { labelKey: "nav.analytics", path: "/admin/analytics", icon: "chart" },
-  { labelKey: "nav.reports", path: "/reports", icon: "file" },
-];
+const navScreenIds = ["SCR-03", "SCR-05", "SCR-12", "SCR-18", "SCR-20", "SCR-25", "SCR-26"];
+const navLabels = {
+  "SCR-03": "nav.dashboard",
+  "SCR-05": "nav.catalog",
+  "SCR-12": "nav.taxonomy",
+  "SCR-18": "nav.map",
+  "SCR-20": "nav.dna",
+  "SCR-25": "nav.analytics",
+  "SCR-26": "nav.reports",
+};
+
+// Deliberately compact UX menu: every item is resolved from the authoritative screen registry.
+const navItems = navScreenIds.map((screenId) => {
+  const screen = screenById[screenId];
+  return { screenId, labelKey: navLabels[screenId], path: screen.path, icon: screen.icon };
+});
 
 export function AdminSidebar({ open, onClose }) {
   const { t } = useTranslation();
@@ -40,7 +47,7 @@ export function AdminSidebar({ open, onClose }) {
       <div className="sidebar-footer">
         <NavLink to="/admin/system" onClick={onClose} className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}><Icon name="settings" size={18} /><span>{t("nav.settings")}</span></NavLink>
         <button className="sidebar-link" onClick={logout}><Icon name="arrow-up-right" size={18} /><span>{t("common.logout")}</span></button>
-        <div className="sidebar-screen-count">{adminScreens.length} admin screens · {user?.username || "VietInsect team"}</div>
+        <div className="sidebar-screen-count">{adminScreens.length} admin screens · menu rút gọn từ registry · {user?.username || "VietInsect team"}</div>
       </div>
     </aside>
   );
