@@ -20,7 +20,7 @@ const navLabels = {
 // Deliberately compact UX menu: every item is resolved from the authoritative screen registry.
 const navItems = navScreenIds.map((screenId) => {
   const screen = screenById[screenId];
-  return { screenId, labelKey: navLabels[screenId], path: screen.path, icon: screen.icon };
+  return { screenId, labelKey: navLabels[screenId], path: screen.adminPath || screen.path, icon: screen.icon };
 });
 
 export function AdminSidebar({ open, onClose }) {

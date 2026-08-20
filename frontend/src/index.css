@@ -214,6 +214,29 @@ a { color: inherit; text-decoration: none; }
 .info-block span { color: var(--vi-muted); font-size: 11px; }
 .info-block strong { display: block; margin-top: 8px; font: 800 19px/1 Manrope, Inter, sans-serif; }
 
+.taxonomy-tree-pane { display: flex; flex-direction: column; gap: 14px; min-height: 480px; }
+.taxonomy-search { position: relative; }
+.taxonomy-search input { width: 100%; min-height: 40px; padding: 0 13px 0 36px; border: 1px solid var(--vi-border); border-radius: var(--vi-radius-sm); background: var(--vi-surface-2); color: var(--vi-ink); outline: 0; }
+.taxonomy-search input:focus { border-color: var(--vi-primary); }
+.taxonomy-search > svg { position: absolute; top: 12px; left: 12px; color: var(--vi-muted); }
+.taxonomy-suggestions { position: absolute; top: 100%; left: 0; right: 0; z-index: 5; margin-top: 4px; border: 1px solid var(--vi-border); border-radius: 9px; background: var(--vi-surface); box-shadow: var(--vi-shadow); overflow: hidden; }
+.taxonomy-suggestion-item { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 9px 13px; font-size: 13px; cursor: pointer; }
+.taxonomy-suggestion-item:hover { background: var(--vi-surface-2); }
+.taxonomy-suggestion-item span { color: var(--vi-muted); font-size: 11px; }
+.taxonomy-tree-root, .taxonomy-children { list-style: none; margin: 0; padding: 0; }
+.taxonomy-children { margin-left: 12px; padding-left: 12px; border-left: 1px solid var(--vi-border); }
+.taxonomy-node { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; cursor: pointer; transition: background 150ms var(--ease-out); }
+.taxonomy-node:hover { background: var(--vi-surface-2); }
+.taxonomy-node-selected { background: rgba(46,125,50,.12); border-left: 3px solid var(--vi-primary); }
+.taxonomy-rank { color: var(--vi-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.taxonomy-name { font-style: italic; font-weight: 700; }
+.taxonomy-common { color: var(--vi-muted); font-size: 12px; }
+
+.tabs-row { display: flex; gap: 6px; border-bottom: 1px solid var(--vi-border); margin-bottom: 20px; overflow-x: auto; }
+.tab-button { padding: 10px 16px; border: 0; background: transparent; color: var(--vi-muted); font-size: 13px; font-weight: 700; border-bottom: 2px solid transparent; white-space: nowrap; }
+.tab-button.active { color: var(--vi-primary); border-bottom-color: var(--vi-primary); }
+.tab-button:hover { color: var(--vi-primary); }
+
 .dialog-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgba(14,36,25,.5); backdrop-filter: blur(5px); animation: fade-in 180ms var(--ease-out); }
 .dialog-card { position: relative; width: min(430px, 100%); padding: 27px; border-radius: 16px; background: var(--vi-surface); color: var(--vi-ink); box-shadow: 0 25px 70px rgba(0,0,0,.24); animation: dialog-in 220ms var(--ease-out); }
 .dialog-card h2 { margin: 19px 0 9px; font: 800 20px/1.2 Manrope, Inter, sans-serif; }
