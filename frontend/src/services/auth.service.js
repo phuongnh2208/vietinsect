@@ -5,4 +5,6 @@ async function login(username, password) {
   return data.data; // { token, user: { adminId, username, fullName } }
 }
 
-export default { login };
+const authService = { login };
+
+export default authService;
