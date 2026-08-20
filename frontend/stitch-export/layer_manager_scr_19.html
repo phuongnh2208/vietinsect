@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VietInsect | Layer Manager</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .layer-item:hover .drag-handle { opacity: 1; }
+        .drag-handle { opacity: 0.3; transition: opacity 0.2s; cursor: grab; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #bfcab8; border-radius: 10px; }
+        
+        /* Glassmorphism for map controls */
+        .map-glass {
+            background: rgba(233, 255, 237, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(112, 122, 107, 0.2);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#1a6d19",
+                        "surface-dim": "#c0e2c9",
+                        "on-tertiary-fixed": "#241a00",
+                        "outline": "#707a6b",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#87da78",
+                        "primary": "#176b17",
+                        "on-secondary-container": "#3d6f4d",
+                        "background": "#e9ffed",
+                        "tertiary-fixed": "#ffe08e",
+                        "secondary-fixed": "#b8f0c5",
+                        "surface-bright": "#e9ffed",
+                        "tertiary-fixed-dim": "#e5c368",
+                        "on-background": "#022111",
+                        "surface-container-highest": "#c8ebd1",
+                        "primary-fixed": "#a2f792",
+                        "on-primary-container": "#f8fff0",
+                        "on-secondary-fixed-variant": "#1d5031",
+                        "surface-container-high": "#cef1d7",
+                        "surface": "#e9ffed",
+                        "surface-variant": "#c8ebd1",
+                        "error": "#ba1a1a",
+                        "tertiary": "#745b04",
+                        "secondary-container": "#b8f0c5",
+                        "surface-container": "#d3f6dc",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#584400",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#4f3d00",
+                        "on-secondary-fixed": "#00210e",
+                        "on-primary-fixed": "#002201",
+                        "tertiary-container": "#c7a850",
+                        "surface-container-low": "#d9fce2",
+                        "inverse-surface": "#183625",
+                        "on-secondary": "#ffffff",
+                        "primary-container": "#35852f",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed-variant": "#005306",
+                        "inverse-on-surface": "#d6f9df",
+                        "inverse-primary": "#87da78",
+                        "on-surface": "#022111",
+                        "error-container": "#ffdad6",
+                        "secondary": "#366847",
+                        "secondary-fixed-dim": "#9dd3aa",
+                        "outline-variant": "#bfcab8",
+                        "on-surface-variant": "#40493c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "container-max": "1440px",
+                        "unit": "4px",
+                        "margin-desktop": "64px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Manrope"],
+                        "headline-md": ["Manrope"],
+                        "caption": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen">
+<!-- Sidebar Shell -->
+<aside class="fixed left-0 top-0 h-screen flex flex-col z-40 bg-surface-container-low border-r border-outline-variant w-64">
+<div class="p-6">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">VietInsect</h1>
+<p class="font-label-md text-label-md text-on-surface-variant">Entomological Database</p>
+</div>
+<nav class="flex-1 px-2 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">pest_control</span>
+<span class="font-label-md text-label-md">Specimen Catalog</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-primary font-bold border-r-4 border-primary bg-secondary-container/30" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-md text-label-md">GIS Mapping</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">biotech</span>
+<span class="font-label-md text-label-md">Research Notes</span>
+</a>
+</nav>
+<div class="p-4 border-t border-outline-variant">
+<button class="w-full bg-primary text-on-primary py-3 rounded-lg font-label-md flex items-center justify-center gap-2 hover:opacity-90 transition-opacity active:scale-95">
+<span class="material-symbols-outlined">add</span>
+                New Entry
+            </button>
+</div>
+<div class="p-2 border-t border-outline-variant">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+</aside>
+<!-- Header Shell -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] flex justify-between items-center px-8 py-4 z-30 bg-surface border-b border-outline-variant">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-md focus-within:ring-2 focus-within:ring-primary rounded-lg transition-all">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-highest border-none rounded-lg text-body-md focus:ring-0" placeholder="Search layers, regions, or specimens..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="px-4 py-2 bg-secondary-container text-on-secondary-container rounded-lg font-label-md hover:bg-primary hover:text-on-primary transition-all">
+                Export Data
+            </button>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant bg-surface-dim">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a female entomologist in her late 30s wearing a khaki field vest and glasses. She is smiling warmly against a blurred background of a modern biological laboratory filled with glass specimen cases and scientific equipment. The lighting is soft and natural, emphasizing a professional yet accessible atmosphere within the VietInsect research environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuADILXpEwfcT2NcQkyzSSArphV7o1R9LuXX7fVsdWYDcDOprVUdZF2bAUTiiUNGXESmOWGFKTyw6Psq_qwOHX1yLMptqiBYgee6cMB5ze7c-7ytazdLZHOLwll9qEBcLPTVkIiALwWeb11fw4EX2QboSo_oxLuLTtRgbr_7RcmS8bH-RCYZ5Pr0UB_5J9YV7nfPzhRTR9Oqcw6fcyThik1iHA5cNvb9RoWR6g2JFkJ5Oznbv5-Uf4eb"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-64 pt-[73px] h-screen flex overflow-hidden">
+<!-- Inner Sidebar: Layer List -->
+<section class="w-80 h-full bg-surface-container-low border-r border-outline-variant flex flex-col">
+<div class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface">
+<h2 class="font-headline-md text-body-lg font-bold text-on-surface">Map Layers</h2>
+<button class="p-2 bg-primary text-on-primary rounded-full hover:scale-105 transition-transform" onclick="toggleModal('upload-modal')">
+<span class="material-symbols-outlined text-[20px]">transcribe</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+<!-- Layer Item 1 -->
+<div class="layer-item bg-surface-container-highest p-3 rounded-xl border border-outline-variant flex items-center gap-3 transition-all hover:border-primary/50">
+<span class="material-symbols-outlined drag-handle text-on-surface-variant">drag_indicator</span>
+<div class="w-4 h-4 rounded-full bg-[#4B9B42] shrink-0 shadow-sm"></div>
+<div class="flex-1 min-w-0">
+<p class="font-label-md text-on-surface truncate">Bee Population 2023</p>
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">GeoJSON • Point</p>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1.5 text-primary hover:bg-primary/10 rounded-md">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button class="p-1.5 text-error hover:bg-error/10 rounded-md">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Layer Item 2 -->
+<div class="layer-item bg-surface-container-highest p-3 rounded-xl border border-outline-variant flex items-center gap-3">
+<span class="material-symbols-outlined drag-handle text-on-surface-variant">drag_indicator</span>
+<div class="w-4 h-4 rounded-full bg-[#1A4D2E] shrink-0 shadow-sm"></div>
+<div class="flex-1 min-w-0">
+<p class="font-label-md text-on-surface truncate">Highlands Forest Canopy</p>
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">GeoTIFF • Raster</p>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1.5 text-primary hover:bg-primary/10 rounded-md">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button class="p-1.5 text-error hover:bg-error/10 rounded-md">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Layer Item 3 (Inactive) -->
+<div class="layer-item bg-surface/50 opacity-70 p-3 rounded-xl border border-dashed border-outline-variant flex items-center gap-3">
+<span class="material-symbols-outlined drag-handle text-on-surface-variant">drag_indicator</span>
+<div class="w-4 h-4 rounded-full bg-[#FFD700] shrink-0 shadow-sm"></div>
+<div class="flex-1 min-w-0">
+<p class="font-label-md text-on-surface truncate">River Basin Boundaries</p>
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Shapefile • Poly</p>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1.5 text-on-surface-variant hover:bg-primary/10 rounded-md">
+<span class="material-symbols-outlined text-[18px]">visibility_off</span>
+</button>
+<button class="p-1.5 text-error hover:bg-error/10 rounded-md">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Contextual Legend -->
+<div class="p-4 bg-surface border-t border-outline-variant">
+<p class="font-label-md text-primary mb-2">Map Legend</p>
+<div class="space-y-2">
+<div class="flex items-center gap-2 text-[12px]">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="text-on-surface-variant">Critical Threat Area</span>
+</div>
+<div class="flex items-center gap-2 text-[12px]">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="text-on-surface-variant">Healthy Habitat</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Area: Map Preview -->
+<section class="flex-1 relative overflow-hidden bg-surface-dim">
+<!-- Satellite Map Backdrop -->
+<div class="absolute inset-0 w-full h-full" data-alt="A high-resolution satellite top-down view of the lush, verdant Central Highlands of Vietnam. The landscape is a rich tapestry of deep forest greens, emerald tea plantations, and winding reddish-brown soil paths. Subtle semi-transparent digital overlays of heat maps and hexagonal grid markers representing insect specimen density are visible, maintaining a scientific and analytical aesthetic in line with the VietInsect GIS platform." data-location="Vietnam Central Highlands" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDygng3scL0amkH4zZJj2jVSwX6CEKQVvGNNsitJjxNGU_RgZKUs3ODLmcRv8m3X5KvXG4JKoU9u6n2WSWGm91GOXXE5a9NBX0bSQqquV2VTcJ_hyY0DKCIKoCJbtl63LcK50cAL590qgvwbFg47Fx3PxPLl5ojZxA96-n6yos2yZDSX7qX0JIgrlYMrr6umxdds-pUlrHfStV-QeVCHbt-Jbh4oOa94PRgJeNeDShmm0BUatJJ140r')"></div>
+<!-- Map Overlays (Simulated) -->
+<div class="absolute inset-0 bg-primary/10 pointer-events-none mix-blend-overlay"></div>
+<!-- Map Controls (Glassmorphism) -->
+<div class="absolute right-6 top-6 flex flex-col gap-2">
+<div class="map-glass p-1 rounded-xl shadow-lg flex flex-col">
+<button class="p-3 hover:bg-primary/10 rounded-lg text-primary transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+<div class="h-px bg-outline-variant mx-2"></div>
+<button class="p-3 hover:bg-primary/10 rounded-lg text-primary transition-colors">
+<span class="material-symbols-outlined">remove</span>
+</button>
+</div>
+<button class="map-glass p-3 rounded-xl shadow-lg text-primary hover:bg-primary/20 transition-all">
+<span class="material-symbols-outlined">my_location</span>
+</button>
+<button class="map-glass p-3 rounded-xl shadow-lg text-primary hover:bg-primary/20 transition-all">
+<span class="material-symbols-outlined">layers</span>
+</button>
+</div>
+<!-- Coordinate / Scale Footer -->
+<div class="absolute bottom-6 left-6 map-glass px-4 py-2 rounded-full shadow-lg flex items-center gap-4 text-[12px] font-mono text-on-surface">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+                    14.0583° N, 108.2772° E
+                </span>
+<div class="w-px h-3 bg-outline-variant"></div>
+<span>Scale 1:50,000</span>
+</div>
+</section>
+</main>
+<!-- Upload Modal -->
+<div class="fixed inset-0 z-50 hidden" id="upload-modal">
+<!-- Backdrop -->
+<div class="absolute inset-0 bg-on-background/40 backdrop-blur-sm" onclick="toggleModal('upload-modal')"></div>
+<!-- Modal Content -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-surface rounded-2xl shadow-2xl overflow-hidden border border-outline-variant">
+<div class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+<div>
+<h3 class="font-headline-md text-headline-md text-primary">Upload New Layer</h3>
+<p class="text-on-surface-variant font-label-md">Add spatial data to the entomological atlas</p>
+</div>
+<button class="p-2 hover:bg-error/10 text-error rounded-full transition-colors" onclick="toggleModal('upload-modal')">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="p-8">
+<!-- Dropzone -->
+<div class="border-2 border-dashed border-outline-variant rounded-2xl p-12 flex flex-col items-center justify-center bg-surface-container-lowest hover:border-primary hover:bg-primary/5 transition-all cursor-pointer group">
+<div class="w-16 h-16 bg-secondary-container rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-[32px]">upload_file</span>
+</div>
+<p class="font-body-lg font-bold text-on-surface">Drag &amp; drop spatial files here</p>
+<p class="text-on-surface-variant mt-2 text-center max-w-sm">Support for .shp (as zip), .geojson, .tif, and .kml formats. Max file size 50MB.</p>
+</div>
+<!-- Supported Formats Grid -->
+<div class="grid grid-cols-3 gap-4 mt-8">
+<div class="p-4 rounded-xl border border-outline-variant bg-surface-container flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">folder_zip</span>
+<div class="leading-tight">
+<p class="font-label-md text-[13px]">Shapefile</p>
+<p class="text-[10px] text-on-surface-variant uppercase">Vector</p>
+</div>
+</div>
+<div class="p-4 rounded-xl border border-outline-variant bg-surface-container flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">code</span>
+<div class="leading-tight">
+<p class="font-label-md text-[13px]">GeoJSON</p>
+<p class="text-[10px] text-on-surface-variant uppercase">Web Vector</p>
+</div>
+</div>
+<div class="p-4 rounded-xl border border-outline-variant bg-surface-container flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">image</span>
+<div class="leading-tight">
+<p class="font-label-md text-[13px]">GeoTIFF</p>
+<p class="text-[10px] text-on-surface-variant uppercase">Raster</p>
+</div>
+</div>
+</div>
+</div>
+<div class="p-6 bg-surface-container-low border-t border-outline-variant flex justify-end gap-3">
+<button class="px-6 py-2 text-on-surface-variant font-label-md hover:bg-surface-container-high rounded-lg transition-colors" onclick="toggleModal('upload-modal')">Cancel</button>
+<button class="px-8 py-2 bg-primary text-on-primary font-label-md rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all">Start Processing</button>
+</div>
+</div>
+</div>
+<script>
+        function toggleModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.toggle('hidden');
+        }
+
+        // Simple interactive simulation for visibility toggle
+        document.querySelectorAll('.layer-item button').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                const icon = this.querySelector('.material-symbols-outlined');
+                if (icon.innerText === 'visibility') {
+                    icon.innerText = 'visibility_off';
+                    this.closest('.layer-item').classList.add('opacity-70');
+                    this.classList.remove('text-primary');
+                    this.classList.add('text-on-surface-variant');
+                } else if (icon.innerText === 'visibility_off') {
+                    icon.innerText = 'visibility';
+                    this.closest('.layer-item').classList.remove('opacity-70');
+                    this.classList.add('text-primary');
+                    this.classList.remove('text-on-surface-variant');
+                }
+            });
+        });
+
+        // Layer sorting simulation (Visual only)
+        let dragged;
+        document.querySelectorAll('.layer-item').forEach(item => {
+            item.setAttribute('draggable', 'true');
+            item.addEventListener('dragstart', (e) => {
+                dragged = e.target;
+                e.target.style.opacity = '0.5';
+            });
+            item.addEventListener('dragend', (e) => {
+                e.target.style.opacity = '1';
+            });
+            item.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+            item.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (e.target.closest('.layer-item') && e.target.closest('.layer-item') !== dragged) {
+                    const parent = dragged.parentNode;
+                    const children = Array.from(parent.children);
+                    const indexA = children.indexOf(dragged);
+                    const indexB = children.indexOf(e.target.closest('.layer-item'));
+                    
+                    if (indexA < indexB) {
+                        parent.insertBefore(dragged, e.target.closest('.layer-item').nextSibling);
+                    } else {
+                        parent.insertBefore(dragged, e.target.closest('.layer-item'));
+                    }
+                }
+            });
+        });
+    </script>
+</body></html>

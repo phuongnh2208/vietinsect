@@ -1,0 +1,379 @@
+<!DOCTYPE html><html class="light" lang="vi" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>VietInsect BigData - Admin Dashboard</title>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;family=Manrope:wght@100..900&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bg-base { background-color: #F8FAF6; }
+        .bg-panel { background-color: #EEF4E9; }
+        .border-panel { border-color: #DCE6D5; }
+        
+        /* Custom Treemap & Progress Bar Styles */
+        .progress-bar-fill {
+            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Smooth transitions */
+        .hover-lift {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .hover-lift:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#87da78",
+                        "surface-dim": "#c0e2c9",
+                        "secondary-fixed-dim": "#9dd3aa",
+                        "outline": "#707a6b",
+                        "surface-bright": "#e9ffed",
+                        "on-tertiary-container": "#4f3d00",
+                        "on-tertiary-fixed": "#241a00",
+                        "primary-fixed-dim": "#87da78",
+                        "on-primary-fixed-variant": "#005306",
+                        "on-primary-container": "#f8fff0",
+                        "on-primary-fixed": "#002201",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#ffe08e",
+                        "error-container": "#ffdad6",
+                        "inverse-surface": "#183625",
+                        "on-secondary-fixed": "#00210e",
+                        "on-tertiary-fixed-variant": "#584400",
+                        "tertiary": "#745b04",
+                        "primary-container": "#35852f",
+                        "on-background": "#022111",
+                        "surface-container-low": "#d9fce2",
+                        "on-secondary-fixed-variant": "#1d5031",
+                        "surface-container": "#d3f6dc",
+                        "secondary": "#366847",
+                        "on-surface": "#022111",
+                        "surface": "#e9ffed",
+                        "on-error": "#ffffff",
+                        "surface-container-high": "#cef1d7",
+                        "secondary-fixed": "#b8f0c5",
+                        "tertiary-container": "#c7a850",
+                        "error": "#ba1a1a",
+                        "surface-tint": "#1a6d19",
+                        "on-secondary-container": "#3d6f4d",
+                        "on-error-container": "#93000a",
+                        "background": "#e9ffed",
+                        "primary-fixed": "#a2f792",
+                        "surface-container-highest": "#c8ebd1",
+                        "primary": "#176b17",
+                        "inverse-on-surface": "#d6f9df",
+                        "outline-variant": "#bfcab8",
+                        "on-surface-variant": "#40493c",
+                        "surface-variant": "#c8ebd1",
+                        "tertiary-fixed-dim": "#e5c368",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-container": "#b8f0c5"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "8px",
+                        "xl": "12px",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "64px",
+                        "container-max": "1440px",
+                        "unit": "4px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Manrope"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Manrope"],
+                        "caption": ["Inter"],
+                        "display-lg": ["Manrope"],
+                        "label-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-[#F8FAF6] text-on-surface font-body-md">
+<!-- Sidebar Navigation -->
+<aside class="fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 bg-[#EEF4E9] border-r border-outline-variant"><!-- Branding Section -->
+<div class="mb-6 px-2">
+    <h1 class="font-headline-md text-headline-md font-bold text-[#133120]">VietInsect</h1>
+    <p class="text-[10px] uppercase tracking-wider text-outline">Scientific Hub</p>
+</div>
+
+<!-- Main Navigation -->
+<nav class="flex-1 space-y-1">
+    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span class="font-label-md">Dashboard</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
+        <span class="material-symbols-outlined">inventory_2</span>
+        <span class="font-label-md">Catalog</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
+        <span class="material-symbols-outlined">map</span>
+        <span class="font-label-md">Maps</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
+        <span class="material-symbols-outlined">biotech</span>
+        <span class="font-label-md">Lab</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#1A4D2E] text-white font-bold">
+        <span class="material-symbols-outlined">admin_panel_settings</span>
+        <span class="font-label-md">Admin</span>
+    </a>
+
+    <!-- CTA Button -->
+    <div class="pt-4">
+        <button class="w-full flex items-center justify-center gap-2 bg-[#1A4D2E] text-white py-2.5 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity">
+            <span class="material-symbols-outlined text-sm">add</span>
+            New Entry
+        </button>
+    </div>
+</nav>
+
+<!-- Footer Section -->
+<div class="mt-auto pt-4 border-t border-outline-variant space-y-1">
+    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
+        <span class="material-symbols-outlined">history_edu</span>
+        <span class="font-label-md">System Logs</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
+        <span class="material-symbols-outlined">settings</span>
+        <span class="font-label-md">Settings</span>
+    </a>
+</div></aside>
+<!-- Main Content Area -->
+<main class="ml-64 min-h-screen">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 flex items-center justify-between px-10 w-full h-16 bg-[#F8FAF6] border-b border-outline-variant">
+<div class="flex items-center gap-6">
+<h2 class="font-headline-md text-headline-md font-bold text-primary">VietInsect BigData</h2>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant">search</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-full py-2 pl-10 pr-4 text-body-md focus:outline-none focus:border-primary transition-colors text-[#133120]" placeholder="Tìm kiếm mẫu vật, mã DNA..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1 px-3 py-1 rounded-full cursor-pointer hover:bg-surface-container hover:bg-surface-container-high transition-colors">
+<span class="font-label-md text-label-md text-primary">VI</span>
+<span class="text-outline-variant">|</span>
+<span class="font-label-md text-label-md text-outline-variant">EN</span>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors">dark_mode</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors relative">
+                    notifications
+                    <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<div class="flex items-center gap-3 pl-4 border-l border-outline-variant">
+<div class="text-right">
+<p class="font-label-md text-label-md text-[#133120]">Dr. Nguyen Van A</p>
+<p class="text-[10px] uppercase tracking-wider text-outline">Lead Researcher</p>
+</div>
+<img class="w-10 h-10 rounded-full object-cover border border-outline-variant" data-alt="Professional studio portrait of a senior Vietnamese entomology researcher with short graying hair, wearing a clean white lab coat, smiling confidently against a minimalist soft green background, high-resolution scientific photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAx4K9uGQlsHpMWOpTONyXSB9EOam9FxGw15KDjpfqXpgRnlimICQbTBf_LBta_wR8EKBl3tFsqJCIMvIedXX6ShguKTKu60-CZ-7lyfX_Cs3-KmcWTgGpOfVu5ow60VEDjBUw7CmwEXAXq9S0WiTxjJgYZ8uthI_eRJFgKqGsWdJqBspSzQn_XDjzVZJv4osikmgwzUu5_9Qeq5n_RR9Qd_lUwbVjNowhLlYCmKZQf_mziDlbY3rSy">
+</div>
+</div>
+</header>
+<!-- Dashboard Body -->
+<div class="p-10 space-y-gutter">
+<!-- Top Row: Stats -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<!-- Stat Card 1 -->
+<div class="bg-[#EEF4E9] p-6 rounded-xl border border-[#DCE6D5] hover-lift">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-[#4B9B42] bg-white p-2 rounded-lg">inventory_2</span>
+<div class="flex items-center text-primary gap-0.5 text-sm font-bold">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+                            12%
+                        </div>
+</div>
+<p class="text-on-surface-variant font-label-md text-label-md mb-1">Tổng mẫu vật</p>
+<h3 class="text-[28px] font-bold text-[#133120] font-headline-md leading-none">1,284,502</h3>
+</div>
+<!-- Stat Card 2 -->
+<div class="bg-[#EEF4E9] p-6 rounded-xl border border-[#DCE6D5] hover-lift">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-[#4B9B42] bg-white p-2 rounded-lg">pest_control</span>
+<div class="flex items-center text-primary gap-0.5 text-sm font-bold">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+                            5.4%
+                        </div>
+</div>
+<p class="text-on-surface-variant font-label-md text-label-md mb-1">Tổng loài</p>
+<h3 class="text-[28px] font-bold text-[#133120] font-headline-md leading-none">42,190</h3>
+</div>
+<!-- Stat Card 3 -->
+<div class="bg-[#EEF4E9] p-6 rounded-xl border border-[#DCE6D5] hover-lift">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-[#4B9B42] bg-white p-2 rounded-lg">image</span>
+<div class="flex items-center text-primary gap-0.5 text-sm font-bold">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+                            24%
+                        </div>
+</div>
+<p class="text-on-surface-variant font-label-md text-label-md mb-1">Tổng ảnh</p>
+<h3 class="text-[28px] font-bold text-[#133120] font-headline-md leading-none">5,102,443</h3>
+</div>
+<!-- Stat Card 4 -->
+<div class="bg-[#EEF4E9] p-6 rounded-xl border border-[#DCE6D5] hover-lift">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-[#4B9B42] bg-white p-2 rounded-lg">strikethrough_s</span>
+<div class="flex items-center text-error gap-0.5 text-sm font-bold">
+<span class="material-symbols-outlined text-sm">trending_down</span>
+                            1.2%
+                        </div>
+</div>
+<p class="text-on-surface-variant font-label-md text-label-md mb-1">Tổng chuỗi DNA</p>
+<h3 class="text-[28px] font-bold text-[#133120] font-headline-md leading-none">89,230</h3>
+</div>
+</div>
+<!-- Middle Section: Treemap & Map -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Treemap Visualization -->
+<div class="lg:col-span-7 bg-[#EEF4E9] p-6 rounded-xl border border-[#DCE6D5]">
+<div class="flex items-center justify-between mb-6">
+<h4 class="font-headline-md text-headline-md text-on-surface">Phân loại theo Bộ (Order)</h4>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-white rounded-full text-[10px] font-bold text-primary uppercase">Top 10</span>
+</div>
+</div>
+<div class="grid grid-cols-6 grid-rows-3 gap-2 h-80">
+<div class="col-span-3 row-span-3 bg-[#4B9B42] rounded-lg p-4 text-white flex flex-col justify-end hover:opacity-90 transition-opacity cursor-pointer">
+<span class="text-xs opacity-80">Coleoptera</span>
+<span class="font-bold text-lg leading-tight">Cánh cứng</span>
+<span class="text-sm">342,100 mẫu</span>
+</div>
+<div class="col-span-3 row-span-1 bg-[#6DAE5C] rounded-lg p-3 text-white flex flex-col justify-end hover:opacity-90 transition-opacity cursor-pointer">
+<span class="text-xs opacity-80 text-white/90">Lepidoptera</span>
+<span class="font-bold text-base leading-tight">Cánh vẩy</span>
+</div>
+<div class="col-span-1 row-span-2 bg-[#86BD71] rounded-lg p-2 text-white flex flex-col justify-end hover:opacity-90 transition-opacity cursor-pointer">
+<span class="font-bold text-[10px]">Diptera</span>
+</div>
+<div class="col-span-2 row-span-1 bg-[#A0C788] rounded-lg p-2 text-white flex flex-col justify-end hover:opacity-90 transition-opacity cursor-pointer">
+<span class="font-bold text-[10px]">Hymenoptera</span>
+</div>
+<div class="col-span-2 row-span-1 bg-[#C1A24B] rounded-lg p-2 text-white flex flex-col justify-end hover:opacity-90 transition-opacity cursor-pointer">
+<span class="font-bold text-[10px]">Hemiptera</span>
+</div>
+</div>
+</div>
+<!-- Distribution Map -->
+<div class="lg:col-span-5 bg-[#EEF4E9] p-6 rounded-xl border border-[#DCE6D5] flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<h4 class="font-headline-md text-headline-md text-on-surface">Bản đồ phân bố</h4>
+<span class="material-symbols-outlined text-outline-variant cursor-pointer">fullscreen</span>
+</div>
+<div class="flex-1 relative rounded-lg overflow-hidden border border-[#DCE6D5] bg-white">
+<div class="absolute inset-0 z-0 bg-[#F0F4F0]" data-alt="A clean, minimalist topographical map of Vietnam with soft terrain shading and subtle administrative boundaries. The map is presented in a light scientific style with numerous circular data markers in varying shades of forest green concentrated in biodiversity hotspots like the Central Highlands and Northern Mountains." data-location="Vietnam" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDLs2dpC9j6v3J2YFfWk5_lFWVp3nrZTAF8syPWWg7EpPx1Mk4U8RRUk1p-296CQne-YeUTfrpVjkSuwwyscBzYb0gZa0Zr5ek5AxYiIYgiQpeATD50SLUVTU6UxQbhOj-zuAAuZD6MgONLtXQxEPIwfKiShhrobmOxQ-ID__K1iToHLhtCyW3Vz7yZvLd1Smf2GTL2HYnBsfbqkUh4j8MRuBJopfJy7sdfOPaeE2X5yjnA-5qCbWU0')"></div>
+<!-- UI Overlay on map -->
+<div class="absolute top-4 right-4 flex flex-col gap-2 z-10">
+<button class="w-8 h-8 bg-white/90 backdrop-blur shadow-sm flex items-center justify-center rounded-lg text-primary hover:bg-white transition-all">+</button>
+<button class="w-8 h-8 bg-white/90 backdrop-blur shadow-sm flex items-center justify-center rounded-lg text-primary hover:bg-white transition-all">−</button>
+</div>
+<div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur p-2 rounded-lg text-[10px] font-bold text-on-surface-variant shadow-sm z-10 border border-[#DCE6D5]">
+                            Mật độ mẫu vật: 0 - 500+ / km²
+                        </div>
+</div>
+</div>
+</div>
+<!-- Bottom Section: Progress & Alerts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+<!-- Digitization Progress -->
+<div class="bg-[#EEF4E9] p-6 rounded-xl border border-[#DCE6D5]">
+<div class="flex items-center justify-between mb-6">
+<h4 class="font-headline-md text-headline-md text-on-surface">Tiến độ số hóa</h4>
+<span class="font-label-md text-label-md text-primary font-bold">78.5%</span>
+</div>
+<div class="relative h-4 w-full bg-[#DCE6D5] rounded-full overflow-hidden mb-4">
+<div class="progress-bar-fill absolute top-0 left-0 h-full bg-[#1A4D2E]" style="width: 78.5%;"></div>
+</div>
+<div class="grid grid-cols-3 gap-4 text-center">
+<div>
+<p class="text-[10px] uppercase text-outline mb-1">Bộ sưu tập miền Bắc</p>
+<p class="font-bold text-primary">92%</p>
+</div>
+<div class="border-x border-outline-variant">
+<p class="text-[10px] uppercase text-outline mb-1">Bộ sưu tập miền Trung</p>
+<p class="font-bold text-primary">64%</p>
+</div>
+<div>
+<p class="text-[10px] uppercase text-outline mb-1">Bộ sưu tập miền Nam</p>
+<p class="font-bold text-primary">81%</p>
+</div>
+</div>
+</div>
+<!-- Alert Banner -->
+<div class="bg-[#FFFCEB] p-6 rounded-xl border border-[#C1A24B] flex items-start gap-4">
+<div class="w-12 h-12 bg-[#C1A24B]/10 rounded-full flex items-center justify-center text-[#C1A24B] shrink-0">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div class="flex-1">
+<h4 class="font-headline-md text-headline-md text-[#745b04] mb-1">Cảnh báo dữ liệu bất thường</h4>
+<p class="text-on-surface-variant font-body-md text-sm mb-4">Phát hiện 12 mẫu vật có tọa độ GPS nằm ngoài lãnh thổ Việt Nam hoặc bị sai lệch định dạng phân loại taxonomic trong đợt tải lên cuối cùng (24/10/2023).</p>
+<div class="flex gap-3">
+<button class="px-4 py-1.5 bg-[#C1A24B] text-white rounded-lg font-bold text-sm hover:opacity-90 transition-opacity">Xem chi tiết</button>
+<button class="px-4 py-1.5 bg-transparent border border-[#C1A24B] text-[#C1A24B] rounded-lg font-bold text-sm hover:bg-[#C1A24B]/5 transition-colors">Bỏ qua</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Micro-interactions for Progress Bar
+        window.addEventListener('load', () => {
+            const bar = document.querySelector('.progress-bar-fill');
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.width = '78.5%';
+            }, 300);
+        });
+
+        // Simple Tab Switcher Simulation
+        document.querySelectorAll('nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                document.querySelectorAll('nav a').forEach(l => {
+                    l.classList.remove('bg-primary-container', 'text-on-primary-container', 'font-bold');
+                    l.classList.add('text-on-surface-variant');
+                });
+                link.classList.remove('text-on-surface-variant');
+                link.classList.add('bg-primary-container', 'text-on-primary-container', 'font-bold');
+            });
+        });
+    </script>
+
+
+
+
+
+
+</body></html>

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DNA Records List - VietInsect BigData</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed-variant": "#005306",
+                    "on-secondary": "#ffffff",
+                    "background": "#e9ffed",
+                    "on-error": "#ffffff",
+                    "outline-variant": "#bfcab8",
+                    "on-background": "#022111",
+                    "surface-variant": "#c8ebd1",
+                    "on-tertiary-container": "#4f3d00",
+                    "on-secondary-fixed": "#00210e",
+                    "secondary": "#366847",
+                    "error": "#ba1a1a",
+                    "outline": "#707a6b",
+                    "surface-container-highest": "#c8ebd1",
+                    "on-primary-container": "#f8fff0",
+                    "secondary-container": "#b8f0c5",
+                    "surface-tint": "#1a6d19",
+                    "surface-dim": "#c0e2c9",
+                    "surface": "#e9ffed",
+                    "surface-container-low": "#d9fce2",
+                    "secondary-fixed": "#b8f0c5",
+                    "primary-fixed": "#a2f792",
+                    "on-primary-fixed": "#002201",
+                    "inverse-on-surface": "#d6f9df",
+                    "surface-bright": "#e9ffed",
+                    "on-error-container": "#93000a",
+                    "primary-fixed-dim": "#87da78",
+                    "on-tertiary-fixed": "#241a00",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-container": "#3d6f4d",
+                    "tertiary-fixed-dim": "#e5c368",
+                    "on-tertiary-fixed-variant": "#584400",
+                    "tertiary-fixed": "#ffe08e",
+                    "secondary-fixed-dim": "#9dd3aa",
+                    "on-surface-variant": "#40493c",
+                    "on-surface": "#022111",
+                    "error-container": "#ffdad6",
+                    "tertiary": "#745b04",
+                    "inverse-surface": "#183625",
+                    "surface-container": "#d3f6dc",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-container": "#35852f",
+                    "on-primary": "#ffffff",
+                    "primary": "#176b17",
+                    "surface-container-high": "#cef1d7",
+                    "tertiary-container": "#c7a850",
+                    "inverse-primary": "#87da78",
+                    "on-secondary-fixed-variant": "#1d5031"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "container-max": "1440px",
+                    "gutter": "24px",
+                    "margin-mobile": "16px",
+                    "margin-desktop": "64px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Manrope"],
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-lg-mobile": ["Manrope"],
+                    "headline-lg": ["Manrope"],
+                    "caption": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-md": ["Manrope"]
+            },
+            "fontSize": {
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #F8FAF6; /* Ivory base per style guidance */
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #F8FAF6;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #DCE6D5;
+            border-radius: 10px;
+        }
+        .scientific-row:nth-child(even) {
+            background-color: #EEF4E9; /* Subtle tonal layering from guidance */
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface antialiased">
+<!-- SideNavBar (Authority: JSON) -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low dark:bg-surface-dim border-r border-outline-variant flex flex-col p-4 gap-2 z-50">
+<div class="mb-8 px-4">
+<h1 class="font-display-lg text-headline-md font-bold text-primary dark:text-primary-fixed">VietInsect</h1>
+<p class="text-caption text-on-surface-variant">Biodiversity Database</p>
+</div>
+<nav class="flex flex-col gap-1 grow">
+<!-- Active Tab: Dashboard (Mapping SCR-20 context to main nav) -->
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg font-bold" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">smb_share</span>
+<span class="font-body-md">Specimen Catalog</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-body-md">Maps</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">science</span>
+<span class="font-body-md">Research Lab</span>
+</a>
+</nav>
+<div class="pt-4 border-t border-outline-variant flex flex-col gap-1">
+<button class="mb-4 w-full bg-primary text-on-primary py-3 px-4 rounded-lg font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined">add</span>
+<span>New Specimen</span>
+</button>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-body-md">Support</span>
+</a>
+</div>
+</aside>
+<!-- TopAppBar (Authority: JSON) -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-surface dark:bg-surface-dim border-b border-outline-variant flex justify-between items-center px-8 z-40">
+<div class="flex items-center flex-1">
+<div class="relative w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-full py-1.5 pl-10 pr-4 text-label-md focus:outline-none focus:border-primary" placeholder="Search DNA records..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">account_circle</span>
+</div>
+<button class="bg-primary text-on-primary px-4 py-1.5 rounded-lg text-label-md font-bold hover:opacity-90 transition-all">
+                Export Data
+            </button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 mt-16 p-8 min-h-screen">
+<!-- Header Section -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<nav class="flex text-caption text-on-surface-variant gap-2 mb-2">
+<span>Research Lab</span>
+<span>/</span>
+<span class="text-primary font-semibold">DNA Records</span>
+</nav>
+<h2 class="font-display-lg text-headline-lg text-on-surface">Genomic Repository <span class="text-primary-container bg-primary-container/10 px-3 py-1 rounded text-label-md align-middle ml-2">SCR-20</span></h2>
+</div>
+<div class="flex items-center gap-2 text-label-md">
+<span class="text-on-surface-variant">Language:</span>
+<button class="font-bold text-primary">EN</button>
+<span class="text-outline-variant">|</span>
+<button class="text-on-surface-variant hover:text-primary">VI</button>
+</div>
+</div>
+<!-- Filter Bar (Bento-style horizontal bar) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-3 mb-8 flex flex-wrap items-center gap-4 shadow-sm">
+<div class="flex items-center gap-2">
+<span class="text-label-md text-on-surface-variant font-medium">Marker:</span>
+<select class="bg-surface border-none text-label-md font-semibold text-on-surface rounded-md focus:ring-1 focus:ring-primary py-1 px-3">
+<option>All Markers</option>
+<option>COI</option>
+<option>16S rRNA</option>
+<option>ITS2</option>
+</select>
+</div>
+<div class="h-6 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-2">
+<span class="text-label-md text-on-surface-variant font-medium">Researcher:</span>
+<select class="bg-surface border-none text-label-md font-semibold text-on-surface rounded-md focus:ring-1 focus:ring-primary py-1 px-3">
+<option>All Staff</option>
+<option>Dr. Pham Nguyen</option>
+<option>Nguyen Thi Lan</option>
+<option>Prof. Tran Hao</option>
+</select>
+</div>
+<div class="h-6 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-2">
+<span class="text-label-md text-on-surface-variant font-medium">Date Range:</span>
+<div class="flex items-center bg-surface px-3 py-1 rounded-md">
+<span class="material-symbols-outlined text-[18px] mr-2 text-on-surface-variant">calendar_today</span>
+<span class="text-label-md text-on-surface">Last 90 Days</span>
+</div>
+</div>
+<div class="ml-auto flex gap-2">
+<button class="p-2 hover:bg-surface-variant rounded-lg transition-colors">
+<span class="material-symbols-outlined">tune</span>
+</button>
+<button class="flex items-center gap-2 bg-secondary text-on-secondary px-4 py-1 rounded-lg text-label-md font-bold">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                    Apply Filters
+                </button>
+</div>
+</div>
+<!-- Data Table Container -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high text-on-surface-variant border-b border-outline-variant">
+<th class="px-6 py-4 font-label-md text-label-md">
+<div class="flex items-center gap-2 cursor-pointer">Specimen ID <span class="material-symbols-outlined text-[16px]">expand_more</span></div>
+</th>
+<th class="px-6 py-4 font-label-md text-label-md">Gen Marker</th>
+<th class="px-6 py-4 font-label-md text-label-md">GenBank Accession</th>
+<th class="px-6 py-4 font-label-md text-label-md">Sequence Length</th>
+<th class="px-6 py-4 font-label-md text-label-md">External Links</th>
+<th class="px-6 py-4 font-label-md text-label-md text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<!-- Row 1 -->
+<tr class="scientific-row hover:bg-surface-variant/30 transition-colors">
+<td class="px-6 py-4 font-medium text-on-surface">VI-ENT-2024-001</td>
+<td class="px-6 py-4">
+<span class="bg-[#4B9B42]/10 text-[#4B9B42] text-caption px-2 py-0.5 rounded font-bold border border-[#4B9B42]/20">COI</span>
+</td>
+<td class="px-6 py-4">
+<a class="text-[#1A4D2E] font-medium hover:underline flex items-center gap-1" href="#">
+                                OR345671.1
+                                <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</td>
+<td class="px-6 py-4 text-on-surface-variant text-label-md">658 bp</td>
+<td class="px-6 py-4">
+<div class="flex gap-3">
+<a class="flex items-center gap-1 text-caption text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]">database</span>
+                                    NCBI
+                                </a>
+<a class="flex items-center gap-1 text-caption text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]">qr_code</span>
+                                    BOLD
+                                </a>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="scientific-row hover:bg-surface-variant/30 transition-colors">
+<td class="px-6 py-4 font-medium text-on-surface">VI-ENT-2024-042</td>
+<td class="px-6 py-4">
+<span class="bg-[#4B9B42]/10 text-[#4B9B42] text-caption px-2 py-0.5 rounded font-bold border border-[#4B9B42]/20">16S rRNA</span>
+</td>
+<td class="px-6 py-4">
+<a class="text-[#1A4D2E] font-medium hover:underline flex items-center gap-1" href="#">
+                                MG992341.2
+                                <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</td>
+<td class="px-6 py-4 text-on-surface-variant text-label-md">512 bp</td>
+<td class="px-6 py-4">
+<div class="flex gap-3">
+<a class="flex items-center gap-1 text-caption text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]">database</span>
+                                    NCBI
+                                </a>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="scientific-row hover:bg-surface-variant/30 transition-colors">
+<td class="px-6 py-4 font-medium text-on-surface">VI-ENT-2023-882</td>
+<td class="px-6 py-4">
+<span class="bg-[#4B9B42]/10 text-[#4B9B42] text-caption px-2 py-0.5 rounded font-bold border border-[#4B9B42]/20">ITS2</span>
+</td>
+<td class="px-6 py-4">
+<a class="text-[#1A4D2E] font-medium hover:underline flex items-center gap-1" href="#">
+                                MN128456.1
+                                <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</td>
+<td class="px-6 py-4 text-on-surface-variant text-label-md">340 bp</td>
+<td class="px-6 py-4">
+<div class="flex gap-3">
+<a class="flex items-center gap-1 text-caption text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]">database</span>
+                                    NCBI
+                                </a>
+<a class="flex items-center gap-1 text-caption text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]">qr_code</span>
+                                    BOLD
+                                </a>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="scientific-row hover:bg-surface-variant/30 transition-colors">
+<td class="px-6 py-4 font-medium text-on-surface">VI-ENT-2024-009</td>
+<td class="px-6 py-4">
+<span class="bg-[#4B9B42]/10 text-[#4B9B42] text-caption px-2 py-0.5 rounded font-bold border border-[#4B9B42]/20">COI</span>
+</td>
+<td class="px-6 py-4">
+<a class="text-[#1A4D2E] font-medium hover:underline flex items-center gap-1" href="#">
+                                OR345672.4
+                                <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</td>
+<td class="px-6 py-4 text-on-surface-variant text-label-md">658 bp</td>
+<td class="px-6 py-4">
+<div class="flex gap-3">
+<a class="flex items-center gap-1 text-caption text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]">qr_code</span>
+                                    BOLD
+                                </a>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="scientific-row hover:bg-surface-variant/30 transition-colors">
+<td class="px-6 py-4 font-medium text-on-surface">VI-ENT-2024-115</td>
+<td class="px-6 py-4">
+<span class="bg-[#4B9B42]/10 text-[#4B9B42] text-caption px-2 py-0.5 rounded font-bold border border-[#4B9B42]/20">COI</span>
+</td>
+<td class="px-6 py-4 text-on-surface-variant italic">Pending...</td>
+<td class="px-6 py-4 text-on-surface-variant text-label-md">650 bp</td>
+<td class="px-6 py-4">—</td>
+<td class="px-6 py-4 text-right">
+<button class="text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+<!-- Pagination / Footer -->
+<div class="px-6 py-4 bg-surface border-t border-outline-variant flex justify-between items-center">
+<span class="text-caption text-on-surface-variant">Showing 1 to 5 of 1,284 entries</span>
+<div class="flex gap-2">
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-surface-variant">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded bg-primary text-on-primary font-bold text-label-md">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-surface-variant">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-surface-variant">3</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-surface-variant">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Specimen Preview Bento (Right Side Interaction Logic) -->
+<div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="col-span-1 bg-surface-container-low border border-outline-variant rounded-xl p-6 relative overflow-hidden group">
+
+<div class="relative z-10">
+<h3 class="font-headline-md text-on-surface mb-2">Sequence Analysis</h3>
+<p class="text-label-md text-on-surface-variant mb-4">Run comparative BLAST analysis against local database.</p>
+<button class="flex items-center gap-2 text-primary font-bold hover:gap-3 transition-all">
+                        Launch Tools <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+<div class="col-span-2 bg-[#1A4D2E] text-on-primary rounded-xl p-6 flex justify-between items-center relative overflow-hidden">
+<div class="relative z-10">
+<div class="text-secondary-fixed text-caption font-bold tracking-widest uppercase mb-1">Weekly Metric</div>
+<div class="text-display-lg leading-none mb-2">142</div>
+<div class="text-body-md opacity-80">New DNA sequences uploaded this week across 12 provinces.</div>
+</div>
+<div class="w-32 h-32 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20">
+<span class="material-symbols-outlined text-[48px]">insights</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Micro-interaction Script -->
+<script>
+        // Simple hover effect for table rows to simulate scientific focus
+        document.querySelectorAll('.scientific-row').forEach(row => {
+            row.addEventListener('mouseenter', () => {
+                row.style.transform = 'translateX(4px)';
+                row.style.transition = 'transform 0.2s ease-out';
+            });
+            row.addEventListener('mouseleave', () => {
+                row.style.transform = 'translateX(0)';
+            });
+        });
+
+        // Toggle dropdown logic simulation
+        document.querySelectorAll('select').forEach(select => {
+            select.addEventListener('change', function() {
+                this.classList.add('animate-pulse');
+                setTimeout(() => this.classList.remove('animate-pulse'), 500);
+            });
+        });
+    </script>
+</body></html>

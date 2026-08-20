@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EntoViet | Bulk Import Workbench</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#1a6d19",
+                    "secondary-fixed-dim": "#9dd3aa",
+                    "on-tertiary-fixed-variant": "#584400",
+                    "inverse-primary": "#87da78",
+                    "surface-container-low": "#d9fce2",
+                    "on-secondary-fixed-variant": "#1d5031",
+                    "primary-fixed-dim": "#87da78",
+                    "on-tertiary-fixed": "#241a00",
+                    "tertiary-container": "#c7a850",
+                    "tertiary": "#745b04",
+                    "on-background": "#022111",
+                    "primary-fixed": "#a2f792",
+                    "on-surface": "#022111",
+                    "error": "#ba1a1a",
+                    "on-primary-container": "#f8fff0",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed-dim": "#e5c368",
+                    "outline": "#707a6b",
+                    "secondary-container": "#b8f0c5",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-fixed": "#00210e",
+                    "surface-dim": "#c0e2c9",
+                    "surface-bright": "#e9ffed",
+                    "background": "#e9ffed",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary": "#366847",
+                    "surface": "#e9ffed",
+                    "on-primary-fixed": "#002201",
+                    "primary-container": "#35852f",
+                    "tertiary-fixed": "#ffe08e",
+                    "secondary-fixed": "#b8f0c5",
+                    "on-tertiary": "#ffffff",
+                    "primary": "#176b17",
+                    "on-secondary-container": "#3d6f4d",
+                    "inverse-surface": "#183625",
+                    "surface-container-highest": "#c8ebd1",
+                    "surface-variant": "#c8ebd1",
+                    "inverse-on-surface": "#d6f9df",
+                    "on-surface-variant": "#40493c",
+                    "on-error-container": "#93000a",
+                    "error-container": "#ffdad6",
+                    "outline-variant": "#bfcab8",
+                    "on-error": "#ffffff",
+                    "surface-container": "#d3f6dc",
+                    "on-primary-fixed-variant": "#005306",
+                    "on-tertiary-container": "#4f3d00",
+                    "surface-container-high": "#cef1d7"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "container-max": "1440px",
+                    "margin-mobile": "16px",
+                    "margin-desktop": "64px",
+                    "gutter": "24px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "caption": ["Inter"],
+                    "headline-md": ["Manrope"],
+                    "headline-lg": ["Manrope"],
+                    "display-lg": ["Manrope"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .step-active { color: #4B9B42; border-color: #4B9B42; }
+        .step-completed { color: #176b17; border-color: #176b17; }
+        .step-future { color: #bfcab8; border-color: #bfcab8; }
+        
+        /* Drag-and-drop mapping animation */
+        .mapping-line {
+            stroke: #35852f;
+            stroke-dasharray: 5;
+            animation: dash 10s linear infinite;
+        }
+        @keyframes dash { to { stroke-dashoffset: -100; } }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen">
+<!-- Sidebar Navigation -->
+<aside class="fixed left-0 top-0 h-full flex flex-col bg-surface-container-low dark:bg-surface-dim h-screen w-64 border-r border-outline-variant z-50">
+<div class="p-6">
+<h1 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed-dim">EntoViet</h1>
+<p class="text-caption text-on-surface-variant">Insect Database</p>
+</div>
+<nav class="flex-1 px-4 py-2 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-secondary-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-secondary-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">flutter_dash</span>
+<span class="font-label-md text-label-md">Catalog</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-secondary-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-md text-label-md">Maps</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-secondary-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">biotech</span>
+<span class="font-label-md text-label-md">Lab</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-primary dark:text-primary-fixed-dim font-bold border-r-4 border-primary dark:border-primary-fixed-dim" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Admin</span>
+</a>
+</nav>
+<div class="p-4 border-t border-outline-variant space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-secondary-container transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 flex flex-col min-h-screen">
+<!-- Top Nav Bar -->
+<header class="flex justify-between items-center w-full px-margin-desktop py-4 bg-surface-container-lowest dark:bg-surface-dim border-b border-outline-variant sticky top-0 z-40">
+<div class="flex items-center gap-4">
+<div class="relative focus-within:ring-2 focus-within:ring-primary rounded-lg">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container border-none rounded-lg focus:ring-0 text-body-md w-64" placeholder="Search specimens..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<span class="font-label-md text-label-md text-on-surface-variant cursor-pointer hover:text-primary transition-colors">VI | EN</span>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">settings</span>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary-fixed overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a scientific researcher in a clean lab environment, soft natural lighting, high-end commercial photography style, neutral tones with organic greens." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2hnpKBuRBDCY_i9NEHRgA5bhLlOeyJxb_--74SbtegawpF193_EKBoK9_AfChzyLSFzkP8LwDAU-MYn1UMD-1Ds6mo52ceqJ3xwv2GuruPOY_7B9WbS0VBELXgfd03Sjdr2B3j0CYcgN0gdQ5WRSdNs8Ztl5V4AMIdpTx1I-cXO-agSY10_L71J6O5M0e5rbGsE4zJWYoTyqtIyUYQwSZI-79LOpc77qvBjKQhDy16MYbjX7Z5rIo"/>
+</div>
+</div>
+</header>
+<!-- Workbench Content -->
+<section class="p-12 flex-1 max-w-7xl mx-auto w-full">
+<div class="mb-8">
+<h2 class="font-headline-lg text-headline-lg text-primary">Bulk Import Workbench</h2>
+<p class="text-body-md text-on-surface-variant mt-2">Scale your research by importing specimen records in batches. Follow the steps below to ensure data integrity.</p>
+</div>
+<!-- Stepper -->
+<div class="mb-12 bg-surface-container-lowest rounded-xl p-8 shadow-sm border border-outline-variant">
+<div class="flex items-center justify-between relative">
+<!-- Progress Line Background -->
+<div class="absolute top-1/2 left-0 w-full h-0.5 bg-outline-variant -translate-y-1/2 z-0"></div>
+<!-- Step 1 (Completed) -->
+<div class="relative z-10 flex flex-col items-center gap-2 group">
+<div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center border-2 border-primary">
+<span class="material-symbols-outlined text-xl">check</span>
+</div>
+<span class="font-label-md text-primary">Download Template</span>
+</div>
+<!-- Step 2 (Completed) -->
+<div class="relative z-10 flex flex-col items-center gap-2 group">
+<div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center border-2 border-primary">
+<span class="material-symbols-outlined text-xl">check</span>
+</div>
+<span class="font-label-md text-primary">Upload File</span>
+</div>
+<!-- Step 3 (Active) -->
+<div class="relative z-10 flex flex-col items-center gap-2 group">
+<div class="w-10 h-10 rounded-full bg-white text-[#4B9B42] flex items-center justify-center border-4 border-[#4B9B42]">
+<span class="font-bold">3</span>
+</div>
+<span class="font-label-md text-[#4B9B42]">Map Columns</span>
+</div>
+<!-- Step 4 (Future) -->
+<div class="relative z-10 flex flex-col items-center gap-2 group">
+<div class="w-10 h-10 rounded-full bg-surface-container text-outline flex items-center justify-center border-2 border-outline-variant">
+<span class="font-bold">4</span>
+</div>
+<span class="font-label-md text-outline">Preview &amp; Import</span>
+</div>
+</div>
+</div>
+<!-- Content Area: Wizard Step 3 Interface -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left: Source Columns (Draggable) -->
+<div class="lg:col-span-4 space-y-4">
+<div class="bg-surface-container-low p-6 rounded-xl border border-outline-variant">
+<h3 class="font-label-md text-primary mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined">file_present</span>
+                            Source Columns (CSV)
+                        </h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between bg-white p-3 rounded border border-outline-variant cursor-grab hover:border-primary transition-all shadow-sm">
+<span class="text-label-md">specimen_id</span>
+<span class="material-symbols-outlined text-on-surface-variant">drag_indicator</span>
+</div>
+<div class="flex items-center justify-between bg-white p-3 rounded border border-outline-variant cursor-grab hover:border-primary transition-all shadow-sm">
+<span class="text-label-md">genus_name</span>
+<span class="material-symbols-outlined text-on-surface-variant">drag_indicator</span>
+</div>
+<div class="flex items-center justify-between bg-white p-3 rounded border border-outline-variant cursor-grab hover:border-primary transition-all shadow-sm">
+<span class="text-label-md">discovery_lat</span>
+<span class="material-symbols-outlined text-on-surface-variant">drag_indicator</span>
+</div>
+<div class="flex items-center justify-between bg-white p-3 rounded border border-outline-variant cursor-grab hover:border-primary transition-all shadow-sm">
+<span class="text-label-md">discovery_long</span>
+<span class="material-symbols-outlined text-on-surface-variant">drag_indicator</span>
+</div>
+<div class="flex items-center justify-between bg-white p-3 rounded border border-outline-variant cursor-grab hover:border-primary transition-all shadow-sm">
+<span class="text-label-md">collector_notes</span>
+<span class="material-symbols-outlined text-on-surface-variant">drag_indicator</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Middle: Visual Connector (SVG) -->
+<div class="hidden lg:flex lg:col-span-1 items-center justify-center">
+<svg fill="none" height="300" viewbox="0 0 40 300" width="40" xmlns="http://www.w3.org/2000/svg">
+<path class="mapping-line" d="M0 45H40" stroke-width="2"></path>
+<path class="mapping-line" d="M0 95H40" stroke-width="2"></path>
+<path class="mapping-line" d="M0 145H40" stroke-width="2"></path>
+<path class="mapping-line" d="M0 195H40" stroke-width="2"></path>
+</svg>
+</div>
+<!-- Right: System Fields (Drop Targets) -->
+<div class="lg:col-span-7 space-y-4">
+<div class="bg-white p-6 rounded-xl border border-outline-variant shadow-sm">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-label-md text-primary">System Field Mapping</h3>
+<span class="text-caption text-on-surface-variant italic">Match your headers to EntoViet requirements</span>
+</div>
+<div class="space-y-4">
+<!-- Mapping Row 1 -->
+<div class="flex items-center gap-4">
+<div class="flex-1 p-3 bg-surface-container-lowest border border-primary-container rounded flex justify-between items-center">
+<span class="font-label-md text-primary">Primary ID</span>
+<span class="text-caption text-primary opacity-60">Required</span>
+</div>
+<div class="material-symbols-outlined text-primary">swap_horiz</div>
+<div class="flex-1 p-3 bg-secondary-container rounded flex justify-between items-center border border-dashed border-secondary">
+<span class="text-label-md text-on-secondary-container">specimen_id</span>
+<span class="material-symbols-outlined text-on-secondary-container text-sm">close</span>
+</div>
+</div>
+<!-- Mapping Row 2 -->
+<div class="flex items-center gap-4">
+<div class="flex-1 p-3 bg-surface-container-lowest border border-outline-variant rounded flex justify-between items-center">
+<span class="font-label-md">Scientific Name</span>
+<span class="text-caption text-on-surface-variant">Required</span>
+</div>
+<div class="material-symbols-outlined text-primary">swap_horiz</div>
+<div class="flex-1 p-3 bg-secondary-container rounded flex justify-between items-center border border-dashed border-secondary">
+<span class="text-label-md text-on-secondary-container">genus_name</span>
+<span class="material-symbols-outlined text-on-secondary-container text-sm">close</span>
+</div>
+</div>
+<!-- Mapping Row 3 -->
+<div class="flex items-center gap-4">
+<div class="flex-1 p-3 bg-surface-container-lowest border border-outline-variant rounded flex justify-between items-center">
+<span class="font-label-md">Coordinate X (Lat)</span>
+</div>
+<div class="material-symbols-outlined text-primary">swap_horiz</div>
+<div class="flex-1 p-3 bg-secondary-container rounded flex justify-between items-center border border-dashed border-secondary">
+<span class="text-label-md text-on-secondary-container">discovery_lat</span>
+<span class="material-symbols-outlined text-on-secondary-container text-sm">close</span>
+</div>
+</div>
+<!-- Empty Target -->
+<div class="flex items-center gap-4">
+<div class="flex-1 p-3 bg-surface-container-lowest border border-outline-variant rounded flex justify-between items-center">
+<span class="font-label-md">Collection Date</span>
+</div>
+<div class="material-symbols-outlined text-outline">arrow_forward</div>
+<div class="flex-1 p-3 border-2 border-dashed border-outline-variant rounded flex justify-center items-center group hover:bg-surface-container transition-colors">
+<span class="text-caption text-outline group-hover:text-primary">Drop column here</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Preview & Status (Mini Preview of Step 4) -->
+<div class="mt-12">
+<div class="flex justify-between items-end mb-4">
+<div>
+<h4 class="font-label-md text-on-background">Live Validation Preview</h4>
+<p class="text-caption text-on-surface-variant">Checking first 1,000 rows for formatting errors...</p>
+</div>
+<button class="bg-primary text-white px-8 py-3 rounded-lg font-label-md hover:opacity-90 transition-all flex items-center gap-2">
+                        Review &amp; Import <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<div class="bg-white rounded-xl border border-outline-variant overflow-hidden shadow-sm">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-high border-b border-outline-variant">
+<tr>
+<th class="p-4 font-label-md text-primary">Line</th>
+<th class="p-4 font-label-md text-primary">Specimen ID</th>
+<th class="p-4 font-label-md text-primary">Genus Name</th>
+<th class="p-4 font-label-md text-primary">Lat/Long</th>
+<th class="p-4 font-label-md text-primary">Validation Status</th>
+</tr>
+</thead>
+<tbody class="text-body-md">
+<tr class="border-b border-outline-variant hover:bg-surface-container-lowest">
+<td class="p-4 text-on-surface-variant">001</td>
+<td class="p-4">VN-COL-2023-01</td>
+<td class="p-4 font-italic">Coleoptera</td>
+<td class="p-4">10.7626, 106.6602</td>
+<td class="p-4"><span class="px-2 py-1 bg-green-100 text-green-700 rounded text-caption font-bold">Valid</span></td>
+</tr>
+<tr class="border-b border-outline-variant bg-[#ffdad6] hover:bg-red-50">
+<td class="p-4 text-on-surface-variant">002</td>
+<td class="p-4 font-bold text-error">INVALID_ID</td>
+<td class="p-4">Lepidoptera</td>
+<td class="p-4">16.4637, 107.5909</td>
+<td class="p-4"><span class="px-2 py-1 bg-error text-white rounded text-caption font-bold flex items-center gap-1 w-fit"><span class="material-symbols-outlined text-sm">error</span> Formatting Error</span></td>
+</tr>
+<tr class="border-b border-outline-variant bg-[#ffe08e] hover:bg-[#fff5d9]">
+<td class="p-4 text-on-surface-variant">003</td>
+<td class="p-4">VN-LEP-2023-09</td>
+<td class="p-4">Hymenoptera</td>
+<td class="p-4 text-tertiary">99.000, 200.000</td>
+<td class="p-4"><span class="px-2 py-1 bg-[#c7a850] text-white rounded text-caption font-bold flex items-center gap-1 w-fit"><span class="material-symbols-outlined text-sm">warning</span> Coordinates Out of Bounds</span></td>
+</tr>
+</tbody>
+</table>
+<!-- Progress Footer -->
+<div class="p-4 bg-surface-container-lowest flex items-center gap-6 border-t border-outline-variant">
+<div class="flex-1">
+<div class="flex justify-between mb-1">
+<span class="text-caption font-bold text-primary">Validation Progress</span>
+<span class="text-caption text-on-surface-variant">84% Complete</span>
+</div>
+<div class="w-full bg-outline-variant h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[84%] transition-all duration-1000 ease-out"></div>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="text-center">
+<div class="text-label-md font-bold text-primary">8,400</div>
+<div class="text-[10px] uppercase text-on-surface-variant">Scanned</div>
+</div>
+<div class="text-center">
+<div class="text-label-md font-bold text-error">12</div>
+<div class="text-[10px] uppercase text-on-surface-variant">Errors</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating Action Button (FAB) Contextual for Admin -->
+<button class="fixed bottom-8 right-8 bg-[#4B9B42] text-white p-4 rounded-full shadow-lg hover:scale-105 transition-transform group flex items-center gap-2">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-label-md">Import Guide</span>
+</button>
+<script>
+        // Micro-interactions for Drag and Drop simulation
+        document.querySelectorAll('.cursor-grab').forEach(item => {
+            item.addEventListener('mousedown', () => {
+                item.style.transform = 'scale(0.98)';
+                item.style.cursor = 'grabbing';
+            });
+            item.addEventListener('mouseup', () => {
+                item.style.transform = 'scale(1)';
+                item.style.cursor = 'grab';
+            });
+        });
+
+        // Simple real-time update simulation for progress bar
+        let progress = 84;
+        const progressBar = document.querySelector('.bg-primary.h-full');
+        const progressText = document.querySelector('.text-on-surface-variant:nth-child(2)');
+        
+        setInterval(() => {
+            if(progress < 100) {
+                progress += Math.random() * 0.5;
+                if(progressBar) progressBar.style.width = `${progress}%`;
+                if(progressText) progressText.innerText = `${Math.floor(progress)}% Complete`;
+            }
+        }, 3000);
+    </script>
+</body></html>

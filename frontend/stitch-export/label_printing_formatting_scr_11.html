@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SCR-11 — Label Printing Screen | VietInsect BigData</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "background": "#e9ffed",
+                    "on-secondary-fixed": "#00210e",
+                    "surface-variant": "#c8ebd1",
+                    "surface-container": "#d3f6dc",
+                    "error": "#ba1a1a",
+                    "on-error-container": "#93000a",
+                    "on-surface-variant": "#40493c",
+                    "tertiary-fixed-dim": "#e5c368",
+                    "on-primary": "#ffffff",
+                    "surface-container-highest": "#c8ebd1",
+                    "on-surface": "#022111",
+                    "on-secondary-fixed-variant": "#1d5031",
+                    "inverse-on-surface": "#d6f9df",
+                    "surface-dim": "#c0e2c9",
+                    "primary-fixed": "#a2f792",
+                    "primary-container": "#35852f",
+                    "primary": "#176b17",
+                    "tertiary-container": "#c7a850",
+                    "on-error": "#ffffff",
+                    "inverse-surface": "#183625",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed-dim": "#9dd3aa",
+                    "surface": "#e9ffed",
+                    "error-container": "#ffdad6",
+                    "surface-container-low": "#d9fce2",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed": "#ffe08e",
+                    "surface-container-high": "#cef1d7",
+                    "secondary-container": "#b8f0c5",
+                    "surface-bright": "#e9ffed",
+                    "outline-variant": "#bfcab8",
+                    "primary-fixed-dim": "#87da78",
+                    "on-primary-fixed-variant": "#005306",
+                    "secondary": "#366847",
+                    "on-secondary-container": "#3d6f4d",
+                    "on-primary-container": "#f8fff0",
+                    "on-background": "#022111",
+                    "outline": "#707a6b",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed": "#002201",
+                    "surface-tint": "#1a6d19",
+                    "tertiary": "#745b04",
+                    "secondary-fixed": "#b8f0c5",
+                    "inverse-primary": "#87da78",
+                    "on-tertiary-fixed": "#241a00",
+                    "on-tertiary-container": "#4f3d00",
+                    "on-tertiary-fixed-variant": "#584400"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-desktop": "64px",
+                    "unit": "4px",
+                    "container-max": "1440px",
+                    "gutter": "24px",
+                    "margin-mobile": "16px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-md": ["Manrope"],
+                    "caption": ["Inter"],
+                    "display-lg": ["Manrope"],
+                    "body-md": ["Inter"],
+                    "headline-lg-mobile": ["Manrope"],
+                    "headline-lg": ["Manrope"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        body {
+            background-color: #F8FAF6;
+        }
+        .sidebar-active {
+            @apply bg-primary-container text-on-primary-container font-bold;
+        }
+        .scientific-label {
+            aspect-ratio: 3 / 2;
+            background: white;
+            border: 1px solid #DCE6D5;
+            padding: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface">
+<!-- AdminLayout Wrapper -->
+<div class="flex min-h-screen">
+<!-- SideNavBar (Authority: JSON) -->
+<aside class="fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 bg-surface-container-low border-r border-outline-variant">
+<div class="mb-8 px-2 flex items-center gap-3">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">biotech</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-black text-on-surface">VietInsect</h1>
+<p class="font-label-md text-label-md text-outline">Scientific Hub</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">bug_report</span>
+<span class="font-label-md">Catalog</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-md">Maps</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">biotech</span>
+<span class="font-label-md">Lab</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container rounded-lg font-bold group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">admin_panel_settings</span>
+<span class="font-label-md">Admin</span>
+</a>
+</nav>
+<div class="mt-auto pt-4 border-t border-outline-variant space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-md text-label-md">System Logs</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 flex-1 flex flex-col min-w-0">
+<!-- TopNavBar (Authority: JSON) -->
+<header class="sticky top-0 z-50 flex items-center justify-between px-10 w-full h-16 bg-surface border-b border-outline-variant">
+<div class="flex items-center gap-6">
+<div class="relative w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-1.5 bg-surface-container-low border border-outline-variant rounded-full text-body-md focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="Search specimen ID or taxon..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1 text-label-md font-bold text-primary mr-4">
+<span class="cursor-pointer hover:underline">VI</span>
+<span class="text-outline">|</span>
+<span class="cursor-pointer hover:underline opacity-50">EN</span>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">dark_mode</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors relative">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<div class="flex items-center gap-3 pl-4 border-l border-outline-variant">
+<div class="text-right">
+<p class="font-label-md text-on-surface">Dr. Nguyen Van A</p>
+<p class="text-caption text-outline">Senior Entomologist</p>
+</div>
+<img class="w-10 h-10 rounded-full border border-outline-variant object-cover" data-alt="A professional headshot of a middle-aged scientific researcher in a clean laboratory environment. He is wearing a white lab coat and has a focused, intelligent expression. The background shows soft-focus laboratory equipment and specimen jars, reinforcing a high-end academic and scientific atmosphere. Lighting is soft and bright, using a natural daylight spectrum." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0hhAtHLg6TbGZTCHzF2O_MAYzcp0exd5ImIaU3-GE3fASde_YgusQNek8507-pAMhI_Ph_0QAmHMTTPr__qXX9rIdA8hCsjZcDMYbNrS4w_oxumy8cXTb5dqraktvT00aH69owU_q47OBHrSyAvDc-3p6vdvNwFd_C6R4bUsVMiWnL_iRRjSmj1u1b1C1N4dD6nNi-DRrrHhdro5iic8iEMVVvMkOX69bLB0N2AhsaQF4jgTOfFqo"/>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<div class="px-10 py-8 max-w-container-max mx-auto w-full">
+<!-- Breadcrumbs & Title -->
+<div class="mb-8">
+<nav class="flex items-center gap-2 text-caption text-outline mb-2">
+<span>Specimen Management</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-primary font-bold">Label Printing</span>
+</nav>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">SCR-11 — Label Printing Screen</h2>
+<p class="text-body-md text-on-surface-variant mt-1">Configure and generate standardized scientific labels for insect specimens.</p>
+</div>
+<div class="grid grid-cols-12 gap-gutter items-start">
+<!-- Left Panel: Configuration -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+<section class="bg-surface-container-low border border-outline-variant rounded-xl p-6 shadow-sm">
+<h3 class="font-headline-md text-headline-md text-primary mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined">settings_suggest</span>
+                                Configuration
+                            </h3>
+<!-- Template Selection -->
+<div class="mb-6">
+<label class="block font-label-md text-on-surface mb-2">Choose Template</label>
+<select class="w-full rounded-lg border-outline-variant bg-surface text-body-md focus:ring-primary focus:border-primary">
+<option>Standard (3 x 2 cm)</option>
+<option>Small (2 x 1.5 cm)</option>
+<option>Detailed (5 x 3.5 cm)</option>
+</select>
+</div>
+<!-- Font Selection -->
+<div class="mb-6">
+<label class="block font-label-md text-on-surface mb-2">Font Selection</label>
+<select class="w-full rounded-lg border-outline-variant bg-surface text-body-md focus:ring-primary focus:border-primary">
+<option>Inter (Modern Sans)</option>
+<option>Roboto Mono (Technical)</option>
+<option>Times New Roman (Classic)</option>
+</select>
+</div>
+<!-- Label Size Radio -->
+<div class="mb-6">
+<label class="block font-label-md text-on-surface mb-3">Label Size Preference</label>
+<div class="grid grid-cols-2 gap-3">
+<label class="flex items-center gap-3 p-3 border border-outline-variant rounded-lg cursor-pointer hover:bg-surface-container transition-colors group">
+<input checked="" class="text-primary focus:ring-primary" name="size" type="radio"/>
+<span class="text-body-md">Single Sided</span>
+</label>
+<label class="flex items-center gap-3 p-3 border border-outline-variant rounded-lg cursor-pointer hover:bg-surface-container transition-colors group">
+<input class="text-primary focus:ring-primary" name="size" type="radio"/>
+<span class="text-body-md">Foldable Tag</span>
+</label>
+</div>
+</div>
+<!-- Data Fields Checkboxes -->
+<div class="mb-4">
+<label class="block font-label-md text-on-surface mb-3">Data Fields to Include</label>
+<div class="space-y-3">
+<label class="flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-body-md">QR Code</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors text-[18px]">qr_code_2</span>
+</label>
+<label class="flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-body-md">Scientific Name</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors text-[18px]">qr_code_2</span>
+</label>
+<label class="flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-body-md">Specimen ID</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors text-[18px]">fingerprint</span>
+</label>
+<label class="flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-body-md">Location / Province</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors text-[18px]">location_on</span>
+</label>
+<label class="flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<input class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-body-md">Collection Date</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors text-[18px]">calendar_today</span>
+</label>
+</div>
+</div>
+</section>
+<!-- Batch Info Card -->
+<div class="bg-primary-container/10 border border-primary/20 rounded-xl p-5">
+<div class="flex items-start gap-4">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">info</span>
+<div>
+<p class="font-label-md text-on-primary-fixed-variant">Batch Summary</p>
+<p class="text-body-md text-on-surface-variant">Currently 12 specimens selected for labeling from the <strong>Cuc Phuong Expedition</strong> set.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Panel: LabelCanvas Preview -->
+<div class="col-span-12 lg:col-span-8 flex flex-col gap-6">
+<section class="bg-surface-container-highest/30 border border-outline-variant rounded-xl p-8 min-h-[700px] relative overflow-hidden">
+<div class="absolute top-4 left-4 flex items-center gap-4">
+<h3 class="font-headline-md text-headline-md text-on-surface">LabelCanvas Preview</h3>
+<span class="px-2 py-0.5 bg-surface-container-low text-outline text-caption rounded border border-outline-variant">A4 Standard Sheet</span>
+</div>
+<div class="flex gap-2 absolute top-4 right-4">
+<button class="p-2 bg-surface hover:bg-surface-variant border border-outline-variant rounded-lg transition-colors" title="Zoom In">
+<span class="material-symbols-outlined">zoom_in</span>
+</button>
+<button class="p-2 bg-surface hover:bg-surface-variant border border-outline-variant rounded-lg transition-colors" title="Zoom Out">
+<span class="material-symbols-outlined">zoom_out</span>
+</button>
+<button class="p-2 bg-surface hover:bg-surface-variant border border-outline-variant rounded-lg transition-colors" title="Fit to Screen">
+<span class="material-symbols-outlined">fullscreen</span>
+</button>
+</div>
+<!-- The Printed Sheet Mockup -->
+<div class="mt-16 mx-auto w-[600px] h-[800px] bg-white shadow-2xl rounded-sm border border-outline-variant p-10 grid grid-cols-3 grid-rows-5 gap-6">
+<!-- Individual Labels -->
+<script>
+                                    const specimens = [
+                                        { id: "VI-2023-0041", name: "Odontolabis mouhotii", loc: "Ninh Binh" },
+                                        { id: "VI-2023-0042", name: "Lucanus planeti", loc: "Vinh Phuc" },
+                                        { id: "VI-2023-0043", name: "Cheirotonus jansoni", loc: "Lao Cai" },
+                                        { id: "VI-2023-0044", name: "Dorcus antaeus", loc: "Yen Bai" },
+                                        { id: "VI-2023-0045", name: "Cyclommatus vitalisi", loc: "Cao Bang" },
+                                        { id: "VI-2023-0046", name: "Prosopocoilus confucius", loc: "Hoa Binh" },
+                                        { id: "VI-2023-0047", name: "Neolucanus delicatus", loc: "Lam Dong" },
+                                        { id: "VI-2023-0048", name: "Hexarthrius parryi", loc: "Gia Lai" },
+                                        { id: "VI-2023-0049", name: "Xylotrupes socrates", loc: "Dak Lak" },
+                                        { id: "VI-2023-0050", name: "Chalcosoma caucasus", loc: "Dak Nong" },
+                                        { id: "VI-2023-0051", name: "Dynastes hercules", loc: "Exotic/Lab" },
+                                        { id: "VI-2023-0052", name: "Eupatorus gracilicornis", loc: "Phu Tho" }
+                                    ];
+                                    
+                                    document.write(specimens.map(s => `
+                                        <div class="scientific-label flex flex-col justify-between">
+                                            <div class="flex justify-between items-start">
+                                                <div class="w-8 h-8 bg-black/5 flex items-center justify-center rounded">
+                                                    <span class="material-symbols-outlined text-[20px] text-on-surface">qr_code_2</span>
+                                                </div>
+                                                <p class="text-[8px] font-bold text-outline uppercase tracking-tighter">${s.id}</p>
+                                            </div>
+                                            <div class="mt-2">
+                                                <p class="text-[10px] font-bold italic leading-tight text-primary">${s.name}</p>
+                                                <p class="text-[8px] font-medium text-on-surface-variant mt-0.5">${s.loc}, Vietnam</p>
+                                            </div>
+                                        </div>
+                                    `).join(''));
+                                </script>
+<!-- Placeholder for empty spaces -->
+<div class="scientific-label border-dashed border-outline-variant flex items-center justify-center opacity-20">
+<span class="material-symbols-outlined">add</span>
+</div>
+<div class="scientific-label border-dashed border-outline-variant flex items-center justify-center opacity-20">
+<span class="material-symbols-outlined">add</span>
+</div>
+<div class="scientific-label border-dashed border-outline-variant flex items-center justify-center opacity-20">
+<span class="material-symbols-outlined">add</span>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+<!-- Fixed Footer Actions -->
+<div class="fixed bottom-8 right-8 flex items-center gap-4 z-50">
+<button class="px-6 py-3 bg-surface border border-outline hover:bg-surface-variant text-on-surface-variant rounded-full font-label-md flex items-center gap-2 transition-all shadow-lg active:scale-95">
+<span class="material-symbols-outlined">print</span>
+                    Print Test Page
+                </button>
+<button class="px-8 py-3 bg-[#1A4D2E] hover:bg-[#235d39] text-white rounded-full font-label-md flex items-center gap-3 transition-all shadow-xl hover:shadow-2xl active:scale-95">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">picture_as_pdf</span>
+                    Export Batch PDF
+                </button>
+</div>
+</main>
+</div>
+<!-- Atmospheric Overlay (Scientific Texture) -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.03] z-[-1]" style="background-image: url('https://www.transparenttextures.com/patterns/graphy.png');"></div>
+<script>
+        // Micro-interactions
+        document.querySelectorAll('input[type="checkbox"], input[type="radio"], select').forEach(el => {
+            el.addEventListener('change', () => {
+                const preview = document.querySelector('.scientific-label:first-child');
+                preview.classList.add('animate-pulse');
+                setTimeout(() => {
+                    preview.classList.remove('animate-pulse');
+                }, 500);
+            });
+        });
+
+        // Toggle Active State
+        function setActiveNav(element) {
+            document.querySelectorAll('aside nav a').forEach(a => {
+                a.classList.remove('bg-primary-container', 'text-on-primary-container', 'font-bold');
+                a.classList.add('text-on-surface-variant');
+            });
+            element.classList.add('bg-primary-container', 'text-on-primary-container', 'font-bold');
+            element.classList.remove('text-on-surface-variant');
+        }
+    </script>
+</body></html>

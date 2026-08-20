@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VietInsect | SDM Prediction Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-primary-fixed": "#002201",
+                "error-container": "#ffdad6",
+                "surface-container": "#d3f6dc",
+                "on-secondary-fixed-variant": "#1d5031",
+                "secondary": "#366847",
+                "secondary-container": "#b8f0c5",
+                "surface": "#e9ffed",
+                "outline-variant": "#bfcab8",
+                "primary-container": "#35852f",
+                "tertiary-fixed": "#ffe08e",
+                "tertiary": "#745b04",
+                "on-surface": "#022111",
+                "inverse-surface": "#183625",
+                "secondary-fixed-dim": "#9dd3aa",
+                "outline": "#707a6b",
+                "surface-tint": "#1a6d19",
+                "on-secondary-fixed": "#00210e",
+                "surface-container-low": "#d9fce2",
+                "on-tertiary-fixed": "#241a00",
+                "surface-container-highest": "#c8ebd1",
+                "on-secondary-container": "#3d6f4d",
+                "secondary-fixed": "#b8f0c5",
+                "on-primary-fixed-variant": "#005306",
+                "surface-variant": "#c8ebd1",
+                "on-error": "#ffffff",
+                "inverse-primary": "#87da78",
+                "inverse-on-surface": "#d6f9df",
+                "background": "#e9ffed",
+                "primary-fixed": "#a2f792",
+                "surface-dim": "#c0e2c9",
+                "on-background": "#022111",
+                "on-secondary": "#ffffff",
+                "surface-bright": "#e9ffed",
+                "primary-fixed-dim": "#87da78",
+                "on-tertiary-container": "#4f3d00",
+                "on-primary-container": "#f8fff0",
+                "surface-container-lowest": "#ffffff",
+                "on-primary": "#ffffff",
+                "primary": "#176b17",
+                "on-tertiary": "#ffffff",
+                "tertiary-container": "#c7a850",
+                "on-surface-variant": "#40493c",
+                "error": "#ba1a1a",
+                "surface-container-high": "#cef1d7",
+                "tertiary-fixed-dim": "#e5c368",
+                "on-tertiary-fixed-variant": "#584400",
+                "on-error-container": "#93000a"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "unit": "4px",
+                "margin-mobile": "16px",
+                "margin-desktop": "64px",
+                "container-max": "1440px",
+                "gutter": "24px"
+            },
+            "fontFamily": {
+                "caption": ["Inter"],
+                "body-lg": ["Inter"],
+                "label-md": ["Inter"],
+                "body-md": ["Inter"],
+                "headline-lg": ["Manrope"],
+                "display-lg": ["Manrope"],
+                "headline-lg-mobile": ["Manrope"],
+                "headline-md": ["Manrope"]
+            },
+            "fontSize": {
+                "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #F8FAF6; /* Brand-specific Ivory background from guidance */
+            color: #022111;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #EEF4E9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #707a6b;
+            border-radius: 10px;
+        }
+
+        .scientific-card {
+            background-color: #EEF4E9; /* Level 1: Panels from guidance */
+            border: 1px solid #DCE6D5;
+            transition: border-color 0.2s ease;
+        }
+
+        .btn-primary {
+            background-color: #1A4D2E;
+            color: white;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .heatmap-gradient {
+            background: linear-gradient(to right, #C1A24B, #4B9B42, #1A4D2E);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-fast {
+            animation: spin 0.8s linear infinite;
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md overflow-hidden">
+<!-- TopNavBar - Rendered from JSON structure -->
+<nav class="flex items-center justify-between px-6 w-full h-16 sticky top-0 z-50 bg-surface border-b border-outline-variant">
+<div class="flex items-center gap-8">
+<span class="font-headline-md text-headline-md font-bold text-primary">VietInsect</span>
+<div class="hidden md:flex gap-6 items-center">
+<a class="text-on-surface-variant hover:bg-surface-container-low transition-colors px-3 py-1 rounded cursor-pointer" href="#">Explore</a>
+<a class="text-primary font-bold border-b-2 border-primary px-3 py-1 cursor-pointer" href="#">SDM Portal</a>
+<a class="text-on-surface-variant hover:bg-surface-container-low transition-colors px-3 py-1 rounded cursor-pointer" href="#">Collections</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative flex items-center bg-surface-container-lowest border border-outline-variant px-3 py-1.5 rounded-full w-64">
+<span class="material-symbols-outlined text-outline text-[20px]">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-label-md w-full ml-2 placeholder:text-outline" placeholder="Search database..." type="text"/>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full">settings</button>
+<div class="flex items-center gap-3 pl-2 ml-2 border-l border-outline-variant">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a female entomologist in a scientific laboratory setting. She is wearing a modern white lab coat and has a neutral, focused expression. The background features blurred glass jars of insect specimens and technical monitoring equipment, rendered in a crisp, high-key lighting style with a professional, scientific aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBx7qtl9o5w-DkPXWYnlN_GCyz2QhkqGgl9aS2FMFpsdqhDr1_FcBMZNlxL4rdIT7wz5gYhW3FGv-njPhZrVnDFqm2eUEajbE70YD34PA3ORhLDHQj2jj0uHPhmEf0HAuyyqEU2U-PSmst_D8iShP8pEc1TZMd4rhfOsKXsKLaXTPYTDHXUCjAQljH2Utn_MDVbnYEXIXMBx_0M5QmC1M7HA8D5g3GwFbcq8WC2AH_KxE_ZZmp-xZCb"/>
+</div>
+</div>
+</div>
+</nav>
+<div class="flex h-[calc(100vh-64px)] overflow-hidden">
+<!-- Left Panel: Settings & Variables -->
+<aside class="w-80 h-full border-r border-outline-variant flex flex-col bg-surface-container-lowest">
+<div class="p-6 border-b border-outline-variant">
+<h1 class="font-headline-md text-headline-md text-on-surface mb-2">Prediction Portal</h1>
+<p class="text-label-md text-on-surface-variant">Species Distribution Modeling (SDM)</p>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
+<!-- Species Selection -->
+<section>
+<label class="font-label-md text-label-md text-primary mb-3 block">TARGET SPECIES</label>
+<div class="relative">
+<select class="w-full bg-surface border border-outline-variant rounded-lg px-3 py-2 text-label-md focus:ring-2 focus:ring-primary focus:border-transparent appearance-none cursor-pointer">
+<option>Lucanus cervus (Stag Beetle)</option>
+<option>Euchirinae (Long-armed Chafer)</option>
+<option>Phyllium pulchrifolium (Leaf Insect)</option>
+<option>Odontolabis mouhoti</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-2 text-outline pointer-events-none">expand_more</span>
+</div>
+</section>
+<!-- Climate Variables: WorldClim -->
+<section>
+<div class="flex items-center justify-between mb-4">
+<label class="font-label-md text-label-md text-primary">WORLDCLIM (V2.1)</label>
+<span class="text-caption text-outline">19 Variables</span>
+</div>
+<div class="space-y-2">
+<label class="flex items-center gap-3 p-3 scientific-card rounded-lg cursor-pointer group">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<div class="flex flex-col">
+<span class="text-label-md font-semibold">BIO1: Annual Mean Temp</span>
+<span class="text-caption text-on-surface-variant">Standardized °C</span>
+</div>
+</label>
+<label class="flex items-center gap-3 p-3 scientific-card rounded-lg cursor-pointer group">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<div class="flex flex-col">
+<span class="text-label-md font-semibold">BIO12: Annual Precip</span>
+<span class="text-caption text-on-surface-variant">mm / year</span>
+</div>
+</label>
+<label class="flex items-center gap-3 p-3 scientific-card rounded-lg cursor-pointer group">
+<input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<div class="flex flex-col">
+<span class="text-label-md font-semibold">BIO4: Temp Seasonality</span>
+<span class="text-caption text-on-surface-variant">Standard Deviation ×100</span>
+</div>
+</label>
+</div>
+</section>
+<!-- Climate Variables: CHELSA -->
+<section>
+<label class="font-label-md text-label-md text-primary mb-4 block">CHELSA HIGH-RES</label>
+<div class="space-y-2">
+<label class="flex items-center gap-3 p-3 scientific-card rounded-lg cursor-pointer group">
+<input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<div class="flex flex-col">
+<span class="text-label-md font-semibold">VPD: Vapor Pressure Deficit</span>
+<span class="text-caption text-on-surface-variant">Mean daytime deficit</span>
+</div>
+</label>
+<label class="flex items-center gap-3 p-3 scientific-card rounded-lg cursor-pointer group">
+<input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<div class="flex flex-col">
+<span class="text-label-md font-semibold">FROST: Frost Day Freq</span>
+<span class="text-caption text-on-surface-variant">Days per month</span>
+</div>
+</label>
+</div>
+</section>
+<!-- Model Algorithm -->
+<section>
+<label class="font-label-md text-label-md text-primary mb-3 block">ALGORITHM</label>
+<div class="flex gap-2 flex-wrap">
+<button class="px-3 py-1.5 rounded-full border border-primary bg-secondary-container text-on-secondary-container font-bold text-caption">MAXENT</button>
+<button class="px-3 py-1.5 rounded-full border border-outline-variant text-on-surface-variant text-caption">Random Forest</button>
+<button class="px-3 py-1.5 rounded-full border border-outline-variant text-on-surface-variant text-caption">GLM/GAM</button>
+</div>
+</section>
+</div>
+<div class="p-6 border-t border-outline-variant bg-surface-container">
+<button class="btn-primary w-full py-4 rounded-xl font-bold text-label-md flex items-center justify-center gap-3" id="runModelBtn">
+<span id="btnText">Run Model Analysis</span>
+<span class="material-symbols-outlined hidden animate-spin-fast" id="loadingIcon">progress_activity</span>
+</button>
+</div>
+</aside>
+<!-- Right Panel: Map & Visualization -->
+<main class="flex-1 relative bg-surface-dim p-6">
+<div class="w-full h-full flex flex-col">
+<!-- Map Header Controls -->
+<div class="flex justify-between items-center mb-4">
+<div class="flex gap-2">
+<div class="bg-white/80 backdrop-blur-md rounded-lg p-1 border border-outline-variant flex">
+<button class="material-symbols-outlined p-2 bg-primary text-white rounded-md">public</button>
+<button class="material-symbols-outlined p-2 text-on-surface-variant hover:bg-surface-container transition-colors rounded-md">layers</button>
+<button class="material-symbols-outlined p-2 text-on-surface-variant hover:bg-surface-container transition-colors rounded-md">straighten</button>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-outline-variant font-bold text-label-md text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[20px]">download</span>
+                            PNG
+                        </button>
+<button class="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-outline-variant font-bold text-label-md text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[20px]">file_download</span>
+                            GeoTIFF
+                        </button>
+</div>
+</div>
+<!-- Main Map Canvas -->
+<div class="flex-1 relative rounded-2xl overflow-hidden border border-outline-variant bg-surface shadow-inner">
+<!-- Map Imagery -->
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover grayscale-[0.2] opacity-80" data-alt="A professional high-resolution satellite map of Vietnam and Southeast Asia, showing lush green topographic details, mountain ranges, and river deltas. The visualization is presented with a professional scientific overlay style, featuring a clean, minimalist border and subtle grid lines. The lighting is bright and clear, reflecting a midday sun over the tropical landscape." data-location="Vietnam" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFGQE81hyana-B-0QN9O_Y0RguQ0cpUFuYhbCxgwzJLU7mtqdCCAnwclY9VQID1fnCPPPhtjOQSAw7pl7iXpHRCmyjN0Ak_V-ou8UhcyFeDqTh_3RnaLqsse-z_dUyr27JbiPCb41hwDQ2MjC4B5MhY5BxS6wvKCm60NOuWkw1yquWKVuoNPPG1kdGPts5Wr1DG8TkH8qc1gs_oI6v1GVrypT-vmuzzK0BnQn0RusLWzgCHrihotoy"/>
+</div>
+<!-- Heatmap Raster Overlay (Visualized using a CSS filter/opacity layer) -->
+<div class="absolute inset-0 z-10 opacity-60 mix-blend-multiply pointer-events-none">
+<!-- Custom shader or image for heatmap representation -->
+<div class="w-full h-full bg-cover" data-alt="A scientific distribution heatmap raster overlay representing biological occurrence probability. The map features a smooth gradient of organic, flowing shapes transitioning from pale ivory-yellow to vibrant emerald green and finally deep forest green in high-probability areas. The texture is granular yet scientific, clearly defining biodiversity hotspots over a geographical region with a professional, data-driven aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAL1LDN0pL1sAhUlSpuAh-x4_uerm7tKtqECIvlBCbwwrHMR28MFA7yklAEkL8Qxn_2vD7cs8QN3Ly_gjfMYbcWfAQlxVBL7R5eqYVTNCDB1YS7JkHxP4IMohmzev5HcsI0zkBcYSdLlGMfeIVkV9P-yU3IWI_4jU79j9RkITYtS_4UWoWFN-T4Bo6DyeZjBA7U0Bx9aiZ8Oo_aS2iHo4OuZxA9jC4ykHIJwtu01PWgd8ygJShVc9pF')"></div>
+</div>
+<!-- Map Legend Overlay (Floating) -->
+<div class="absolute bottom-8 left-8 z-20 w-80 bg-white/90 backdrop-blur-xl p-5 rounded-2xl border border-outline-variant shadow-xl">
+<h4 class="text-label-md font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">info</span>
+                            Probability of Occurrence
+                        </h4>
+<div class="space-y-4">
+<div class="h-4 w-full heatmap-gradient rounded-full"></div>
+<div class="flex justify-between text-caption font-semibold text-on-surface-variant">
+<span>Low (0.0)</span>
+<span>Medium (0.5)</span>
+<span>High (1.0)</span>
+</div>
+</div>
+<div class="mt-6 pt-4 border-t border-outline-variant flex flex-col gap-2">
+<div class="flex justify-between text-caption">
+<span class="text-outline">AUC Score</span>
+<span class="font-bold text-primary">0.942</span>
+</div>
+<div class="flex justify-between text-caption">
+<span class="text-outline">Resolution</span>
+<span class="font-bold text-on-surface">30 arc-sec</span>
+</div>
+</div>
+</div>
+<!-- Map Interaction Controls (Right) -->
+<div class="absolute right-8 top-8 z-20 flex flex-col gap-2">
+<button class="w-10 h-10 bg-white border border-outline-variant rounded-lg flex items-center justify-center hover:bg-surface-container transition-colors shadow-sm">
+<span class="material-symbols-outlined">add</span>
+</button>
+<button class="w-10 h-10 bg-white border border-outline-variant rounded-lg flex items-center justify-center hover:bg-surface-container transition-colors shadow-sm">
+<span class="material-symbols-outlined">remove</span>
+</button>
+</div>
+</div>
+<!-- Footer Summary Bar -->
+<div class="mt-4 flex items-center justify-between px-2">
+<div class="flex items-center gap-6">
+<div class="flex flex-col">
+<span class="text-caption text-outline">COORDINATE SYSTEM</span>
+<span class="text-label-md font-bold">WGS 84 / EPSG:4326</span>
+</div>
+<div class="w-px h-8 bg-outline-variant"></div>
+<div class="flex flex-col">
+<span class="text-caption text-outline">PIXEL SIZE</span>
+<span class="text-label-md font-bold">~1km²</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-caption italic text-on-surface-variant">Last prediction run: Today, 14:22 GMT+7</span>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script>
+        const runBtn = document.getElementById('runModelBtn');
+        const btnText = document.getElementById('btnText');
+        const loadingIcon = document.getElementById('loadingIcon');
+
+        runBtn.addEventListener('click', () => {
+            // Toggle loading state
+            btnText.textContent = "Processing Models...";
+            loadingIcon.classList.remove('hidden');
+            runBtn.disabled = true;
+            runBtn.style.opacity = "0.7";
+            runBtn.style.cursor = "wait";
+
+            // Simulated heavy computation delay
+            setTimeout(() => {
+                btnText.textContent = "Run Model Analysis";
+                loadingIcon.classList.add('hidden');
+                runBtn.disabled = false;
+                runBtn.style.opacity = "1";
+                runBtn.style.cursor = "pointer";
+                
+                // Visual feedback of "completion"
+                const mapOverlay = document.querySelector('.opacity-60');
+                mapOverlay.style.transition = "opacity 1.5s ease-in-out";
+                mapOverlay.style.opacity = "0";
+                setTimeout(() => {
+                    mapOverlay.style.opacity = "0.6";
+                }, 50);
+            }, 3000);
+        });
+
+        // Initialize tooltips/interactions if needed
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const parent = e.target.closest('.scientific-card');
+                if (e.target.checked) {
+                    parent.style.borderColor = '#1A6D19';
+                } else {
+                    parent.style.borderColor = '#DCE6D5';
+                }
+            });
+        });
+    </script>
+</body></html>

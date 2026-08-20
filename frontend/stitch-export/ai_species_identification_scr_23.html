@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VietInsect | AI Species Identification</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed": "#002201",
+                    "error-container": "#ffdad6",
+                    "surface-container": "#d3f6dc",
+                    "on-secondary-fixed-variant": "#1d5031",
+                    "secondary": "#366847",
+                    "secondary-container": "#b8f0c5",
+                    "surface": "#e9ffed",
+                    "outline-variant": "#bfcab8",
+                    "primary-container": "#35852f",
+                    "tertiary-fixed": "#ffe08e",
+                    "tertiary": "#745b04",
+                    "on-surface": "#022111",
+                    "inverse-surface": "#183625",
+                    "secondary-fixed-dim": "#9dd3aa",
+                    "outline": "#707a6b",
+                    "surface-tint": "#1a6d19",
+                    "on-secondary-fixed": "#00210e",
+                    "surface-container-low": "#d9fce2",
+                    "on-tertiary-fixed": "#241a00",
+                    "surface-container-highest": "#c8ebd1",
+                    "on-secondary-container": "#3d6f4d",
+                    "secondary-fixed": "#b8f0c5",
+                    "on-primary-fixed-variant": "#005306",
+                    "surface-variant": "#c8ebd1",
+                    "on-error": "#ffffff",
+                    "inverse-primary": "#87da78",
+                    "inverse-on-surface": "#d6f9df",
+                    "background": "#F8FAF6",
+                    "primary-fixed": "#a2f792",
+                    "surface-dim": "#c0e2c9",
+                    "on-background": "#022111",
+                    "on-secondary": "#ffffff",
+                    "surface-bright": "#e9ffed",
+                    "primary-fixed-dim": "#87da78",
+                    "on-tertiary-container": "#4f3d00",
+                    "on-primary-container": "#f8fff0",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "primary": "#176b17",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-container": "#c7a850",
+                    "on-surface-variant": "#40493c",
+                    "error": "#ba1a1a",
+                    "surface-container-high": "#cef1d7",
+                    "tertiary-fixed-dim": "#e5c368",
+                    "on-tertiary-fixed-variant": "#584400",
+                    "on-error-container": "#93000a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "margin-mobile": "16px",
+                    "margin-desktop": "64px",
+                    "container-max": "1440px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "caption": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-lg": ["Manrope"],
+                    "display-lg": ["Manrope"],
+                    "headline-lg-mobile": ["Manrope"],
+                    "headline-md": ["Manrope"]
+            },
+            "fontSize": {
+                    "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .fill-icon { font-variation-settings: 'FILL' 1; }
+        
+        /* Custom scrollbar for horizontal cards */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .dashed-dropzone {
+            border: 2px dashed #4B9B42;
+        }
+
+        .probability-gradient {
+            background: linear-gradient(90deg, #4B9B42 0%, #C1A24B 100%);
+        }
+
+        .glass-header {
+            backdrop-filter: blur(8px);
+            background: rgba(248, 250, 246, 0.8);
+        }
+        
+        /* State transition simulation */
+        #upload-state { display: flex; }
+        #results-state { display: none; }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-hidden">
+<!-- Side Navigation Shell -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant flex flex-col p-4 space-y-2 z-50">
+<div class="mb-8 px-2">
+<h1 class="font-headline-md text-headline-md font-black text-on-surface">VietInsect</h1>
+<p class="font-label-md text-label-md text-on-surface-variant">Biodiversity Database</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg font-bold" href="#">
+<span class="material-symbols-outlined fill-icon">science</span>
+<span class="font-label-md text-label-md">Lab</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-label-md text-label-md">Catalog</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-md text-label-md">Maps</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Admin</span>
+</a>
+</nav>
+<button class="w-full bg-primary text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 mb-4 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined">add</span>
+            New Entry
+        </button>
+<div class="border-t border-outline-variant pt-4 space-y-1">
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-md text-label-md">Help</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 min-h-screen flex flex-col">
+<!-- Top Bar -->
+<header class="h-16 flex items-center justify-between px-8 glass-header sticky top-0 z-40 border-b border-outline-variant">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary">auto_awesome</span>
+<h2 class="font-headline-md text-headline-md font-bold text-primary">AI Species Identification</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2 font-label-md text-label-md text-on-surface-variant border-r border-outline-variant pr-6">
+<span class="cursor-pointer hover:text-primary transition-colors">VI</span>
+<span>|</span>
+<span class="text-primary font-bold">EN</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">settings</span>
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-xs overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional close-up headshot of a middle-aged scientific researcher in a bright, modern laboratory setting. The researcher wears a clean white coat, with soft, high-key lighting emphasizing a focused and intelligent expression. The background shows blurred lab equipment and glassware, maintaining a minimalist and scientific professional aesthetic with a clean, ivory-toned color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCX0-oxEovJAYPaGvoeLg9VU19KkOdDL7NqOkN1Civv3wH0o_mCiB3UD0BcHCl2TFWkjEWbcSmi5BLQdkmvqt-tIf2cCHDrZmlSXw8n4F38mrrF66vFbQajHY-y055IYuB5PhNAa0mnomgN88XCuPGk-MUDtN9FefH_ERSnp7tAsRlxgierxRxbM3dwKSI2aMratpgwAQkTchd0waVLelRSqt026j98ZjgVcz5_jV-RmiMxvIwgpxR"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Content Area -->
+<section class="flex-1 p-8 overflow-y-auto">
+<!-- Upload State -->
+<div class="flex-col items-center justify-center min-h-[716px] w-full max-w-4xl mx-auto" id="upload-state">
+<div class="dashed-dropzone w-full aspect-video rounded-xl bg-[#EEF4E9] flex flex-col items-center justify-center gap-6 cursor-pointer hover:bg-surface-container transition-colors group" onclick="simulateUpload()">
+<div class="relative">
+<div class="w-24 h-24 bg-primary-container rounded-full flex items-center justify-center text-white transform group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-5xl">cloud_upload</span>
+</div>
+<div class="absolute -bottom-2 -right-2 bg-secondary text-white w-10 h-10 rounded-full flex items-center justify-center border-4 border-[#EEF4E9]">
+<span class="material-symbols-outlined text-xl">photo_camera</span>
+</div>
+</div>
+<div class="text-center space-y-2">
+<h3 class="font-headline-md text-headline-md text-on-surface">Upload Specimen Image</h3>
+<p class="text-on-surface-variant max-w-sm">Drag and drop your high-resolution specimen photo here or click to browse files. Supports JPG, PNG, and HEIC.</p>
+</div>
+</div>
+<div class="mt-8 grid grid-cols-3 gap-6 w-full">
+<div class="bg-surface-container-low p-4 rounded-lg flex items-start gap-4">
+<span class="material-symbols-outlined text-primary">smb_share</span>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Scientific Precision</p>
+<p class="text-caption text-on-surface-variant">Validated against GBIF global biodiversity datasets.</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-lg flex items-start gap-4">
+<span class="material-symbols-outlined text-primary">speed</span>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Instant Results</p>
+<p class="text-caption text-on-surface-variant">Neural processing typically takes under 2 seconds.</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-lg flex items-start gap-4">
+<span class="material-symbols-outlined text-primary">location_on</span>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Regional Context</p>
+<p class="text-caption text-on-surface-variant">Optimized for Southeast Asian entomological species.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Results State (Initially Hidden) -->
+<div class="flex-col space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700" id="results-state">
+<!-- Specimen Review -->
+<div class="flex gap-8 items-start">
+<div class="w-1/2 aspect-square rounded-xl overflow-hidden shadow-sm border border-outline-variant bg-[#EEF4E9]">
+<img class="w-full h-full object-cover" data-alt="A highly detailed macro photograph of a rare tropical beetle from Vietnam, featuring vibrant iridescent wing covers with emerald and gold highlights. The specimen is positioned on a clean, neutral grey surface with soft, diffused scientific lighting that emphasizes its taxonomic features and textures. The overall mood is precise and academic, following a scientific minimalism aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOtOP5VmfF8BcyWFQcJFKyEbp1CIeqlJZsZK5zWz_reavYeOKjQG5YJwiyf8iS_7aeVmNnLYSlMUbsligdzYlvpHEht17IMcOFS0l97zkosLS9-ird22tyY6xUINOW_sQ5Fc-RdvYxEarbIhuZXpzQHX7f8-IthCkx9aKauJTSRYNj6dWHjMJuserOiQUVKeFCfrbwC_iFQQ65AWl9kFoaUelU86baXS8gFVpEiCfjNtT0HHRfJ01K"/>
+</div>
+<div class="flex-1 space-y-6 pt-4">
+<div class="space-y-1">
+<span class="inline-block px-3 py-1 bg-primary-container text-white rounded-full text-caption font-bold">IMAGE ANALYZED</span>
+<h3 class="font-display-lg text-display-lg text-on-surface mt-4">Identification Complete</h3>
+<p class="text-body-lg text-on-surface-variant">We have identified 5 potential taxonomic matches based on structural morphology and coloration patterns.</p>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 px-6 py-3 border border-outline text-on-surface rounded-lg font-bold hover:bg-surface-container transition-all" onclick="resetUI()">
+<span class="material-symbols-outlined">restart_alt</span>
+                                Retake Photo
+                            </button>
+</div>
+</div>
+</div>
+<!-- Horizontal Matches List -->
+<div class="space-y-6">
+<div class="flex items-center justify-between">
+<h4 class="font-headline-md text-headline-md text-on-surface">Top Genetic Matches</h4>
+<span class="font-label-md text-label-md text-on-surface-variant">Sorted by Confidence Probability</span>
+</div>
+<div class="flex gap-6 overflow-x-auto pb-6 hide-scrollbar snap-x">
+<!-- Top Match Card -->
+<div class="min-w-[380px] snap-start flex flex-col bg-[#EEF4E9] border-2 border-primary rounded-xl overflow-hidden shadow-md">
+<div class="h-48 relative">
+<img class="w-full h-full object-cover" data-alt="A stunning macro photo of the Chrysochroa buqueti beetle, showing its brilliant metallic green and orange exoskeleton in high resolution. The specimen is photographed in a sterile studio environment with soft natural lighting to highlight its taxonomic details. The background is a clean, off-white ivory, maintaining the scientific minimalism style of the VietInsect research platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDH5t12LfNhLRmlIJwuHzkwZxTEwBtz53l8ZCc4KxU_RR1M2wGCNbb_ckXYK1eUicCawGBlx5Wg30YVxAB4B6o-2HcDyUeMsw0NU7FqnH-cFkwHiaW6XAuGipHlCcVkL_nah6BcPZprN-KewRg2rzQmSUe01UjxzqvYJfCCk1d8wsXQQE6iWw8mnuRNXhmJfSXFIiCgeodFwqxy_s7EhA84ryPmAZYVCzMPXs90hUODTcLGukrx37SG"/>
+<div class="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full font-bold text-caption">98.4% Match</div>
+</div>
+<div class="p-6 flex-1 flex flex-col">
+<p class="text-primary font-bold text-caption italic mb-1">Chrysochroa buqueti</p>
+<h5 class="font-headline-md text-headline-md text-on-surface mb-4">Jewel Beetle</h5>
+<div class="space-y-2 mb-8">
+<div class="flex justify-between text-caption font-bold text-on-surface-variant">
+<span>Probability</span>
+<span>98.4%</span>
+</div>
+<div class="w-full h-2 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full probability-gradient" style="width: 98.4%"></div>
+</div>
+</div>
+<button class="w-full bg-primary text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 mt-auto hover:brightness-110 transition-all shadow-lg">
+<span class="material-symbols-outlined fill-icon">verified</span>
+                                    Confirm &amp; Attach to Specimen
+                                </button>
+</div>
+</div>
+<!-- Match Card 2 -->
+<div class="min-w-[320px] snap-start flex flex-col bg-[#EEF4E9] border border-outline-variant rounded-xl overflow-hidden hover:border-primary/50 transition-colors">
+<div class="h-40 relative">
+<img class="w-full h-full object-cover grayscale-[0.3]" data-alt="A scientific macro view of a Sternocera aequisignata jewel beetle, showcasing its emerald green metallic surface and distinctive textured shell. The photography uses high-key laboratory lighting on an ivory background, ensuring taxonomic clarity. The style is minimalist and professional, perfectly suited for an entomological biodiversity database application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiAca84WAZY5AP0bphZaTMmKvaWMXI7nLdHJdZsHwqudeE9IFfl7PWJAqMdUnm8bxdDMbg6GkYCvvYz0eqsnnl2VMNsTjRwnRBkFWnLG-8AzUxIZ63DJWEMKrcMV4Y7SspbECVt76xDVVcZKB0xPU2pnhgskBv-MFwIFzAxPI_KR0lMX2iXBwz6auF7SRRo8z9YXPF6VhAnCC4u19yAUwkqpV0ydiU20XENsgG58gOg-inkcY88xy_"/>
+<div class="absolute top-3 right-3 bg-secondary text-white px-3 py-1 rounded-full font-bold text-caption">84.2%</div>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<p class="text-secondary font-bold text-caption italic mb-1">Sternocera aequisignata</p>
+<h5 class="font-label-md text-label-md text-on-surface mb-4">Asian Jewel Beetle</h5>
+<div class="space-y-2 mt-auto">
+<div class="w-full h-1.5 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full probability-gradient opacity-80" style="width: 84.2%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Match Card 3 -->
+<div class="min-w-[320px] snap-start flex flex-col bg-[#EEF4E9] border border-outline-variant rounded-xl overflow-hidden hover:border-primary/50 transition-colors">
+<div class="h-40 relative">
+<img class="w-full h-full object-cover grayscale-[0.3]" data-alt="Microscopic focus on the wing structure of a Catacanthus incarnatus, commonly known as the Man-faced Stink Bug, highlighting its unique coloration and pattern. Professional scientific imagery with crisp focus and neutral earth-toned background. The visual style is clean, academic, and adheres to high-end UI design standards for biological research tools." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1S7Ysw69tg-FUALazbV39-s4CSgn-FYwnHCs71U-Vs4Ate6EYVqnJLcfgydZHvKrAluLxF2yLCun12EIf49Igp3kbqErQMpii3-ZOqdcUToZxbIsXZkByl1HnyL2MlwQvrw4UKstTL_r9kKsRXI0Xv0UrgWzKnfI_pxiIDCZZcl-AujjtFplfWQ6sM0OlWeOe-qW7LWAfnhnnRO94NQJzVEdLWaknLko_rmT91IzLaDey8f1W1Kj-"/>
+<div class="absolute top-3 right-3 bg-secondary text-white px-3 py-1 rounded-full font-bold text-caption">62.1%</div>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<p class="text-secondary font-bold text-caption italic mb-1">Catacanthus incarnatus</p>
+<h5 class="font-label-md text-label-md text-on-surface mb-4">Man-faced Stink Bug</h5>
+<div class="space-y-2 mt-auto">
+<div class="w-full h-1.5 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full probability-gradient opacity-60" style="width: 62.1%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Match Card 4 -->
+<div class="min-w-[320px] snap-start flex flex-col bg-[#EEF4E9] border border-outline-variant rounded-xl overflow-hidden hover:border-primary/50 transition-colors">
+<div class="h-40 relative">
+<img class="w-full h-full object-cover grayscale-[0.3]" data-alt="Detailed specimen photograph of a Eupholus beetles from New Guinea, characterized by its striking blue and black patterned exoskeleton. Captured under balanced soft-box lighting in a scientific laboratory setting. The image emphasizes the iridescent blue scales and geometric patterns of the insect, following a nature-tech hybrid aesthetic for professional entomologists." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDr7SOsVgm6vnq_340l9WQp15J-Qu5g5AQSgndO5VvBQathCGfe-skXiDyAhvBRcMYgZTKdoV3mtdihqtiB6mwL1FuP8qdng-9MOJJdUUyz7GhIi8rQ4pkNpEN5o4HMcUU_cmU4cHn1z5Z7kGylfEe5BcnN6SQoTNFZhMSntf2mDml1NEn0pY3hNh5KbHMB-OfB80e-VQaqQScv-jJgNmoYJWwNOnkp8pV9SGH0d8azJewLS9trotW6"/>
+<div class="absolute top-3 right-3 bg-secondary text-white px-3 py-1 rounded-full font-bold text-caption">41.8%</div>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<p class="text-secondary font-bold text-caption italic mb-1">Eupholus magnificus</p>
+<h5 class="font-label-md text-label-md text-on-surface mb-4">Magnificent Weevil</h5>
+<div class="space-y-2 mt-auto">
+<div class="w-full h-1.5 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full probability-gradient opacity-40" style="width: 41.8%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Match Card 5 -->
+<div class="min-w-[320px] snap-start flex flex-col bg-[#EEF4E9] border border-outline-variant rounded-xl overflow-hidden hover:border-primary/50 transition-colors">
+<div class="h-40 relative">
+<img class="w-full h-full object-cover grayscale-[0.3]" data-alt="High-resolution close-up of an Odontolabis cuvera stag beetle, showing its large mandibles and smooth mahogany-colored shell. The specimen is presented in a taxonomic pose on a minimalist ivory surface. Professional lighting creates subtle highlights that define its form, maintaining a high-fidelity scientific feel for a biodiversity monitoring application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeSYscFTFO5yh3busIt42CwNtYquwrvrdReaWremAmUqpJUF15fHnqxA1bf9UkIpYxX_sFkojbNOY_s78T0kHzzRnQtqQDphRZ-YOhl-OLLbGZ-XO_foneO_fn5vlTbrV0ELaUc_zbfZ3oZMK79kj4sikqUkS7eEVeY1DPMeyaMssJwtW3ZdLeZck0KTMB1ePGhag15-XHfY5H2iVWT5wzS0XzJGPdSVa8RuDUlTlux3mJeBRr4276"/>
+<div class="absolute top-3 right-3 bg-secondary text-white px-3 py-1 rounded-full font-bold text-caption">12.5%</div>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<p class="text-secondary font-bold text-caption italic mb-1">Odontolabis cuvera</p>
+<h5 class="font-label-md text-label-md text-on-surface mb-4">Golden Stag Beetle</h5>
+<div class="space-y-2 mt-auto">
+<div class="w-full h-1.5 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full probability-gradient opacity-20" style="width: 12.5%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Tooltip/Helper Footer -->
+<footer class="h-12 border-t border-outline-variant flex items-center justify-between px-8 text-caption text-on-surface-variant bg-[#F8FAF6]">
+<div class="flex gap-4">
+<span>Model: VI-EntoNet-v4.2</span>
+<span>•</span>
+<span>Dataset: GBIF-Vietnam-2024</span>
+</div>
+<div class="flex gap-4">
+<a class="hover:text-primary underline decoration-primary/30" href="#">Privacy Policy</a>
+<a class="hover:text-primary underline decoration-primary/30" href="#">Terms of Research</a>
+</div>
+</footer>
+</main>
+<script>
+        function simulateUpload() {
+            const uploadState = document.getElementById('upload-state');
+            const resultsState = document.getElementById('results-state');
+            
+            // Add loading effect
+            const btn = uploadState.querySelector('.w-24');
+            btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-5xl">sync</span>';
+            
+            setTimeout(() => {
+                uploadState.style.display = 'none';
+                resultsState.style.display = 'flex';
+            }, 1200);
+        }
+
+        function resetUI() {
+            const uploadState = document.getElementById('upload-state');
+            const resultsState = document.getElementById('results-state');
+            const btn = uploadState.querySelector('.w-24');
+            
+            btn.innerHTML = '<span class="material-symbols-outlined text-5xl">cloud_upload</span>';
+            uploadState.style.display = 'flex';
+            resultsState.style.display = 'none';
+        }
+    </script>
+</body></html>

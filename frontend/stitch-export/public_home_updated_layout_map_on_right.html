@@ -1,0 +1,419 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>VietInsect BigData System</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#40493c",
+                        "on-secondary-fixed-variant": "#1d5031",
+                        "surface": "#e9ffed",
+                        "primary": "#176b17",
+                        "on-tertiary-container": "#4f3d00",
+                        "tertiary-fixed-dim": "#e5c368",
+                        "inverse-primary": "#87da78",
+                        "surface-container-highest": "#c8ebd1",
+                        "secondary-container": "#b8f0c5",
+                        "on-tertiary-fixed": "#241a00",
+                        "primary-container": "#35852f",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed-variant": "#005306",
+                        "outline": "#707a6b",
+                        "on-primary": "#ffffff",
+                        "on-surface": "#022111",
+                        "surface-dim": "#c0e2c9",
+                        "surface-tint": "#1a6d19",
+                        "on-primary-container": "#f8fff0",
+                        "primary-fixed": "#a2f792",
+                        "inverse-on-surface": "#d6f9df",
+                        "error": "#ba1a1a",
+                        "surface-container-low": "#d9fce2",
+                        "tertiary-container": "#c7a850",
+                        "on-tertiary-fixed-variant": "#584400",
+                        "on-secondary": "#ffffff",
+                        "background": "#e9ffed",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-bright": "#e9ffed",
+                        "on-background": "#022111",
+                        "on-error-container": "#93000a",
+                        "surface-container": "#d3f6dc",
+                        "on-error": "#ffffff",
+                        "tertiary": "#745b04",
+                        "on-secondary-fixed": "#00210e",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffe08e",
+                        "secondary-fixed-dim": "#9dd3aa",
+                        "inverse-surface": "#183625",
+                        "primary-fixed-dim": "#87da78",
+                        "surface-variant": "#c8ebd1",
+                        "surface-container-high": "#cef1d7",
+                        "secondary": "#366847",
+                        "outline-variant": "#bfcab8",
+                        "secondary-fixed": "#b8f0c5",
+                        "on-primary-fixed": "#002201",
+                        "on-secondary-container": "#3d6f4d",
+                        "ivory": "#F8FAF6",
+                        "pale-green": "#EEF4E9",
+                        "deep-forest": "#133120"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "gutter": "24px",
+                        "container-max": "1440px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "64px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Manrope"],
+                        "headline-md": ["Manrope"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        @keyframes pulse-ring {
+            0% { transform: scale(0.33); opacity: 0; }
+            80%, 100% { opacity: 0; }
+        }
+        @keyframes pulse-dot {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1); }
+            100% { transform: scale(0.8); }
+        }
+        .cluster-pulse {
+            position: relative;
+            width: 12px;
+            height: 12px;
+        }
+        .cluster-pulse::before {
+            content: '';
+            position: absolute;
+            left: -100%; top: -100%;
+            width: 300%; height: 300%;
+            border-radius: 45px;
+            background-color: currentColor;
+            animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+        }
+        .cluster-pulse::after {
+            content: '';
+            position: absolute;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background-color: currentColor;
+            border-radius: 50%;
+            animation: pulse-dot 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+        }
+        .fade-in-map {
+            animation: fadeIn 1.5s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .nav-item-active { border-bottom: 2px solid #176b17; color: #176b17; font-weight: 600; }
+    </style>
+</head>
+<body class="bg-surface font-body-md text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Header Section -->
+<header class="fixed top-0 left-0 right-0 z-50 h-20 flex items-center justify-between px-margin-desktop transition-all duration-300" id="main-header">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">bug_report</span>
+</div>
+<span class="font-headline-md text-primary font-extrabold tracking-tight">VietInsect</span>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="font-label-md nav-item-active py-1 px-2" href="#">Home</a>
+<a class="font-label-md text-on-surface-variant hover:text-primary transition-colors py-1 px-2" href="#">Search</a>
+<a class="font-label-md text-on-surface-variant hover:text-primary transition-colors py-1 px-2" href="#">Map</a>
+<a class="font-label-md text-on-surface-variant hover:text-primary transition-colors py-1 px-2" href="#">About</a>
+</nav>
+<div class="flex items-center gap-4">
+<div class="flex bg-surface-container rounded-full p-1 border border-outline-variant">
+<button class="px-3 py-1 text-[10px] font-bold rounded-full bg-primary text-white">VI</button>
+<button class="px-3 py-1 text-[10px] font-bold rounded-full text-on-surface-variant hover:bg-surface-variant transition-colors">EN</button>
+</div>
+</div>
+</header>
+<!-- Hero Section Restructured -->
+<section class="relative w-full min-h-[921px] flex items-center bg-ivory pt-20 overflow-hidden">
+<!-- Shader/Gradient Background Detail -->
+<div class="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(circle_at_70%_50%,#EEF4E9_0%,transparent_50%)]"></div>
+<div class="max-w-7xl mx-auto px-margin-desktop w-full grid grid-cols-1 lg:grid-cols-2 items-center gap-12 z-10">
+<!-- Content Placement: Left Side -->
+<div class="flex flex-col gap-8 fade-in-map" style="opacity: 1;">
+<div>
+<h1 class="font-headline-lg text-deep-forest text-5xl md:text-6xl mb-6 drop-shadow-sm leading-[1.1]">
+                    VietInsect<br>
+<span class="text-primary">BigData System</span>
+</h1>
+<p class="font-body-lg text-deep-forest max-w-lg leading-relaxed opacity-90">
+                    The national repository for entomological research. Our system integrates high-resolution specimen digitization with geographic big data to monitor Vietnam's unique biodiversity.
+                </p>
+</div>
+<!-- Search Bar: Left under intro -->
+<div class="glass p-2 rounded-2xl flex items-center gap-2 shadow-xl hover:shadow-2xl transition-all duration-300 group max-w-xl">
+<span class="material-symbols-outlined ml-3 text-deep-forest group-hover:text-primary transition-colors">search</span>
+<input class="bg-transparent border-none focus:ring-0 w-full text-deep-forest font-body-md placeholder:text-outline/60" placeholder="Search species or location..." type="text">
+<button class="bg-[#4B9B42] hover:bg-on-primary-fixed-variant text-white px-8 py-4 rounded-xl font-bold transition-transform active:scale-95 whitespace-nowrap shadow-md">
+                    Search Specimen
+                </button>
+</div>
+<div class="flex items-center gap-4 text-deep-forest/70">
+<span class="material-symbols-outlined text-primary">verified</span>
+<span class="font-label-md">Verified by Vietnam Academy of Science and Technology</span>
+</div>
+</div>
+<!-- Layout Shift: Vietnam Map Illustration to Right -->
+<div class="relative flex items-center justify-center fade-in-map" style="opacity: 1;">
+<div class="relative w-full max-w-md aspect-[1/1.6] border border-[#4B9B42]/20 rounded-[40px] p-8 bg-pale-green/40 backdrop-blur-md flex items-center justify-center overflow-hidden shadow-2xl">
+<!-- SVG Vietnam Silhouette -->
+<svg class="h-[90%] w-auto drop-shadow-2xl filter brightness-105" viewBox="0 0 400 800"><path d="M180,40 L195,65 L190,110 L210,140 L230,180 L220,240 L240,290 L270,320 L280,360 L270,410 L250,450 L230,500 L240,550 L230,600 L210,650 L190,700 L170,750 L140,780 L120,760 L140,700 L160,650 L180,600 L190,550 L180,500 L160,450 L130,400 L110,350 L120,300 L140,250 L160,200 L150,150 L160,100 L155,70 Z" fill="#EEF4E9" stroke="#4B9B42" stroke-width="1"></path><g class="text-[#1A4D2E]"><circle class="cluster-pulse" cx="180" cy="80" r="5"></circle><circle class="cluster-pulse" cx="195" cy="150" r="3"></circle><circle class="cluster-pulse" cx="215" cy="280" r="6"></circle><circle class="cluster-pulse" cx="240" cy="320" r="4"></circle></g><g class="text-[#C1A24B]"><circle class="cluster-pulse" cx="250" cy="380" r="5"></circle><circle class="cluster-pulse" cx="210" cy="550" r="4"></circle><circle class="cluster-pulse" cx="150" cy="720" r="6"></circle><circle class="cluster-pulse" cx="180" cy="650" r="3"></circle></g><g class="text-[#1A4D2E] opacity-90"><circle cx="320" cy="420" r="2"></circle><circle cx="325" cy="425" r="1.5"></circle><circle cx="315" cy="428" r="2"></circle><text x="335" y="425" class="text-[8px] fill-current font-bold">Hoang Sa</text></g><g class="text-[#C1A24B] opacity-90"><circle cx="340" cy="650" r="2"></circle><circle cx="345" cy="660" r="1.5"></circle><circle cx="355" cy="655" r="2"></circle><text x="310" y="680" class="text-[8px] fill-current font-bold">Truong Sa</text></g></svg>
+<!-- Map UI: Legend -->
+<div class="absolute bottom-6 left-6 glass p-4 rounded-2xl shadow-lg border-white/50">
+<h4 class="font-label-md text-deep-forest mb-2">Density</h4>
+<div class="flex items-center gap-2">
+<span class="text-[10px] text-on-surface-variant">Min</span>
+<div class="h-1.5 w-24 rounded-full bg-gradient-to-r from-[#C1A24B] to-[#1A4D2E]"></div>
+<span class="text-[10px] text-on-surface-variant">Max</span>
+</div>
+</div>
+<!-- Map UI: Toggle -->
+<div class="absolute top-6 right-6 glass p-1 rounded-full flex gap-1 shadow-md border-white/50">
+<button class="px-4 py-1.5 rounded-full bg-primary text-white text-[11px] font-bold">Heatmap</button>
+<button class="px-4 py-1.5 rounded-full text-deep-forest hover:bg-white/50 text-[11px] font-bold">Points</button>
+</div>
+<!-- Map UI: Controls -->
+<div class="absolute bottom-6 right-6 flex flex-col gap-2">
+<div class="flex flex-col glass rounded-xl overflow-hidden shadow-md border-white/50">
+<button class="p-2 hover:bg-white/50 border-b border-white/20 transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+<button class="p-2 hover:bg-white/50 transition-colors">
+<span class="material-symbols-outlined text-[18px]">remove</span>
+</button>
+</div>
+<button class="glass p-2.5 rounded-xl shadow-md hover:bg-white/50 transition-colors flex items-center justify-center border-white/50">
+<span class="material-symbols-outlined text-[18px]">fullscreen</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Counter Bar (Preserved Forest Green) -->
+<div class="bg-[#1A4D2E] w-full py-10 text-white relative z-20">
+<div class="max-w-7xl mx-auto px-margin-desktop grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+<div class="flex flex-col items-center">
+<span class="font-display-lg block mb-1 text-4xl font-bold">12,482</span>
+<span class="font-label-md uppercase tracking-widest text-[#9dd3aa]">Species Registered</span>
+</div>
+<div class="flex flex-col items-center md:border-x border-white/10 px-4">
+<span class="font-display-lg block mb-1 text-4xl font-bold">450k+</span>
+<span class="font-label-md uppercase tracking-widest text-[#9dd3aa]">Total Specimens</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-display-lg block mb-1 text-4xl font-bold">63</span>
+<span class="font-label-md uppercase tracking-widest text-[#9dd3aa]">Provinces Covered</span>
+</div>
+</div>
+</div>
+<!-- Featured Specimens Grid -->
+<section class="py-24 px-margin-desktop bg-surface max-w-7xl mx-auto">
+<div class="flex justify-between items-end mb-12">
+<div>
+<h2 class="font-headline-lg text-deep-forest mb-2">Featured Specimens</h2>
+<p class="text-on-surface-variant font-body-md">High-resolution digitizations from our central archive.</p>
+</div>
+<a class="text-primary font-label-md flex items-center gap-2 hover:underline" href="#">
+            View Entire Catalog <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Specimen 1 -->
+<div class="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer shadow-sm border border-outline-variant bg-white">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="A macro photography shot of a vibrant green Vietnamese Leaf Insect (Phyllium) resting on a dark, mossy branch. The lighting is precise, studio-style, highlighting the intricate vein patterns on its leaf-like wings. Professional entomological documentation aesthetic with sharp focus and clean composition." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBMReOhIngo3PhRUnTcNiiu6RpwkFliIsJtYHD1m292uYfRR7D5pxh2aI7c-UxSlTYs8C8UXqEXjmMatRUGHIiPO26_MecVwyHtsVnXHoppDt1iqqzcOuTFub8WIE90eOi8Hrp--hpl2o19qQptWbXn0LSM7FH9ykbrZkjtdz6H7euwGJTjTKM11P9xznTVgAZf4KU-zriBj6Elzem87-9e29Welrc8G2JaTzAY7HD0haVJO-U02jn2">
+<div class="absolute inset-0 bg-gradient-to-t from-[#022111]/90 via-[#022111]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+<p class="text-white font-headline-md leading-tight">Phyllium westwoodii</p>
+<p class="text-[#9dd3aa] font-label-md">Leaf Insect • Ninh Binh</p>
+</div>
+</div>
+<!-- Specimen 2 -->
+<div class="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer shadow-sm border border-outline-variant bg-white">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="A high-resolution scientific image of a majestic Stag Beetle (Lucanidae) with large mandibles, positioned against a neutral, soft grey background. The lighting is soft and diffused, emphasizing the glossy, dark mahogany shell of the insect. The mood is clinical and authoritative, showcasing biodiversity details." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQolad6fPQREdQo420eV6Noj7UhJ5PyjVtg6aG2qJwKUM6GzdKo9yp9gh_R3q34RwK9NQVmxHK2lCFPCxgZy7gZc6WDAlTMHttR5V4U3X153vjLJPE-_VJEuekZuhwo_9rjeliNvadlz-4hcezWZ7YKCDhmd3B_vu3Ym6jfroiNwwpsxuSgi368EwaENJMZ8NTHrlFCAT4RobbUVhH4rj6mMktqHudrgPOmwGtpA4oHWAhOBmUSkIK">
+<div class="absolute inset-0 bg-gradient-to-t from-[#022111]/90 via-[#022111]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+<p class="text-white font-headline-md leading-tight">Lucanus laminifer</p>
+<p class="text-[#9dd3aa] font-label-md">Stag Beetle • Lao Cai</p>
+</div>
+</div>
+<!-- Specimen 3 -->
+<div class="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer shadow-sm border border-outline-variant bg-white">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Stunning close-up of a Troides helena butterfly, commonly known as the Common Birdwing, displaying its vibrant golden-yellow and deep black wings. The setting is a lush tropical jungle leaf, with soft-focus dappled sunlight breaking through the canopy. Scientific minimalism meets natural beauty." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCazxeSAV8EWt6Z4Ss23Yl5IVMMZa3rmbcELnTjxbBpPXAGsV4g1KKzTQH4FjIQw-yTDNoMxtSroPG6zYsK3R1RzY5xuF8rSQVJuRojX91mlGf8NLToR7PqaYSxVME_gLTM6igy4Lh3NgihwTJVZ2VKbDtmut9b_htUNCD-R_AQ1SOoyMcWzgMc3ImRA40SZwkV0ejcnURVg_M4OcA-vzawYdOHT4kFfetyaLjZKLGTGNppJGsiw3Qg">
+<div class="absolute inset-0 bg-gradient-to-t from-[#022111]/90 via-[#022111]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+<p class="text-white font-headline-md leading-tight">Troides helena</p>
+<p class="text-[#9dd3aa] font-label-md">Common Birdwing • Dong Nai</p>
+</div>
+</div>
+<!-- Specimen 4 -->
+<div class="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer shadow-sm border border-outline-variant bg-white">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="A professional entomological specimen photo of a colorful Lanternfly (Pyrops candelaria) with its unique snout and spotted wings. It is mounted on a white scientific background for taxonomic study. Bright, even lighting reveals every texture and color gradient on the specimen's body." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZX7vNJDq6QfA_WBU3UAheZKv_LpT2JZaO291ba5BEFOr4lp0o0Jfd-txWS9ilP7czZUFo9QF-QLlxdREtMtEBSC0nyo9np3bw0hYuijLfQu3aUIC5Bx7kJqI9n9cm77Xxs7rKNn3CUky447k1gdpSLEjUFyAIgF9vUde2Ni6O4hqcicIu36cckivEczC7Kce9Fw9LzXCKoQLHkypf-t0bDEQ0kJlAlfMIy-K3xAhAsj8yYl2AT7wE">
+<div class="absolute inset-0 bg-gradient-to-t from-[#022111]/90 via-[#022111]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+<p class="text-white font-headline-md leading-tight">Pyrops candelaria</p>
+<p class="text-[#9dd3aa] font-label-md">Lanternfly • Lam Dong</p>
+</div>
+</div>
+</div>
+</section>
+<!-- About / System Intro -->
+<section class="py-24 bg-surface-container-low">
+<div class="max-w-7xl mx-auto px-margin-desktop">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+<div>
+<h3 class="font-headline-lg text-deep-forest mb-6">Scientific Hub for Biodiversity Monitoring</h3>
+<p class="font-body-lg text-on-surface-variant mb-8">VietInsect BigData System is Vietnam's premier platform for the cataloging and analysis of entomological data. By integrating cutting-edge digitization with global taxonomic standards, we empower researchers to monitor environmental health through the lens of insect populations.</p>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+<div class="flex flex-col gap-4">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[#4B9B42]">photo_camera</span>
+</div>
+<h4 class="font-label-md text-deep-forest">Digitization</h4>
+<p class="text-xs text-on-surface-variant">High-fidelity 3D and 2D scanning of rare specimens.</p>
+</div>
+<div class="flex flex-col gap-4">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[#4B9B42]">database</span>
+</div>
+<h4 class="font-label-md text-deep-forest">Darwin Core</h4>
+<p class="text-xs text-on-surface-variant">Fully compatible with international biodiversity standards.</p>
+</div>
+<div class="flex flex-col gap-4">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[#4B9B42]">memory</span>
+</div>
+<h4 class="font-label-md text-deep-forest">AI Recognition</h4>
+<p class="text-xs text-on-surface-variant">Advanced machine learning for automated identification.</p>
+</div>
+</div>
+</div>
+<div class="relative">
+<div class="aspect-video rounded-3xl overflow-hidden border-8 border-white shadow-2xl">
+<img class="w-full h-full object-cover" data-alt="A clean, modern laboratory setting in Vietnam where researchers are using high-tech microscope cameras to digitize insect specimens. The room is brightly lit with clinical white and soft green tones, reflecting a state-of-the-art scientific environment. Professional researchers are seen in the background working at computer stations." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOGoC_3SLkCi7a1cs4w-3iSIOFTdUMyt2jlLYPCJnTnL-M1k2r_Yv9mJq9ejf_1qw2Dj1qwdyWTdjw3iXy6eHAP6YZnSS-kvBLmKZQ8V0LyLEvBwSL4VSgn_nhZkDDdZ6X7lZaepVeYXulQ2vlvkrfvIgZLXEBVvEYZ1mx1lC6oD2Cqm4FsDyg-DXLJ8m9NNxQKhngivP3lD7dnkeICM-iTqQqQOT2attXa5hSvjmoYVeMpQqzfms5">
+</div>
+<div class="absolute -bottom-8 -left-8 glass p-6 rounded-2xl shadow-xl max-w-[200px]">
+<p class="font-display-lg text-primary leading-none mb-1">99%</p>
+<p class="font-label-md text-on-surface-variant">Taxonomic Accuracy Rate</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer -->
+<footer class="bg-[#1A4D2E] text-white pt-20 pb-10">
+<div class="max-w-7xl mx-auto px-margin-desktop">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+<div class="col-span-1 md:col-span-2">
+<div class="flex items-center gap-2 mb-6">
+<div class="w-8 h-8 bg-white rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-[#1A4D2E]" style="font-variation-settings: 'FILL' 1;">bug_report</span>
+</div>
+<span class="font-headline-md font-extrabold tracking-tight">VietInsect</span>
+</div>
+<p class="text-[#9dd3aa] max-w-sm mb-6">Institute of Information Technology (ITI) &amp; Vietnam Academy of Science and Technology (VAST). Pioneering digital biodiversity in Southeast Asia.</p>
+<div class="flex gap-4">
+<div class="w-10 h-10 border border-white/20 rounded-full flex items-center justify-center hover:bg-white/10 cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-sm">public</span>
+</div>
+<div class="w-10 h-10 border border-white/20 rounded-full flex items-center justify-center hover:bg-white/10 cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-sm">alternate_email</span>
+</div>
+</div>
+</div>
+<div>
+<h5 class="font-label-md uppercase tracking-widest mb-6">Quick Links</h5>
+<ul class="flex flex-col gap-4 text-[#9dd3aa] font-body-md">
+<li class=""><a class="hover:text-white transition-colors" href="#">Taxonomic Database</a></li>
+<li class=""><a class="hover:text-white transition-colors" href="#">Digital Herbarium</a></li>
+<li class=""><a class="hover:text-white transition-colors" href="#">Research Publications</a></li>
+<li class=""><a class="hover:text-white transition-colors" href="#">API Documentation</a></li>
+</ul>
+</div>
+<div>
+<h5 class="font-label-md uppercase tracking-widest mb-6">Partners</h5>
+<div class="flex flex-col gap-6">
+<div class="flex items-center gap-3">
+<div class="w-12 h-6 bg-white/10 rounded flex items-center justify-center font-bold text-[10px]">GBIF</div>
+<span class="text-xs text-[#9dd3aa]">Global Biodiversity Facility</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-12 h-6 bg-white/10 rounded flex items-center justify-center font-bold text-[10px]">BOLD</div>
+<span class="text-xs text-[#9dd3aa]">Barcode of Life Data</span>
+</div>
+</div>
+</div>
+</div>
+<div class="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-[12px] text-[#9dd3aa]">
+<p class="">© 2024 VietInsect BigData System. All rights reserved.</p>
+<div class="flex gap-8">
+<a class="hover:text-white transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-white transition-colors" href="#">Data Usage Agreement</a>
+</div>
+</div>
+</div>
+</footer>
+<script>
+    // Header transparency shift on scroll
+    window.addEventListener('scroll', () => {
+        const header = document.getElementById('main-header');
+        if (window.scrollY > 50) {
+            header.classList.add('glass', 'shadow-sm');
+            header.classList.remove('h-20');
+            header.classList.add('h-16');
+        } else {
+            header.classList.remove('glass', 'shadow-sm');
+            header.classList.add('h-20');
+            header.classList.remove('h-16');
+        }
+    });
+
+    // Animation trigger
+    document.addEventListener('DOMContentLoaded', () => {
+        const fadeElements = document.querySelectorAll('.fade-in-map');
+        fadeElements.forEach((el, index) => {
+            el.style.opacity = '0';
+            setTimeout(() => {
+                el.style.opacity = '1';
+            }, 100 * (index + 1));
+        });
+    });
+</script>
+
+
+</body></html>

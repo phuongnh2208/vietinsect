@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VietInsect - Specimen Search</title>
+<!-- Manrope Font -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary': '#1A4D2E',
+            'surface': '#F8FAF6',
+            'sidebar': '#EEF4E9',
+            'card-bg': '#FFFFFF',
+            'accent-green': '#4b9b42',
+            'border-light': '#E2E8DF'
+          },
+          fontFamily: {
+            manrope: ['Manrope', 'sans-serif'],
+          },
+          borderRadius: {
+            'v-base': '8px',
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-scrollbar">
+    /* Custom scrollbar for a cleaner look */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="bg-surface font-manrope text-slate-800">
+<!-- BEGIN: MainHeader -->
+<header class="bg-white border-b border-border-light sticky top-0 z-50 px-6 py-3 flex items-center justify-between">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 bg-primary rounded-v-base flex items-center justify-center">
+<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<div class="leading-tight">
+<h1 class="font-extrabold text-xl tracking-tight text-primary">VietInsect</h1>
+<p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Scientific Database</p>
+</div>
+</div>
+<nav class="hidden md:flex items-center gap-6 text-sm font-semibold">
+<a class="text-primary border-b-2 border-primary pb-1" href="#">Search</a>
+<a class="text-slate-600 hover:text-primary" href="#">How-to</a>
+<a class="text-slate-600 hover:text-primary" href="#">Tools</a>
+<a class="text-slate-600 hover:text-primary" href="#">About</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:bg-slate-100 rounded-full">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<button class="bg-primary text-white px-5 py-2 rounded-v-base text-sm font-bold shadow-sm hover:bg-opacity-90">Login</button>
+</div>
+</header>
+<!-- END: MainHeader -->
+<div class="flex min-h-screen">
+<!-- BEGIN: LeftSidebar (Filters) -->
+<aside class="w-72 bg-sidebar border-r border-border-light p-6 shrink-0 hidden lg:block">
+<h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6">Filter Results</h2>
+<div class="space-y-8">
+<!-- Taxon Filter -->
+<section>
+<div class="flex justify-between items-center mb-3">
+<h3 class="font-bold text-slate-800">Taxon</h3>
+<svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<div class="space-y-2 text-sm">
+<label class="flex items-center justify-between cursor-pointer group">
+<span class="flex items-center gap-2 text-slate-600 group-hover:text-primary transition-colors">
+<input checked="" class="rounded border-slate-300 text-primary focus:ring-primary w-4 h-4" type="checkbox"/>
+                Lepidoptera
+              </span>
+<span class="text-xs text-slate-400 font-medium">(2,450)</span>
+</label>
+<label class="flex items-center justify-between cursor-pointer group">
+<span class="flex items-center gap-2 text-slate-600 group-hover:text-primary transition-colors">
+<input class="rounded border-slate-300 text-primary focus:ring-primary w-4 h-4" type="checkbox"/>
+                Coleoptera
+              </span>
+<span class="text-xs text-slate-400 font-medium">(1,822)</span>
+</label>
+<label class="flex items-center justify-between cursor-pointer group">
+<span class="flex items-center gap-2 text-slate-600 group-hover:text-primary transition-colors">
+<input class="rounded border-slate-300 text-primary focus:ring-primary w-4 h-4" type="checkbox"/>
+                Hymenoptera
+              </span>
+<span class="text-xs text-slate-400 font-medium">(945)</span>
+</label>
+</div>
+</section>
+<!-- Province Filter -->
+<section>
+<div class="flex justify-between items-center mb-3">
+<h3 class="font-bold text-slate-800">Province</h3>
+<svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+</section>
+<!-- Year Collected -->
+<section>
+<div class="flex justify-between items-center mb-3">
+<h3 class="font-bold text-slate-800">Year Collected</h3>
+<svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<div class="px-2">
+<input class="w-full h-1.5 bg-slate-300 rounded-lg appearance-none cursor-pointer accent-primary" max="2024" min="1950" type="range" value="2024"/>
+<div class="flex justify-between text-[10px] text-slate-500 font-bold mt-2">
+<span>1950</span>
+<span>2024</span>
+</div>
+</div>
+</section>
+<!-- IUCN Red List -->
+<section>
+<div class="flex justify-between items-center mb-3">
+<h3 class="font-bold text-slate-800">IUCN Red List</h3>
+<svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<button class="text-[10px] bg-red-100 text-red-700 font-bold py-1 px-2 rounded border border-red-200">Endangered</button>
+<button class="text-[10px] bg-orange-100 text-orange-700 font-bold py-1 px-2 rounded border border-orange-200">Vulnerable</button>
+<button class="text-[10px] bg-green-100 text-green-700 font-bold py-1 px-2 rounded border border-green-200 col-span-2">Least Concern</button>
+</div>
+</section>
+</div>
+<!-- New Entry Button -->
+<div class="mt-12">
+<button class="w-full bg-primary text-white py-3 rounded-v-base font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+          New Entry
+        </button>
+</div>
+</aside>
+<!-- END: LeftSidebar -->
+<!-- BEGIN: MainContent -->
+<main class="flex-1 p-6 md:p-10 overflow-y-auto">
+<!-- Search Banner Section -->
+<section class="mb-10" data-purpose="search-header">
+<h2 class="text-4xl font-extrabold text-slate-900 mb-2">Search</h2>
+<p class="text-slate-500 font-medium mb-8">Search across species, occurrences, datasets, publishers, articles and more</p>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<input class="w-full bg-white border-2 border-primary/30 group-hover:border-primary focus:border-primary focus:ring-0 rounded-v-base pl-12 pr-4 py-4 text-lg shadow-sm transition-all" placeholder="Search taxonomic strings, specimens, or regions..." type="text" value="rhinoceros"/>
+</div>
+</section>
+<!-- Results Layout (Grid inspired by Ref 6 & 10) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
+<!-- Center Column: Primary Search Results -->
+<div class="xl:col-span-8 space-y-6">
+<!-- Result Card 1: Map/Summary -->
+<div class="bg-white border border-border-light rounded-v-base shadow-sm overflow-hidden flex flex-col md:flex-row h-auto md:h-48 group hover:border-primary/40 transition-colors">
+<div class="flex-1 p-6 flex flex-col justify-between">
+<div>
+<div class="flex items-baseline gap-2 mb-1">
+<h3 class="text-lg font-extrabold italic text-slate-900">Rhinoceros <span class="not-italic font-normal text-slate-500">Linnaeus, 1758</span></h3>
+<span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded">Genus</span>
+</div>
+<p class="text-xs text-slate-400 font-bold">Eukaryota &gt; Animalia &gt; ... &gt; Rhinoceros</p>
+</div>
+</div>
+<div class="md:w-64 bg-slate-900 overflow-hidden">
+<img alt="Distribution Map" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5nQUepWNJNmcX7ZVYWVdgcPoDT8huaf9Tlhlk0lalqaY-9khDYG77nVfB192Q8fDDXfIs5JcdzfFOOnU5jjN_JJuuwPlZ02VubwNMQW6zObAUpVF8VcEFO32pTkKNQj2TjAoOSF6vJtCE8vTDWoDMagtjozYJASpgsbhaohc6yMXKn1ZNRU50enembXkmxWaCQfZL5xjgyzL-wawnEGYZoVyXKreo8zU1aw638hphnNaBJmNXqr8Y"/>
+</div>
+</div>
+<!-- Result Card 2: Dataset -->
+<div class="bg-white border border-border-light rounded-v-base p-6 shadow-sm hover:border-primary/40 transition-colors">
+<h3 class="font-extrabold text-primary mb-2 hover:underline cursor-pointer">The identification of Theileria bicornis in captive rhinoceros in Australia</h3>
+<p class="text-sm text-slate-500 line-clamp-2 mb-4">This dataset contains the digitized treatments in Plazi based on the original journal article Yam, Jerald, Gestier, Sarah, Bryant, Benn, Campbell-Ward, Michelle, Bogema, Daniel, Jenkins, Cheryl...</p>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="text-[11px] bg-slate-100 text-slate-600 px-2 py-1 rounded font-bold uppercase tracking-wider">Checklist dataset</span>
+<span class="text-[11px] text-slate-400 font-medium">Published by Plazi.org taxonomic treatments database</span>
+</div>
+<span class="text-xs bg-slate-100 px-2 py-1 rounded font-bold text-slate-500">1 record</span>
+</div>
+</div>
+<!-- Result Card 3: Article -->
+<div class="bg-white border border-border-light rounded-v-base p-6 shadow-sm hover:border-primary/40 transition-colors">
+<h3 class="font-extrabold text-primary mb-2 hover:underline cursor-pointer">Geoparnus rhinoceros sp. nov., a new edaphic dryopid with unusual sexual dimorphism</h3>
+<p class="text-sm text-slate-500 line-clamp-2 mb-4">This dataset contains the digitized treatments in Plazi based on the original journal article Kodada, Ján, Jäch, Manfred A., Jr, Fedor Č lampor, Ová, Zuzana Č lamporová- Za Ť Ovi Č (2007)...</p>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="text-[11px] bg-slate-100 text-slate-600 px-2 py-1 rounded font-bold uppercase tracking-wider">Checklist dataset</span>
+<span class="text-[11px] text-slate-400 font-medium">Published by Plazi.org taxonomic treatments database</span>
+</div>
+<span class="text-xs bg-slate-100 px-2 py-1 rounded font-bold text-slate-500">4 records</span>
+</div>
+</div>
+<!-- BEGIN: Data Table Section (Inspired by Ref 5) -->
+<section class="pt-8">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-xl font-bold text-slate-900">Detailed Occurrences</h2>
+<div class="flex items-center gap-2">
+<button class="bg-white border border-border-light text-slate-500 px-3 py-1.5 rounded text-xs font-bold flex items-center gap-2">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+                  Export CSV
+                </button>
+</div>
+</div>
+<div class="bg-white border border-border-light rounded-v-base shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-sm text-left">
+<thead class="bg-slate-50 border-b border-border-light text-slate-500 uppercase text-[10px] font-bold tracking-wider">
+<tr>
+<th class="px-4 py-3">Scientific Name</th>
+<th class="px-4 py-3">Coordinates</th>
+<th class="px-4 py-3">Year</th>
+<th class="px-4 py-3">Basis of Record</th>
+<th class="px-4 py-3">Publisher</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-light">
+<tr class="hover:bg-slate-50 cursor-pointer">
+<td class="px-4 py-4 italic font-semibold text-slate-900">Rhinoceros unicornis</td>
+<td class="px-4 py-4 text-slate-500">27.53N, 84.33E</td>
+<td class="px-4 py-4 text-slate-500">2023</td>
+<td class="px-4 py-4 text-slate-500">Human observation</td>
+<td class="px-4 py-4 text-slate-500">iNaturalist.org</td>
+</tr>
+<tr class="hover:bg-slate-50 cursor-pointer">
+<td class="px-4 py-4 italic font-semibold text-slate-900">Rhinoceros unicornis</td>
+<td class="px-4 py-4 text-slate-500">28.44N, 81.24E</td>
+<td class="px-4 py-4 text-slate-500">2022</td>
+<td class="px-4 py-4 text-slate-500">Preserved specimen</td>
+<td class="px-4 py-4 text-slate-500">VietInsect Labs</td>
+</tr>
+<tr class="hover:bg-slate-50 cursor-pointer">
+<td class="px-4 py-4 italic font-semibold text-slate-900">Rhinoceros sondaicus</td>
+<td class="px-4 py-4 text-slate-500">11.45N, 107.38E</td>
+<td class="px-4 py-4 text-slate-500">2010</td>
+<td class="px-4 py-4 text-slate-500">Human observation</td>
+<td class="px-4 py-4 text-slate-500">Cat Tien Database</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<!-- END: Data Table Section -->
+</div>
+<!-- Right Column: Sidebar Stats (Inspired by Ref 6) -->
+<aside class="xl:col-span-4 space-y-4">
+<div class="bg-white border border-border-light rounded-v-base p-1 shadow-sm overflow-hidden">
+<!-- Occurrences -->
+<a class="flex items-center justify-between p-5 hover:bg-slate-50 transition-colors group" href="#">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-primary">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<div>
+<h4 class="font-bold text-slate-800">Occurrences</h4>
+<p class="text-xs text-slate-400 italic">Rhinoceros Linnaeus, 1758</p>
+</div>
+</div>
+<svg class="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</a>
+<div class="h-px bg-slate-100 mx-4"></div>
+<!-- Taxa -->
+<a class="flex items-center justify-between p-5 hover:bg-slate-50 transition-colors group" href="#">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-primary">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<div>
+<h4 class="font-bold text-slate-800">Taxa</h4>
+<p class="text-xs text-slate-400">309 total species &amp; subspecies</p>
+</div>
+</div>
+<svg class="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</a>
+<div class="h-px bg-slate-100 mx-4"></div>
+<!-- Datasets -->
+<a class="flex items-center justify-between p-5 hover:bg-slate-50 transition-colors group" href="#">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-primary">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<div>
+<h4 class="font-bold text-slate-800">Datasets</h4>
+<p class="text-xs text-slate-400">26 source databases</p>
+</div>
+</div>
+<svg class="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</a>
+<div class="h-px bg-slate-100 mx-4"></div>
+<!-- Resources -->
+<a class="flex items-center justify-between p-5 hover:bg-slate-50 transition-colors group" href="#">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-primary">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<div>
+<h4 class="font-bold text-slate-800">Resources and articles</h4>
+<p class="text-xs text-slate-400">3 publications found</p>
+</div>
+</div>
+<svg class="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</a>
+</div>
+<!-- Quick Filters Card -->
+<div class="bg-sidebar border border-border-light rounded-v-base p-6">
+<h4 class="font-bold text-slate-800 mb-4 text-sm">Suggested Regions</h4>
+<div class="flex flex-wrap gap-2">
+<button class="bg-white border border-slate-200 px-3 py-1 rounded-full text-xs font-semibold text-slate-600 hover:border-primary hover:text-primary transition-colors">Southeast Asia</button>
+<button class="bg-white border border-slate-200 px-3 py-1 rounded-full text-xs font-semibold text-slate-600 hover:border-primary hover:text-primary transition-colors">Nepal</button>
+<button class="bg-white border border-slate-200 px-3 py-1 rounded-full text-xs font-semibold text-slate-600 hover:border-primary hover:text-primary transition-colors">India</button>
+<button class="bg-white border border-slate-200 px-3 py-1 rounded-full text-xs font-semibold text-slate-600 hover:border-primary hover:text-primary transition-colors">Vietnam</button>
+</div>
+</div>
+</aside>
+</div>
+<!-- Pagination -->
+<footer class="mt-12 py-8 flex items-center justify-center gap-2 border-t border-border-light">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<button class="w-10 h-10 rounded-v-base bg-primary text-white font-bold text-sm">1</button>
+<button class="w-10 h-10 rounded-v-base hover:bg-slate-100 font-bold text-sm text-slate-600">2</button>
+<button class="w-10 h-10 rounded-v-base hover:bg-slate-100 font-bold text-sm text-slate-600">3</button>
+<span class="px-2 text-slate-400">...</span>
+<button class="w-10 h-10 rounded-v-base hover:bg-slate-100 font-bold text-sm text-slate-600">124</button>
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</footer>
+</main>
+<!-- END: MainContent -->
+</div>
+</body></html>

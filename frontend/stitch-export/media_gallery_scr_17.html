@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VietInsect BigData | Media Gallery</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface": "#022111",
+                    "on-primary-fixed": "#002201",
+                    "tertiary": "#745b04",
+                    "on-surface-variant": "#40493c",
+                    "primary": "#176b17",
+                    "surface-container-highest": "#c8ebd1",
+                    "secondary-fixed": "#b8f0c5",
+                    "surface-variant": "#c8ebd1",
+                    "error-container": "#ffdad6",
+                    "inverse-primary": "#87da78",
+                    "on-primary-fixed-variant": "#005306",
+                    "on-tertiary-fixed-variant": "#584400",
+                    "tertiary-fixed": "#ffe08e",
+                    "background": "#e9ffed",
+                    "tertiary-container": "#c7a850",
+                    "outline": "#707a6b",
+                    "secondary-fixed-dim": "#9dd3aa",
+                    "on-primary": "#ffffff",
+                    "on-background": "#022111",
+                    "error": "#ba1a1a",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-fixed": "#241a00",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#f8fff0",
+                    "secondary-container": "#b8f0c5",
+                    "surface-bright": "#e9ffed",
+                    "inverse-surface": "#183625",
+                    "on-secondary-fixed": "#00210e",
+                    "on-error": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed-dim": "#e5c368",
+                    "on-tertiary": "#ffffff",
+                    "primary-fixed-dim": "#87da78",
+                    "on-secondary-container": "#3d6f4d",
+                    "on-tertiary-container": "#4f3d00",
+                    "surface-dim": "#c0e2c9",
+                    "surface-tint": "#1a6d19",
+                    "surface-container-low": "#d9fce2",
+                    "surface": "#e9ffed",
+                    "primary-container": "#35852f",
+                    "secondary": "#366847",
+                    "inverse-on-surface": "#d6f9df",
+                    "surface-container": "#d3f6dc",
+                    "primary-fixed": "#a2f792",
+                    "surface-container-high": "#cef1d7",
+                    "on-secondary-fixed-variant": "#1d5031",
+                    "outline-variant": "#bfcab8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "gutter": "24px",
+                    "margin-desktop": "64px",
+                    "margin-mobile": "16px",
+                    "container-max": "1440px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Manrope"],
+                    "body-md": ["Inter"],
+                    "headline-md": ["Manrope"],
+                    "caption": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "display-lg": ["Manrope"],
+                    "label-md": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .masonry-grid {
+            column-count: 1;
+            column-gap: 1.5rem;
+        }
+        @media (min-width: 768px) { .masonry-grid { column-count: 2; } }
+        @media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
+        @media (min-width: 1536px) { .masonry-grid { column-count: 4; } }
+        .masonry-item {
+            break-inside: avoid;
+            margin-bottom: 1.5rem;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #bfcab8; border-radius: 10px; }
+        .lightbox-overlay {
+            background: rgba(2, 33, 17, 0.92);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md antialiased overflow-x-hidden">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 flex flex-col fixed left-0 top-0 z-50 bg-surface-container-low border-r border-outline-variant transition-all duration-200 ease-in-out">
+<div class="flex flex-col h-full py-6 px-4">
+<div class="flex items-center gap-3 px-2 mb-8">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">biotech</span>
+</div>
+<div>
+<h1 class="font-headline-md text-label-md font-bold text-on-surface">VietInsect</h1>
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Scientific Database</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 bg-primary-container text-on-primary-container font-bold rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<span class="font-label-md">Catalog</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px]">map</span>
+<span class="font-label-md">Maps</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px]">biotech</span>
+<span class="font-label-md">Lab</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+<span class="font-label-md">Admin</span>
+</a>
+</nav>
+<button class="mt-6 flex items-center justify-center gap-2 bg-primary text-on-primary py-2.5 rounded-lg font-label-md active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Entry
+            </button>
+<div class="mt-auto pt-6 border-t border-outline-variant flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px]">help</span>
+<span class="font-label-md">Help</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span class="font-label-md">Sign Out</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="w-full h-16 flex items-center px-6 sticky top-0 z-40 bg-surface border-b border-outline-variant">
+<div class="flex justify-between items-center w-full max-w-[1440px] mx-auto">
+<div class="flex items-center gap-8">
+<span class="font-headline-md text-headline-md font-extrabold text-on-surface tracking-tight">Media Gallery</span>
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="bg-surface-container-low border-none rounded-full pl-10 pr-4 py-1.5 w-64 text-label-md focus:ring-2 focus:ring-primary" placeholder="Search specimens..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-8 w-px bg-outline-variant mx-2"></div>
+<div class="flex items-center gap-3 cursor-pointer group">
+<div class="text-right">
+<p class="font-label-md text-on-surface leading-none">Dr. Nguyen</p>
+<p class="text-[10px] text-on-surface-variant">Chief Researcher</p>
+</div>
+<img class="w-10 h-10 rounded-full border border-outline-variant object-cover" data-alt="A professional headshot of a middle-aged Vietnamese male researcher in a clean laboratory setting. He has a warm, intelligent expression and is wearing a crisp white lab coat. The lighting is soft and natural, reflecting a high-end scientific environment. The background shows blurred lab equipment and green specimen jars, maintaining the brand's Ivory and Forest Green palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnbPvXV32M_HkrYmGKkFPqCKNkVY0wK4mgtKQQMdWF5VqfbxsyZ3kZCbGLdH8h5EFw_FasJM52UNtbQAtNLkihBiMVrEutAMxf5pWhL7vZGtYqyTxh4y6w3DRJ0cCbgybGUFaakQjfWJqxVs50JPEpjAiZ91OuZchISG_JhLVF6jE_KPZ3-wNB2agGYBwXqY0ecXnLnq6oP4ByPym6PTyTatB-nL7BopouopPo9P9EHxnlI2Mm2ptB"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Gallery Section -->
+<div class="flex flex-1 p-6 gap-6">
+<!-- Filter Panel -->
+<aside class="w-64 flex flex-col gap-6 shrink-0">
+<div class="bg-surface-container-low rounded-xl p-5 border border-outline-variant">
+<h3 class="font-label-md text-on-surface mb-4 flex items-center justify-between">
+                        Filters
+                        <span class="material-symbols-outlined text-[18px]">filter_list</span>
+</h3>
+<div class="space-y-4">
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">Taxon Rank</label>
+<select class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 text-label-md focus:ring-primary focus:border-primary">
+<option>All Orders</option>
+<option>Coleoptera</option>
+<option>Lepidoptera</option>
+<option>Hymenoptera</option>
+</select>
+</div>
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">Province</label>
+<select class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 text-label-md focus:ring-primary focus:border-primary">
+<option>All Regions</option>
+<option>Lâm Đồng</option>
+<option>Đắk Lắk</option>
+<option>Hà Giang</option>
+</select>
+</div>
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">Year Range</label>
+<select class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 text-label-md focus:ring-primary focus:border-primary">
+<option>All Years</option>
+<option>2024</option>
+<option>2023</option>
+<option>2020 - 2022</option>
+</select>
+</div>
+<div class="pt-4 space-y-2">
+<div class="flex items-center gap-2">
+<input class="rounded text-primary focus:ring-primary border-outline-variant" id="high-res" type="checkbox"/>
+<label class="text-label-md text-on-surface-variant" for="high-res">High Resolution Only</label>
+</div>
+<div class="flex items-center gap-2">
+<input class="rounded text-primary focus:ring-primary border-outline-variant" id="vouchered" type="checkbox"/>
+<label class="text-label-md text-on-surface-variant" for="vouchered">Physical Voucher</label>
+</div>
+</div>
+</div>
+<button class="w-full mt-6 py-2 text-primary border border-primary rounded-lg font-label-md hover:bg-primary-container/10 transition-colors">
+                        Reset Filters
+                    </button>
+</div>
+<div class="bg-primary-container text-on-primary-container rounded-xl p-5 relative overflow-hidden group">
+<div class="relative z-10">
+<h4 class="font-headline-md text-label-md mb-2">Contribution Stats</h4>
+<p class="text-[24px] font-bold">12,842</p>
+<p class="text-[12px] opacity-80">Images archived this month</p>
+</div>
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-[100px] opacity-10 rotate-12 transition-transform group-hover:scale-110">eco</span>
+</div>
+</aside>
+<!-- Masonry Grid -->
+<section class="flex-1">
+<div class="masonry-grid">
+<!-- Item 1 -->
+<div class="masonry-item group relative cursor-pointer" onclick="openLightbox('Attacus atlas', 'Cát Tiên National Park', 'May 2024')">
+<img class="w-full rounded-lg border border-outline-variant transition-transform duration-300 group-hover:scale-[1.02]" data-alt="A detailed macro photograph of an Attacus atlas moth, also known as the Atlas moth, resting on a tropical leaf. The wings display intricate patterns of orange, brown, and translucent window-like spots. The lighting is soft and diffused as if under a rainforest canopy. Professional scientific photography style with sharp focus on the textures of the wing scales." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoOrFPCPHynQLUUzTj6tQZOoIAA5r0HApQ9R31kJSaSn7Mpvbj5X7n4jvM34n-ivEc_P-sAbFugQiNvkwK4-Skipm8xcI4Av8OnPYQp6Q2R2HsU9h3BxXs8ORrFEwSoCJoxacVAgsZqf_z6fxwtQgDkgBQgx7ZIZsk-hNzGE7t28kwUHpIIG2Edq7yd7b_tB-Lt5PTkUI14mN6mvjZqvmYVDWHDbSXEwH-d7qj20BCQse87sBW2Nko"/>
+<div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex flex-col justify-end p-4">
+<div class="flex justify-between items-center text-white">
+<div>
+<p class="italic font-bold text-label-md">Attacus atlas</p>
+<p class="text-[10px] opacity-80">Lepidoptera • Saturniidae</p>
+</div>
+<span class="material-symbols-outlined">open_in_full</span>
+</div>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="masonry-item group relative cursor-pointer" onclick="openLightbox('Chrysochroa fulgidissima', 'Bidoup-Nui Ba', 'June 2024')">
+<img class="w-full rounded-lg border border-outline-variant transition-transform duration-300 group-hover:scale-[1.02]" data-alt="A macro shot of a Jewel Beetle, Chrysochroa fulgidissima, displaying iridescent metallic green and purple wing covers. The specimen is positioned on a piece of decaying bark. The photograph uses a clean studio-style background in pale ivory to highlight the beetle's vibrant colors. Scientific aesthetic with sharp detail and bright, even lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBd1ECMnAoM3WK68u-wOvifPCE1u3h4Mg0yKDu6YmtgqTvyMdndiZ0dGkJKpC7gu5EYFjEQD9kX41HsELQYvuqq1ALXIzbcJQL-JzvljV-cxMIU55FjXEfDobSFKBJCv6QMml4uuTBIwnAUL4Up0WojeUQtHA-V1GTj8VEo-ZgxEaJo1j1OBNU-g7RPj2V-B2yaF938uvPV_fibKnbSjuh-VS4OME8H6yCH4jByBEQAL7e7u35mvpNM"/>
+<div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex flex-col justify-end p-4">
+<div class="flex justify-between items-center text-white">
+<div>
+<p class="italic font-bold text-label-md">Chrysochroa fulgidissima</p>
+<p class="text-[10px] opacity-80">Coleoptera • Buprestidae</p>
+</div>
+<span class="material-symbols-outlined">open_in_full</span>
+</div>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="masonry-item group relative cursor-pointer" onclick="openLightbox('Phyllium giganteum', 'Bach Ma Mountain', 'April 2024')">
+<img class="w-full rounded-lg border border-outline-variant transition-transform duration-300 group-hover:scale-[1.02]" data-alt="A Giant Leaf Insect, Phyllium giganteum, perfectly camouflaged against a vibrant green leaf. The insect's body mimics the leaf's veins and edges with incredible precision. High-resolution specimen photography with shallow depth of field, emphasizing the organic mimicry. Professional laboratory lighting setup, ivory and forest green color tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeOa4kivULVTLWjT-vuXhSwT3DWwTPv5qBNTuUJnDAxW_y4J70t2_SkptNkNjSSX3vRXgxrxwaNC6Bh78JjxKayw07qUu7yJezBCStggO7Zxs-nDJPFXud5KF29yem3kj4IGVNvWbSYqCRD1McRxnh3xNyTVrLco4JHKSKfOy2HPnRtr3v-mWUetFmSaNhHvUd_htN2lO2F6Lq7I257WuU9gSd_fuSaDXKvSuUYLymn4mqrKGdY3Ng"/>
+<div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex flex-col justify-end p-4">
+<div class="flex justify-between items-center text-white">
+<div>
+<p class="italic font-bold text-label-md">Phyllium giganteum</p>
+<p class="text-[10px] opacity-80">Phasmatodea • Phylliidae</p>
+</div>
+<span class="material-symbols-outlined">open_in_full</span>
+</div>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="masonry-item group relative cursor-pointer" onclick="openLightbox('Cicadidae sp.', 'Tam Dao National Park', 'March 2024')">
+<img class="w-full rounded-lg border border-outline-variant transition-transform duration-300 group-hover:scale-[1.02]" data-alt="Close-up of a large cicada emerging from its nymphal shell. The wings are translucent and still hardening. Photographed at night with a focused macro flash, creating high contrast between the subject and the dark forest background. Expert entomological documentation style, showing biological process in crisp detail." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfGgFXg5_brLsj3UROkGbI04VDWvfk2H1pNspa3133RlCgdrAbDsAy0-PslGUyofIz30xIlppCXpio-Iy1j1AyULtKvYXjcQKv7_xpz_WJANQIRj7gSAsTJ5CPdwgpR8M_s_Hg4pgpvQN_Ctw4TYA_ieDJaitp8VCmJImqyxglo-a0WC8NmwuiwxU2BOn5NsqHvnhkOu1Rc-P_VM6kRhVlBarZyksyXJ--rdjmRzw6XWK1PW7k-qiR"/>
+<div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex flex-col justify-end p-4">
+<div class="flex justify-between items-center text-white">
+<div>
+<p class="italic font-bold text-label-md">Cicadidae sp.</p>
+<p class="text-[10px] opacity-80">Hemiptera • Cicadidae</p>
+</div>
+<span class="material-symbols-outlined">open_in_full</span>
+</div>
+</div>
+</div>
+<!-- Item 5 -->
+<div class="masonry-item group relative cursor-pointer" onclick="openLightbox('Odontolabis mouhoti', 'Kon Ka Kinh', 'July 2024')">
+<img class="w-full rounded-lg border border-outline-variant transition-transform duration-300 group-hover:scale-[1.02]" data-alt="A male Stag Beetle, Odontolabis mouhoti, with its large mandibles prominently displayed. The beetle has a polished chestnut and black finish. It is placed on a scientific measurement scale grid. Top-down view, technical specimen photography, bright professional lighting, minimalist composition." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQ6mGrzWIO0fsOvkaDC4_QELICjbTiPMsXwhHxSxhtckiOOx4kl1aJZ_LEBazjrG0tIAMPRNxF2lb6Lhmx2pMoysj1BlAlX62-K_RPZVXv8hxEYSymoo0kjjCT5bwKiAHP3aZUOhnzQQUcZrBlTIlWoa74VyVWvOgStMVW94ESY4cGrF8k1wGpMbninZzzAowLAXKd4dZnwD-2ypX_avMhsU_hgDywoMDBqA820HtdrN_EDtfa2zm8"/>
+<div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex flex-col justify-end p-4">
+<div class="flex justify-between items-center text-white">
+<div>
+<p class="italic font-bold text-label-md">Odontolabis mouhoti</p>
+<p class="text-[10px] opacity-80">Coleoptera • Lucanidae</p>
+</div>
+<span class="material-symbols-outlined">open_in_full</span>
+</div>
+</div>
+</div>
+<!-- Item 6 -->
+<div class="masonry-item group relative cursor-pointer" onclick="openLightbox('Aethriamanta aethra', 'Mekong Delta', 'August 2024')">
+<img class="w-full rounded-lg border border-outline-variant transition-transform duration-300 group-hover:scale-[1.02]" data-alt="A bright red dragonfly, Aethriamanta aethra, perched on a reed above a wetland. The wings are perfectly transparent with visible vein structures. Natural lighting with golden hour glow, reflecting off the water in the background. High-quality wildlife photography with a focus on color intensity and delicate details." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAP5AzEDo5lM3Ib6COChayQ1Xk4VkYa3Oi90xBaYZjTs535Iu8gCLQK2uGi65mKsXSORVohuKcnYVUups4VIhPQNKpj_J0qFbPjXU7kmrFWXq-8UgkXysCqoLqUi4BQKbBSvBPiYb0T68Vi4bA4O4qRkeGqFSF7KAYTw2FVvdBb18a4P6-wFuVMs1GaLZdoo5TxAs322r1peF90RkYGFIhVRi0FMth1lQFM17Fy2ih8U8uqb0n56r2W"/>
+<div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex flex-col justify-end p-4">
+<div class="flex justify-between items-center text-white">
+<div>
+<p class="italic font-bold text-label-md">Aethriamanta aethra</p>
+<p class="text-[10px] opacity-80">Odonata • Libellulidae</p>
+</div>
+<span class="material-symbols-outlined">open_in_full</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-8 flex justify-center">
+<button class="bg-surface-container-high text-on-surface px-8 py-3 rounded-full font-label-md hover:bg-surface-variant transition-colors flex items-center gap-2">
+                        Load More Specimens
+                        <span class="material-symbols-outlined">expand_more</span>
+</button>
+</div>
+</section>
+</div>
+</main>
+<!-- Lightbox Mockup Overlay (Hidden by default) -->
+<div class="fixed inset-0 z-[100] lightbox-overlay flex-col hidden" id="lightbox">
+<div class="flex-1 relative flex items-center justify-center p-8">
+<button class="absolute top-8 right-8 text-white/60 hover:text-white transition-colors" onclick="closeLightbox()">
+<span class="material-symbols-outlined text-[40px]">close</span>
+</button>
+<button class="absolute left-8 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[48px]">chevron_left</span>
+</button>
+<button class="absolute right-8 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[48px]">chevron_right</span>
+</button>
+<img class="max-h-full max-w-full rounded-lg shadow-2xl" data-alt="High-resolution centered specimen photo for lightbox view. The insect is sharp and detailed against a clean studio background. Professional lighting emphasizes taxonomic features." id="lightbox-img" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfcvlmc0nLdLXYX9VrHDOz9WzvhGqgOZyM4r11UKOSvmHltcYjX3cymQccExuwgrIuFTbJrpiLeLTJW8FWHy5J6nim2blx1vRF2bpgdH6glNbFfT4FPRjRHprcIFnrPHoq5Uqg_hMnNpOonmUeDh-w9rPLLmpS7jJvqlic4JXEhoteXCet6OtNFnSjP58tRIveGW3zooR8MqaDJI3HBpVIMgc27_0GkQREja9WeOYtS6ARxRPpADFZ"/>
+</div>
+<!-- Metadata Bar -->
+<div class="h-24 bg-[#133120] text-white px-margin-desktop flex items-center justify-between border-t border-white/10">
+<div class="flex items-center gap-6">
+<div class="w-12 h-12 bg-primary flex items-center justify-center rounded-lg">
+<span class="material-symbols-outlined text-white text-[24px]" style="font-variation-settings: 'FILL' 1;">smb_share</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md italic leading-tight" id="lightbox-title">Attacus atlas</h2>
+<div class="flex items-center gap-4 text-white/70 text-label-md">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">location_on</span> <span id="lightbox-location">Cát Tiên National Park</span></span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">calendar_today</span> <span id="lightbox-date">May 2024</span></span>
+</div>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="flex flex-col items-center gap-1 text-white/70 hover:text-white transition-colors">
+<span class="material-symbols-outlined">download</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Hi-Res</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-white/70 hover:text-white transition-colors">
+<span class="material-symbols-outlined">share</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Share</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-white/70 hover:text-white transition-colors">
+<span class="material-symbols-outlined">info</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Full Data</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+        function openLightbox(title, location, date) {
+            const lightbox = document.getElementById('lightbox');
+            document.getElementById('lightbox-title').textContent = title;
+            document.getElementById('lightbox-location').textContent = location;
+            document.getElementById('lightbox-date').textContent = date;
+            
+            lightbox.classList.remove('hidden');
+            lightbox.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            lightbox.classList.add('hidden');
+            lightbox.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close on Esc key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeLightbox();
+        });
+    </script>
+</body></html>

@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SCR-14 — Quản lý danh pháp (Taxon Editor) | Insecta VN</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed-dim": "#e5c368",
+                    "error": "#ba1a1a",
+                    "surface-variant": "#c8ebd1",
+                    "on-tertiary": "#ffffff",
+                    "primary-container": "#35852f",
+                    "on-primary-fixed": "#002201",
+                    "on-error-container": "#93000a",
+                    "on-primary": "#ffffff",
+                    "primary-fixed": "#a2f792",
+                    "background": "#e9ffed",
+                    "outline": "#707a6b",
+                    "on-surface-variant": "#40493c",
+                    "on-secondary-container": "#3d6f4d",
+                    "on-tertiary-fixed-variant": "#584400",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container": "#d3f6dc",
+                    "surface-dim": "#c0e2c9",
+                    "outline-variant": "#bfcab8",
+                    "surface-container-low": "#d9fce2",
+                    "secondary-container": "#b8f0c5",
+                    "on-error": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed-variant": "#005306",
+                    "inverse-surface": "#183625",
+                    "surface-container-highest": "#c8ebd1",
+                    "on-tertiary-fixed": "#241a00",
+                    "primary": "#176b17",
+                    "on-tertiary-container": "#4f3d00",
+                    "surface-tint": "#1a6d19",
+                    "primary-fixed-dim": "#87da78",
+                    "on-secondary-fixed-variant": "#1d5031",
+                    "on-primary-container": "#f8fff0",
+                    "error-container": "#ffdad6",
+                    "surface-bright": "#e9ffed",
+                    "inverse-primary": "#87da78",
+                    "tertiary-container": "#c7a850",
+                    "surface-container-high": "#cef1d7",
+                    "tertiary": "#745b04",
+                    "on-background": "#022111",
+                    "inverse-on-surface": "#d6f9df",
+                    "tertiary-fixed": "#ffe08e",
+                    "secondary-fixed": "#b8f0c5",
+                    "surface": "#e9ffed",
+                    "on-surface": "#022111",
+                    "secondary-fixed-dim": "#9dd3aa",
+                    "secondary": "#366847",
+                    "on-secondary-fixed": "#00210e"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "unit": "4px",
+                    "margin-mobile": "16px",
+                    "margin-desktop": "64px",
+                    "container-max": "1440px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Manrope"],
+                    "headline-lg-mobile": ["Manrope"],
+                    "caption": ["Inter"],
+                    "label-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Manrope"],
+                    "headline-lg": ["Manrope"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #F8FAF6; /* Ivory base from prompt */
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar-active {
+            background-color: rgba(184, 240, 197, 0.3); /* secondary-container/30 */
+            border-right: 4px solid #176b17; /* primary */
+            font-weight: 700;
+            color: #176b17;
+        }
+        .scientific-card {
+            background-color: #EEF4E9; /* Level 1: Pale green-grey surface */
+            border: 1px solid #DCE6D5;
+            transition: border-color 0.2s ease;
+        }
+        .scientific-card:hover {
+            border-color: #c7a850; /* Earth Yellow accent */
+        }
+        .taxon-tree-item:hover {
+            background-color: #d3f6dc;
+        }
+        /* Custom scrollbar for technical look */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #bfcab8; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #707a6b; }
+    </style>
+</head>
+<body class="text-on-surface">
+<!-- SideNavBar (Authority Source: JSON) -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant flex flex-col py-6 px-4 z-50">
+<div class="mb-10 px-2">
+<h1 class="font-display-lg text-display-lg font-bold text-primary tracking-tight">Insecta VN</h1>
+<p class="font-body-md text-body-md text-on-surface-variant opacity-75">Research Database</p>
+</div>
+<nav class="flex-1 space-y-1">
+<!-- Nav Item 1 -->
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<!-- Nav Item 2 -->
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px]">bug_report</span>
+<span class="font-body-md text-body-md">Catalog</span>
+</a>
+<!-- Nav Item 3 -->
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px]">map</span>
+<span class="font-body-md text-body-md">Maps</span>
+</a>
+<!-- Nav Item 4 -->
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px]">biotech</span>
+<span class="font-body-md text-body-md">Lab</span>
+</a>
+<!-- Nav Item 5 (Active) -->
+<a class="sidebar-active flex items-center gap-3 px-3 py-3 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+<span class="font-body-md text-body-md">Admin</span>
+</a>
+</nav>
+<div class="pt-6 border-t border-outline-variant mt-auto space-y-1">
+<button class="w-full bg-[#1A4D2E] text-white py-3 px-4 rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Specimen
+            </button>
+<div class="mt-4">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">help</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 min-h-screen flex flex-col">
+<!-- TopAppBar (Authority Source: JSON) -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-surface/95 backdrop-blur-md border-b border-outline-variant flex justify-between items-center px-8 z-40">
+<div class="flex items-center gap-6">
+<h2 class="font-headline-md text-headline-md font-semibold text-primary">Taxon Editor</h2>
+<div class="relative group">
+<span class="absolute inset-y-0 left-3 flex items-center text-outline pointer-events-none">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</span>
+<input class="bg-surface-container-low border-none rounded-full pl-10 pr-4 py-2 text-label-md focus:ring-2 focus:ring-primary/20 w-80" placeholder="Search taxonomic rank..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2 font-label-md text-label-md text-on-surface-variant">
+<span class="text-primary font-bold cursor-pointer">VI</span>
+<span class="text-outline">|</span>
+<span class="hover:text-primary cursor-pointer transition-colors">EN</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional close-up headshot of a scientific researcher in a modern laboratory setting, wearing a white lab coat with soft natural lighting and a blurred background of microscopes and glassware. Professional and authoritative atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD87a1AS8JYJlrmhyuiM0liIvWbLDFPJqcQlOCdXpPTI9WQ-f9d_ht_Hk80wqqz0--cs27sz5N9o55dkG1OOctB7AcIdaQyJGg2EMizh-dL2pBTwNO_35f0kp53l714wChiAu8RyAscmX2Yk5iee5_IU6zreQYQMhybbeG_F6nbdiHSkK217pMSuUPmNWytFjcyCet_RnjXpEMmmq5vLlxEfPrd5ivKxWFMzOc97i_XS31PMOdgj0-2"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="mt-16 p-8 flex-1 flex flex-col gap-8 max-w-[1440px] mx-auto w-full">
+<div class="flex gap-8 items-start">
+<!-- Left Column: Taxonomy Tree -->
+<aside class="w-1/4 sticky top-24">
+<div class="scientific-card rounded-xl p-5 flex flex-col h-[716px]">
+<div class="flex justify-between items-center mb-4">
+<span class="font-label-md text-label-md uppercase tracking-wider text-outline">Hierarchy Explorer</span>
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary">unfold_less</span>
+</div>
+<div class="overflow-y-auto flex-1 pr-2 space-y-1">
+<!-- Tree Items -->
+<div class="taxon-tree-item p-2 rounded-lg cursor-pointer flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">expand_more</span>
+<span class="material-symbols-outlined text-primary text-[20px]">category</span>
+<span class="font-label-md text-label-md font-bold">Animalia</span>
+</div>
+<div class="ml-4 space-y-1">
+<div class="taxon-tree-item p-2 rounded-lg cursor-pointer flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">expand_more</span>
+<span class="font-label-md text-label-md">Arthropoda</span>
+</div>
+<div class="ml-4 space-y-1">
+<div class="taxon-tree-item p-2 rounded-lg cursor-pointer flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">expand_more</span>
+<span class="font-label-md text-label-md">Insecta</span>
+</div>
+<div class="ml-4 space-y-1">
+<div class="taxon-tree-item p-2 rounded-lg cursor-pointer flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">expand_more</span>
+<span class="font-label-md text-label-md italic">Coleoptera</span>
+</div>
+<div class="ml-4 bg-primary-container/10 border-l-2 border-primary p-2 rounded-r-lg cursor-pointer flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="font-label-md text-label-md font-bold italic">Coccinella</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Right Column: CRUD Form -->
+<section class="flex-1 space-y-6">
+<div class="scientific-card rounded-xl p-8 bg-white shadow-sm">
+<div class="flex justify-between items-start mb-8">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest">Genus Level</span>
+<h3 class="font-headline-lg text-headline-lg italic">Coccinella</h3>
+</div>
+<p class="font-body-md text-body-md text-outline">Editing nomenclature details and regional identifiers.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 border border-outline text-on-surface rounded-lg font-label-md text-label-md hover:bg-surface-container transition-all">Cancel</button>
+<button class="px-6 py-2 bg-[#1A4D2E] text-white rounded-lg font-label-md text-label-md shadow-lg shadow-primary/20 hover:shadow-xl transition-all">Save Changes</button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-8">
+<div class="space-y-6">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2">Scientific Name</label>
+<input class="w-full border-[#DCE6D5] rounded-lg bg-[#F8FAF6] p-3 italic font-medium focus:ring-primary focus:border-primary" type="text" value="Coccinella"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2">Author</label>
+<input class="w-full border-[#DCE6D5] rounded-lg bg-[#F8FAF6] p-3 focus:ring-primary focus:border-primary" type="text" value="Linnaeus"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2">Publication Year</label>
+<input class="w-full border-[#DCE6D5] rounded-lg bg-[#F8FAF6] p-3 focus:ring-primary focus:border-primary" type="number" value="1758"/>
+</div>
+</div>
+<div class="space-y-6">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2">Common Name (Vietnamese)</label>
+<input class="w-full border-[#DCE6D5] rounded-lg bg-[#F8FAF6] p-3 focus:ring-primary focus:border-primary" type="text" value="Bọ rùa"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2">Common Name (English)</label>
+<input class="w-full border-[#DCE6D5] rounded-lg bg-[#F8FAF6] p-3 focus:ring-primary focus:border-primary" type="text" value="Ladybug"/>
+</div>
+<!-- API Validation States -->
+<div class="grid grid-cols-1 gap-4">
+<!-- Validated State -->
+<div class="border-2 border-[#4B9B42] bg-[#F1FAF0] rounded-xl p-4 flex gap-4 items-center">
+<div class="bg-[#4B9B42] text-white rounded-full p-1 h-6 w-6 flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-[#1A4D2E]">Catalogue of Life API Result</p>
+<p class="text-[12px] text-[#4B9B42]/80">Match found: LSID: urn:lsid:catalogueoflife.org:...</p>
+</div>
+</div>
+<!-- Error/Mismatch State (Hidden/Example) -->
+<div class="border-2 border-[#D8362A] bg-[#FEF4F4] rounded-xl p-4 flex gap-4 items-center">
+<div class="bg-[#D8362A] text-white rounded-full p-1 h-6 w-6 flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">priority_high</span>
+</div>
+<div class="flex-1">
+<p class="font-label-md text-label-md text-[#7A1D16]">Validation Warning</p>
+<p class="text-[12px] text-[#D8362A]/80">Did you mean: <span class="font-bold italic">Coccinella</span> or <span class="font-bold italic">Coccinellidae</span>?</p>
+</div>
+<button class="text-[12px] font-bold text-[#D8362A] underline">Ignore</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Bottom Section: Synonym management table -->
+<section class="scientific-card rounded-xl p-8 bg-white shadow-sm mb-12">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h4 class="font-headline-md text-headline-md font-semibold text-on-surface">Synonym Management</h4>
+<p class="font-body-md text-body-md text-outline">Linking historical or alternative names to the currently accepted taxon.</p>
+</div>
+<button class="flex items-center gap-2 text-primary font-label-md text-label-md hover:bg-primary/5 px-4 py-2 rounded-lg transition-colors">
+<span class="material-symbols-outlined">add_link</span>
+                        Add Synonym
+                    </button>
+</div>
+<div class="overflow-hidden rounded-lg border border-outline-variant">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low">
+<tr>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant">Accepted Name</th>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant">Synonym</th>
+<th class="p-4 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="p-4 italic font-bold">Coccinella septempunctata</td>
+<td class="p-4 italic text-on-surface-variant">Coccinella 7-punctata</td>
+<td class="p-4 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 hover:bg-surface-container rounded-md text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-2 hover:bg-error/10 rounded-md text-outline hover:text-error transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="p-4 italic font-bold">Coccinella septempunctata</td>
+<td class="p-4 italic text-on-surface-variant">Coccinella divaricata</td>
+<td class="p-4 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 hover:bg-surface-container rounded-md text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-2 hover:bg-error/10 rounded-md text-outline hover:text-error transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="p-4 italic font-bold">Coccinella magnifica</td>
+<td class="p-4 italic text-on-surface-variant">Coccinella distincta</td>
+<td class="p-4 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 hover:bg-surface-container rounded-md text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-2 hover:bg-error/10 rounded-md text-outline hover:text-error transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+<!-- Footer Note -->
+<footer class="ml-auto w-full p-8 pt-0 flex justify-between items-center text-caption text-outline opacity-60">
+<p>© 2024 Insecta VN Research Institute - Vietnam Academy of Science and Technology</p>
+<p>Database Engine v4.2.1-stable</p>
+</footer>
+</main>
+<!-- FAB for Quick Actions (Suppressed on Admin Detail pages per mandate, but added for Home navigation context) -->
+<!-- Not rendered here to prioritize the Taxon Editor focus -->
+<script>
+        // Simple Interaction logic for demo
+        document.querySelectorAll('.taxon-tree-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Remove active classes
+                document.querySelectorAll('.taxon-tree-item').forEach(i => {
+                    i.classList.remove('bg-primary-container/10', 'border-l-2', 'border-primary', 'text-primary');
+                });
+                // Add to current (just visual mockup)
+                this.classList.add('bg-primary-container/10', 'border-l-2', 'border-primary', 'text-primary');
+            });
+        });
+
+        // Hover animation for buttons
+        const primaryBtn = document.querySelector('button.bg-[#1A4D2E]');
+        if(primaryBtn) {
+            primaryBtn.addEventListener('mousedown', () => primaryBtn.style.transform = 'scale(0.98)');
+            primaryBtn.addEventListener('mouseup', () => primaryBtn.style.transform = 'scale(1)');
+        }
+    </script>
+</body></html>

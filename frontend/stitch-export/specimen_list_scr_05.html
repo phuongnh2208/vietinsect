@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Quản lý mẫu vật - InsectaVN Researcher</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Manrope:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-primary": "#87da78",
+                    "on-primary": "#ffffff",
+                    "on-error": "#ffffff",
+                    "secondary-container": "#b8f0c5",
+                    "surface-container-high": "#cef1d7",
+                    "secondary-fixed": "#b8f0c5",
+                    "secondary": "#366847",
+                    "surface-bright": "#e9ffed",
+                    "error": "#ba1a1a",
+                    "tertiary": "#745b04",
+                    "inverse-surface": "#183625",
+                    "tertiary-fixed-dim": "#e5c368",
+                    "tertiary-container": "#c7a850",
+                    "on-surface": "#022111",
+                    "on-tertiary-fixed-variant": "#584400",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-container": "#f8fff0",
+                    "on-surface-variant": "#40493c",
+                    "on-tertiary-fixed": "#241a00",
+                    "outline-variant": "#bfcab8",
+                    "on-secondary-container": "#3d6f4d",
+                    "error-container": "#ffdad6",
+                    "surface-tint": "#1a6d19",
+                    "surface-container": "#d3f6dc",
+                    "background": "#F8FAF6",
+                    "surface-variant": "#c8ebd1",
+                    "surface-container-low": "#EEF4E9",
+                    "on-primary-fixed": "#002201",
+                    "primary-container": "#35852f",
+                    "on-secondary-fixed-variant": "#1d5031",
+                    "primary-fixed": "#a2f792",
+                    "on-tertiary-container": "#4f3d00",
+                    "outline": "#707a6b",
+                    "tertiary-fixed": "#ffe08e",
+                    "surface-container-highest": "#c8ebd1",
+                    "secondary-fixed-dim": "#9dd3aa",
+                    "on-error-container": "#93000a",
+                    "surface-container-lowest": "#ffffff",
+                    "on-background": "#133120",
+                    "surface-dim": "#c0e2c9",
+                    "inverse-on-surface": "#d6f9df",
+                    "primary-fixed-dim": "#87da78",
+                    "primary": "#1A4D2E",
+                    "on-secondary": "#ffffff",
+                    "surface": "#F8FAF6",
+                    "on-primary-fixed-variant": "#005306",
+                    "on-secondary-fixed": "#00210e"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "margin-desktop": "64px",
+                    "container-max": "1440px",
+                    "margin-mobile": "16px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Manrope"],
+                    "caption": ["Inter"],
+                    "headline-lg": ["Manrope"],
+                    "body-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Manrope"],
+                    "headline-lg-mobile": ["Manrope"]
+            },
+            "fontSize": {
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #F8FAF6;
+            color: #133120;
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scientific-row:hover {
+            background-color: #EEF4E9 !important;
+        }
+        /* Custom scrollbar for data density */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F8FAF6;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #DCE6D5;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="overflow-hidden">
+<!-- SideNavBar Anchor -->
+<aside class="fixed left-0 top-0 h-full z-40 border-r border-outline-variant/30 bg-surface-container-low dark:bg-surface-dim h-screen w-64 flex flex-col">
+<div class="p-6">
+<h1 class="font-headline-md text-headline-md text-primary dark:text-inverse-primary font-bold">InsectaVN</h1>
+<p class="font-label-md text-label-md text-on-surface-variant opacity-70">Biodiversity Hub</p>
+</div>
+<nav class="flex-1 mt-4">
+<a class="flex items-center gap-3 px-6 py-3 text-on-surface-variant dark:text-outline hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-on-surface-variant dark:text-outline hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-label-md text-label-md">Catalog</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-on-surface-variant dark:text-outline hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-md text-label-md">Maps</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-on-surface-variant dark:text-outline hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">biotech</span>
+<span class="font-label-md text-label-md">Lab</span>
+</a>
+<!-- Active State: Admin (Managing specimens usually falls under Admin/Management) -->
+<a class="flex items-center gap-3 px-6 py-3 text-primary dark:text-inverse-primary font-bold border-r-4 border-primary dark:border-inverse-primary bg-secondary-container/30" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Admin</span>
+</a>
+</nav>
+<div class="p-6 border-t border-outline-variant/20">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/30">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a female entomology researcher in a bright, modern laboratory setting. She is wearing a crisp white lab coat and has a neutral, focused expression. The background features blurred glass jars with scientific specimens and high-tech microscope equipment. The lighting is soft, even, and natural, maintaining a clean and minimalist scientific aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAONzXfvCcf9sScxcjqzfouXooJfzz_SIkxTcBMbiwwDbbWxsgUxbEVfFZ8v6ju3Jp5RrK2usCIicrykG1n63sy5AoY58kZI-QKnr9iLTnc0SJiabAuJnN3NQc0AmsVft8V-ZZnIqhI_i2RC2CBAPjS7N5yqD5EFJoyFYPt2xMw8BwOyRU4QhDHPNJ65k9M0is9JT7WKEwtlmsOpOcrA6F_osSLLsiRIirrw1_iuAhjKoQSn2Q9XTEe"/>
+</div>
+<div>
+<p class="font-label-md text-label-md font-bold">Dr. Minh Anh</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wider">Senior Lead</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 min-h-screen flex flex-col">
+<!-- TopAppBar Anchor -->
+<header class="flex justify-between items-center h-16 w-full px-8 bg-surface-container-lowest dark:bg-surface-dim border-b border-outline-variant/20 sticky top-0 z-30">
+<div class="flex items-center gap-6 flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant scale-75">search</span>
+<input class="w-full pl-10 pr-4 py-1.5 bg-surface-container-low border-none rounded-lg text-label-md focus:ring-1 focus:ring-primary/30 transition-all outline-none" placeholder="Tìm kiếm mẫu vật, loài, mã số..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="font-label-md text-label-md hover:text-primary transition-colors">VI | EN</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full">settings</button>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="p-8 flex-1 overflow-auto">
+<!-- Page Header & Breadcrumbs -->
+<div class="mb-8">
+<nav class="flex items-center gap-2 text-caption text-on-surface-variant/60 mb-2">
+<a class="hover:text-primary transition-colors" href="#">Admin</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-on-surface-variant">Quản lý mẫu vật</span>
+</nav>
+<h2 class="font-headline-md text-headline-md text-on-surface font-bold">Quản lý mẫu vật</h2>
+</div>
+<!-- Toolbar -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container-low border border-outline-variant/30 rounded text-label-md font-medium hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">view_column</span>
+                        Chọn cột
+                        <span class="material-symbols-outlined text-[18px]">expand_more</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2 border border-[#4B9B42] text-[#4B9B42] rounded text-label-md font-medium hover:bg-[#4B9B42]/5 transition-colors">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                        Xuất dữ liệu
+                    </button>
+</div>
+<button class="flex items-center gap-2 px-6 py-2 bg-[#1A4D2E] text-white rounded font-label-md text-label-md font-bold shadow-sm hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                    Thêm mới
+                </button>
+</div>
+<!-- Data Table -->
+<div class="bg-white border border-outline-variant/20 rounded-lg overflow-hidden shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-[#EEF4E9] text-[#133120] font-bold border-b border-outline-variant/20">
+<th class="p-4 w-12">
+<input class="rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox"/>
+</th>
+<th class="p-4 font-label-md text-label-md">Specimen ID</th>
+<th class="p-4 font-label-md text-label-md">Species Name</th>
+<th class="p-4 font-label-md text-label-md">Family</th>
+<th class="p-4 font-label-md text-label-md">Order</th>
+<th class="p-4 font-label-md text-label-md">Collection Date</th>
+<th class="p-4 font-label-md text-label-md">Location</th>
+<th class="p-4 font-label-md text-label-md">Status</th>
+<th class="p-4"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10 bg-[#F8FAF6]">
+<!-- Row 1 -->
+<tr class="scientific-row transition-colors group">
+<td class="p-4">
+<input class="rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox"/>
+</td>
+<td class="p-4 font-label-md text-label-md font-bold text-primary">IVN-2023-0812</td>
+<td class="p-4">
+<div class="flex flex-col">
+<span class="italic font-medium text-on-surface">Morpho helenor</span>
+<span class="text-caption text-on-surface-variant">Bướm Lam Cánh Lớn</span>
+</div>
+</td>
+<td class="p-4 text-label-md text-on-surface-variant">Nymphalidae</td>
+<td class="p-4 text-label-md text-on-surface-variant">Lepidoptera</td>
+<td class="p-4 text-label-md text-on-surface-variant">12/08/2023</td>
+<td class="p-4 text-label-md text-on-surface-variant">Ba Vi National Park</td>
+<td class="p-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-bold bg-[#b8f0c5] text-[#1A4D2E]">Public</span>
+</td>
+<td class="p-4 text-right">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">more_vert</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="scientific-row transition-colors group">
+<td class="p-4">
+<input class="rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox"/>
+</td>
+<td class="p-4 font-label-md text-label-md font-bold text-primary">IVN-2023-0945</td>
+<td class="p-4">
+<div class="flex flex-col">
+<span class="italic font-medium text-on-surface">Apis cerana</span>
+<span class="text-caption text-on-surface-variant">Ong Mật Nội</span>
+</div>
+</td>
+<td class="p-4 text-label-md text-on-surface-variant">Apidae</td>
+<td class="p-4 text-label-md text-on-surface-variant">Hymenoptera</td>
+<td class="p-4 text-label-md text-on-surface-variant">05/09/2023</td>
+<td class="p-4 text-label-md text-on-surface-variant">Cuc Phuong Forest</td>
+<td class="p-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-bold bg-[#DCE6D5] text-[#40493c]">Private</span>
+</td>
+<td class="p-4 text-right">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">more_vert</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="scientific-row transition-colors group">
+<td class="p-4">
+<input class="rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox"/>
+</td>
+<td class="p-4 font-label-md text-label-md font-bold text-primary">IVN-2023-1102</td>
+<td class="p-4">
+<div class="flex flex-col">
+<span class="italic font-medium text-on-surface">Gryllus bimaculatus</span>
+<span class="text-caption text-on-surface-variant">Dế Mèn Hai Chấm</span>
+</div>
+</td>
+<td class="p-4 text-label-md text-on-surface-variant">Gryllidae</td>
+<td class="p-4 text-label-md text-on-surface-variant">Orthoptera</td>
+<td class="p-4 text-label-md text-on-surface-variant">21/11/2023</td>
+<td class="p-4 text-label-md text-on-surface-variant">Dong Nai Biosphere</td>
+<td class="p-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-bold bg-[#b8f0c5] text-[#1A4D2E]">Public</span>
+</td>
+<td class="p-4 text-right">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">more_vert</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="scientific-row transition-colors group">
+<td class="p-4">
+<input class="rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox"/>
+</td>
+<td class="p-4 font-label-md text-label-md font-bold text-primary">IVN-2023-1205</td>
+<td class="p-4">
+<div class="flex flex-col">
+<span class="italic font-medium text-on-surface">Odontolabis cuvera</span>
+<span class="text-caption text-on-surface-variant">Kẹp Kìm Vàng</span>
+</div>
+</td>
+<td class="p-4 text-label-md text-on-surface-variant">Lucanidae</td>
+<td class="p-4 text-label-md text-on-surface-variant">Coleoptera</td>
+<td class="p-4 text-label-md text-on-surface-variant">02/12/2023</td>
+<td class="p-4 text-label-md text-on-surface-variant">Tam Dao Mountains</td>
+<td class="p-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-bold bg-[#b8f0c5] text-[#1A4D2E]">Public</span>
+</td>
+<td class="p-4 text-right">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">more_vert</button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="scientific-row transition-colors group">
+<td class="p-4">
+<input class="rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox"/>
+</td>
+<td class="p-4 font-label-md text-label-md font-bold text-primary">IVN-2024-0115</td>
+<td class="p-4">
+<div class="flex flex-col">
+<span class="italic font-medium text-on-surface">Attacus atlas</span>
+<span class="text-caption text-on-surface-variant">Bướm Khế</span>
+</div>
+</td>
+<td class="p-4 text-label-md text-on-surface-variant">Saturniidae</td>
+<td class="p-4 text-label-md text-on-surface-variant">Lepidoptera</td>
+<td class="p-4 text-label-md text-on-surface-variant">15/01/2024</td>
+<td class="p-4 text-label-md text-on-surface-variant">Cat Tien National Park</td>
+<td class="p-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-bold bg-[#DCE6D5] text-[#40493c]">Private</span>
+</td>
+<td class="p-4 text-right">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">more_vert</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-white border-t border-outline-variant/10 gap-4">
+<div class="flex items-center gap-4 text-caption text-on-surface-variant">
+<span>Đang hiển thị 1-10 của 2,450 mẫu vật</span>
+<div class="flex items-center gap-2">
+<span>Hiện:</span>
+<select class="bg-transparent border-none py-0 pl-0 pr-6 focus:ring-0 text-caption font-bold text-primary cursor-pointer">
+<option>50 dòng/trang</option>
+<option>100 dòng/trang</option>
+<option>200 dòng/trang</option>
+</select>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-low transition-colors disabled:opacity-30" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded bg-primary text-white text-caption font-bold">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-low text-caption font-medium transition-colors">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-low text-caption font-medium transition-colors">3</button>
+<span class="px-1 text-caption text-on-surface-variant">...</span>
+<button class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-low text-caption font-medium transition-colors">49</button>
+<button class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Contextual Insight (Bento Style Placeholder) -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-12">
+<div class="lg:col-span-2 p-6 rounded-xl border border-outline-variant/20 bg-surface-container-low flex items-center gap-6">
+<div class="flex-1">
+<h4 class="font-headline-md text-label-md font-bold mb-2">Thống kê phân loại gần đây</h4>
+<p class="text-caption text-on-surface-variant mb-4">Hoạt động thu thập dữ liệu tăng 14% so với tháng trước. Đa số các mẫu vật mới thuộc bộ Lepidoptera (Bướm & Ngài).</p>
+<div class="flex gap-4">
+<div class="flex flex-col">
+<span class="text-[20px] font-bold text-primary">156</span>
+<span class="text-[10px] uppercase tracking-tighter text-on-surface-variant">Mẫu vật mới</span>
+</div>
+<div class="w-[1px] bg-outline-variant/30 h-full"></div>
+<div class="flex flex-col">
+<span class="text-[20px] font-bold text-primary">42</span>
+<span class="text-[10px] uppercase tracking-tighter text-on-surface-variant">Loài định danh</span>
+</div>
+</div>
+</div>
+<div class="w-32 h-32 rounded-lg bg-white p-2 shadow-inner">
+<!-- Chart Placeholder -->
+<div class="w-full h-full rounded flex items-end gap-1 px-1 py-1">
+<div class="w-1/4 bg-primary h-[40%] rounded-t"></div>
+<div class="w-1/4 bg-primary h-[70%] rounded-t"></div>
+<div class="w-1/4 bg-primary h-[50%] rounded-t"></div>
+<div class="w-1/4 bg-primary h-[90%] rounded-t"></div>
+</div>
+</div>
+</div>
+<div class="p-6 rounded-xl border border-outline-variant/20 bg-[#1A4D2E] text-white overflow-hidden relative group">
+<div class="relative z-10">
+<h4 class="font-label-md text-label-md font-bold mb-1">Hướng dẫn số hóa</h4>
+<p class="text-caption opacity-80 mb-4">Tìm hiểu cách sử dụng hệ thống AI để hỗ trợ nhận diện mẫu vật tự động từ hình ảnh.</p>
+<a class="inline-flex items-center gap-2 text-caption font-bold underline underline-offset-4 hover:gap-3 transition-all" href="#">
+                            Xem tài liệu
+                            <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</a>
+</div>
+<!-- Decorative Icon -->
+<span class="material-symbols-outlined absolute -right-4 -bottom-4 text-[120px] opacity-10 rotate-12 group-hover:rotate-0 transition-transform duration-700">visibility</span>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<footer class="p-8 border-t border-outline-variant/10 text-caption text-on-surface-variant flex justify-between items-center">
+<span>© 2024 InsectaVN Research Biodiversity Hub</span>
+<div class="flex gap-6">
+<a class="hover:text-primary" href="#">Chính sách bảo mật</a>
+<a class="hover:text-primary" href="#">Điều khoản dịch vụ</a>
+</div>
+</footer>
+</main>
+<script>
+        // Micro-interaction for table rows
+        document.querySelectorAll('.scientific-row').forEach(row => {
+            row.addEventListener('click', (e) => {
+                if (e.target.type !== 'checkbox' && e.target.tagName !== 'BUTTON') {
+                    const cb = row.querySelector('input[type="checkbox"]');
+                    cb.checked = !cb.checked;
+                    row.classList.toggle('bg-secondary-container/10', cb.checked);
+                }
+            });
+        });
+
+        // Hover effect for row select
+        const tableCheckboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+        tableCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                const row = cb.closest('tr');
+                if (cb.checked) {
+                    row.classList.add('bg-secondary-container/10');
+                } else {
+                    row.classList.remove('bg-secondary-container/10');
+                }
+            });
+        });
+    </script>
+</body></html>

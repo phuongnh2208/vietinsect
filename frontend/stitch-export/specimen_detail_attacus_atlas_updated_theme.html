@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Attacus atlas - VietInsect BigData</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;family=Manrope:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "surface-tint": "#1a6d19",
+                "primary-fixed-dim": "#87da78",
+                "on-tertiary-fixed-variant": "#584400",
+                "on-tertiary": "#ffffff",
+                "surface-container": "#EEF4E9",
+                "on-primary-container": "#f8fff0",
+                "secondary": "#366847",
+                "secondary-fixed-dim": "#9dd3aa",
+                "background": "#F8FAF6",
+                "inverse-primary": "#87da78",
+                "on-secondary-container": "#3d6f4d",
+                "surface-bright": "#F8FAF6",
+                "primary-container": "#35852f",
+                "on-surface": "#133120",
+                "surface-container-low": "#EEF4E9",
+                "on-tertiary-fixed": "#241a00",
+                "tertiary-container": "#c7a850",
+                "on-surface-variant": "#40493c",
+                "on-secondary-fixed": "#00210e",
+                "outline": "#707a6b",
+                "tertiary": "#745b04",
+                "tertiary-fixed-dim": "#e5c368",
+                "on-error-container": "#93000a",
+                "surface-variant": "#bfcab8",
+                "tertiary-fixed": "#ffe08e",
+                "surface-container-lowest": "#ffffff",
+                "primary-fixed": "#a2f792",
+                "on-primary-fixed": "#002201",
+                "error-container": "#ffdad6",
+                "surface": "#F8FAF6",
+                "inverse-surface": "#183625",
+                "on-background": "#133120",
+                "on-primary-fixed-variant": "#005306",
+                "secondary-fixed": "#b8f0c5",
+                "primary": "#176b17",
+                "on-secondary-fixed-variant": "#1d5031",
+                "surface-dim": "#EEF4E9",
+                "surface-container-high": "#EEF4E9",
+                "secondary-container": "#b8f0c5",
+                "surface-container-highest": "#bfcab8",
+                "outline-variant": "#bfcab8",
+                "on-secondary": "#ffffff",
+                "on-primary": "#ffffff",
+                "inverse-on-surface": "#d6f9df",
+                "on-error": "#ffffff",
+                "on-tertiary-container": "#4f3d00",
+                "error": "#ba1a1a"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "margin-desktop": "64px",
+                "margin-mobile": "16px",
+                "unit": "4px",
+                "container-max": "1440px",
+                "gutter": "24px"
+            },
+            "fontFamily": {
+                "caption": ["Inter"],
+                "headline-lg-mobile": ["Manrope"],
+                "body-md": ["Inter"],
+                "display-lg": ["Manrope"],
+                "headline-md": ["Manrope"],
+                "headline-lg": ["Manrope"],
+                "body-lg": ["Inter"],
+                "label-md": ["Inter"]
+            },
+            "fontSize": {
+                "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #707a6b;
+            border-radius: 10px;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-screen w-64 flex flex-col p-4 z-40 bg-surface-container-low border-r border-outline-variant">
+<div class="flex items-center gap-3 mb-8 px-2">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bug_report</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-black text-on-surface">VietInsect</h1>
+<p class="font-label-md text-label-md text-on-surface-variant opacity-70">Scientific Hub</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container rounded-lg font-bold" href="#">
+<span class="material-symbols-outlined">bug_report</span>
+<span class="font-label-md text-label-md">Catalog</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-md text-label-md">Maps</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined">biotech</span>
+<span class="font-label-md text-label-md">Lab</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Admin</span>
+</a>
+</nav>
+<div class="mt-auto space-y-1 pt-4 border-t border-outline-variant">
+<button class="w-full mb-4 py-3 bg-primary text-on-primary rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined">add</span>
+                New Entry
+            </button>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-md text-label-md">System Logs</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="sticky top-0 z-50 flex items-center justify-between px-16 ml-64 w-[calc(100%-16rem)] h-16 bg-surface border-b border-outline-variant">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-background border border-outline-variant rounded-full text-label-md focus:outline-none focus:border-primary transition-colors" placeholder="Search taxa, researchers, locations..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2 text-label-md text-primary font-bold">
+<span class="cursor-pointer">VI</span>
+<span class="text-outline-variant">|</span>
+<span class="cursor-pointer text-on-surface-variant opacity-50 hover:opacity-100 transition-opacity">EN</span>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<span class="material-symbols-outlined cursor-pointer hover:text-primary transition-colors">dark_mode</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-primary transition-colors">notifications</span>
+</div>
+<div class="flex items-center gap-3 pl-4 border-l border-outline-variant cursor-pointer group">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a scientific researcher in a bright, modern laboratory setting. The researcher has a neutral, focused expression, wearing a clean white lab coat. The lighting is clinical and bright, reflecting a high-end light-mode UI aesthetic with soft green and grey tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3PRLxUFgSAsm2ypQQQjU6sjFe6Px8mMfkc5YrbZeg-_G4GKeEe0RLZLU9aZd1vYMLf3m-q1SvCZwlYTgM3Bg-Fh9cKce6Ku7wXSYfPIJBLzJXZhM5g5WX2Ay-RKA90ACLzdgiHtm4nGdxxwjM1YIk4h6IfLtz7iFKNrfO52xbZ5vGEhnzcm9cwvPq1ecKug5YgYjxggTPK1RT3X55iSxll_Xp3CdXje6UGwD8QrQFC6L4HAdH4sFy"/>
+</div>
+<span class="font-label-md text-label-md text-on-surface group-hover:text-primary transition-colors">Dr. Nguyen Van A</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 p-12 max-w-[1440px] mx-auto">
+<!-- Breadcrumbs -->
+<nav class="flex items-center gap-2 mb-8 text-on-surface-variant">
+<a class="font-label-md text-label-md hover:text-primary transition-colors" href="#">Home</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<a class="font-label-md text-label-md hover:text-primary transition-colors" href="#">Catalog</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<a class="font-label-md text-label-md hover:text-primary transition-colors text-opacity-70" href="#">Saturniidae</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="font-label-md text-label-md text-primary font-bold italic">Attacus atlas</span>
+</nav>
+<div class="bento-grid">
+<!-- Left Column: Image Gallery -->
+<section class="col-span-7 space-y-6">
+<div class="aspect-[4/3] rounded-2xl overflow-hidden bg-surface-container border border-outline-variant group relative cursor-zoom-in">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A high-resolution scientific macro photograph of an Attacus atlas butterfly, also known as the Atlas Moth, resting on a tropical leaf. The vibrant orange, brown, and white patterns of the wings are crystal clear, showing every fine detail and texture. The background is a soft, out-of-focus jungle green, maintaining a professional and authoritative scientific aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5SQhNlMUIX0Lwc35Jh2VPAsU11qfoCd6dG4IDJaJHbG6g4-fwfTgwdAdDOIOSBf-d1LnOcGD96p6xWLbEt1xqOsulrHuzxYKY_XHaWA93VKvN8cNNR92jfB0aY7RGdmli67_MIrlH6Jc8iXK-3UsDwbx1x9NxFmIR-dMQ8JaTekWRGgaqh8NLQOn8UOGY3484-Q8t8R0FrEKYbmgOdcRXrdrG47ToP5C3XEAtOXAR2Vrd8pb6_ZvV"/>
+<div class="absolute bottom-6 left-6 bg-black/40 backdrop-blur-md px-4 py-2 rounded-lg text-white font-label-md">
+                        Specimen #VN-SAT-0024
+                    </div>
+</div>
+<div class="grid grid-cols-3 gap-6">
+<div class="aspect-square rounded-xl overflow-hidden border-2 border-primary cursor-pointer hover:opacity-90 transition-opacity">
+<img class="w-full h-full object-cover" data-alt="Close-up detail of the wing pattern of an Attacus atlas moth, highlighting the translucent window-like triangular patches and intricate scales. The lighting is soft and even, typical of laboratory specimen photography, with an earthy and professional color palette of ochre and forest green." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAd7ab5Fo9H06d3mQEIlsvU3i2Ob10Fh9a-bfEYgLwjcHrjEyGgoqZQMgftitdMlpkBmC41Lyl0_O6UkavQ9kz4ldYYtildp-8mZEUOHOGbRCBOZEAqtcKAJIPd29HvwLPrlIOAOlc-52IwBu5DPthvTLnbPi8UKqEpBpO_wwfr2Wcb7tzZRykBJvkyEnpm2M35YJDpCXfpeAOxQSkXPKSFTOGbVw2h0pHWMPVU-3F8Eagkfa9NxvR4"/>
+</div>
+<div class="aspect-square rounded-xl overflow-hidden border border-outline-variant cursor-pointer hover:opacity-90 transition-opacity">
+<img class="w-full h-full object-cover" data-alt="A dorsal view of a preserved Attacus atlas specimen in a scientific mounting box. The moth is perfectly symmetrical, showing the full wingspan. The environment is clean and clinical, lit with bright, diffused light, fitting the professional entomological research UI theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcC8HhbkT6CAB4CX-Xkrp0BFh4_BSiGTLMvb7yN_SOE0BG-JlDzIeUt9VI1VB-l4KQbuWCLLOW41S2H88cR80NprSGuedXXbDIJeeVBmDiwAIgz5mHdoq12sQ9xbrOnkPwRkVGvu0vm3X2u4Mg1bVEqAM9iALw-pq8uQtnAbNZrQAGOzihNuN_EOQB_Xizzl085HsMkjmosqHBmUZCRHLFFvwJAj1Z-OJss_sFPoByA2JOs_Km0omJ"/>
+</div>
+<div class="aspect-square rounded-xl overflow-hidden border border-outline-variant cursor-pointer hover:opacity-90 transition-opacity">
+<img class="w-full h-full object-cover" data-alt="A side profile of an Attacus atlas moth's head and thorax, showing the feathered antennae and thick, furry body. The image is a sharp macro shot with a shallow depth of field, emphasizing the technical precision of a modern scientific laboratory instrument." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB53K6DoHFuw719GqFWjxb-e-qU4Wj0tZ4TWb-mHpOx2JylJ776Cf218YFsdbZUv0m_i4VeuehejSnJU9mC5Ap9uvQJ_BJbPF41-UoDgRWdbz1d-NdYGab3Dv_0lN1ZYiGLgfuKI7jp_slXqyiGF1_Ykdzz-c8l-heGCyXTGglLwjq8hacqH6_49txoC0F_oJSWlvuUxRHl-c5OTUtlMo7yv5ojV6Rf0-3TARDFHSUPkZlGtUPcLvs8"/>
+</div>
+</div>
+</section>
+<!-- Right Column: Taxonomy & Info -->
+<section class="col-span-5 space-y-6">
+<div class="p-8 bg-surface-container rounded-2xl border border-outline-variant">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h2 class="font-display-lg text-[40px] italic leading-tight text-on-surface">Attacus atlas</h2>
+<p class="font-headline-md text-headline-md text-primary mt-1">Bướm Khế</p>
+</div>
+<span class="px-4 py-1.5 bg-[#4B9B42] text-white text-label-md rounded-full font-bold shadow-sm">IUCN: LC</span>
+</div>
+<div class="grid grid-cols-2 gap-y-4 pt-6 border-t border-outline-variant/30">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant opacity-60">Order</p>
+<p class="font-body-md text-body-md font-semibold">Lepidoptera</p>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant opacity-60">Family</p>
+<p class="font-body-md text-body-md font-semibold">Saturniidae</p>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant opacity-60">Genus</p>
+<p class="font-body-md text-body-md font-semibold italic">Attacus</p>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant opacity-60">Wingspan</p>
+<p class="font-body-md text-body-md font-semibold">25–30 cm</p>
+</div>
+</div>
+</div>
+<div class="p-8 bg-surface-container rounded-2xl border border-outline-variant shadow-sm">
+<h3 class="font-label-md text-label-md uppercase tracking-wider text-primary mb-4">Mô tả khoa học</h3>
+<p class="font-body-md text-body-md text-on-surface leading-relaxed text-justify">
+                        Bướm khế (Attacus atlas) là loài bướm đêm thuộc họ Saturniidae, được coi là một trong những loài bướm có diện tích bề mặt cánh lớn nhất thế giới. Sải cánh của chúng có thể đạt tới hơn 25 cm. Màu sắc chủ đạo là nâu đỏ với các họa tiết hình tam giác trong suốt trên cả cánh trước và cánh sau. Tại Việt Nam, loài này phân bố rộng rãi từ Bắc chí Nam, thường được tìm thấy trong các khu vườn cây ăn trái hoặc bìa rừng nhiệt dới. Tên gọi "Bướm Khế" xuất phát từ việc sâu non của loài này thường ăn lá cây khế.
+                    </p>
+</div>
+<div class="p-6 bg-surface-container rounded-2xl border border-outline-variant">
+<h3 class="font-label-md text-label-md mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">location_on</span>
+                        Observation Points - Vietnam
+                    </h3>
+<div class="h-48 w-full rounded-xl overflow-hidden relative border border-outline-variant">
+<div class="absolute inset-0 bg-background" data-location="Ba Vi National Park, Vietnam">
+<img class="w-full h-full object-cover opacity-60" data-alt="A clean, minimalist topographical map of Ba Vi National Park in Northern Vietnam. The map uses a sophisticated scientific palette of soft greens, greys, and pale yellows, with professional cartographic markers. Small, high-contrast dots indicate observation points of the Attacus atlas moth, presented in a modern, information-dense UI style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCN6_DvqfC6Q1ixT6n2j0uKc0jfZfgoge-_Ew6OZwnrSFe37q_D8U-R1ck3cGgjmcMFJ1yTtKCXEU78zxpRPD8HNYaJsUtnLs7r4GQP7yO1LhDL0TTSDGDjnC0M9Qd3RE4afBA47N4lv6syvN5uk4qT7fu8V8c-1Vc_VfElC6day5gPH-m3nWFY3v1-B0JpEp-bQMYp6_6-804SnffQ3ImtSE5MZjzLLGOa5AVvw3wUU09B7P71xQO6"/>
+</div>
+<!-- UI Overlay on Map -->
+<div class="absolute top-3 right-3 flex flex-col gap-2">
+<button class="w-8 h-8 bg-white/90 backdrop-blur rounded shadow flex items-center justify-center text-on-surface hover:bg-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+<button class="w-8 h-8 bg-white/90 backdrop-blur rounded shadow flex items-center justify-center text-on-surface hover:bg-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">remove</span>
+</button>
+</div>
+<div class="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-outline-variant shadow-sm">
+<p class="font-label-md text-[12px] font-bold text-on-surface">Ba Vi National Park</p>
+<p class="text-[10px] text-on-surface-variant">Lat: 21.08 N | Long: 105.36 E</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Bottom: Observation Logs -->
+<section class="col-span-12 mt-4">
+<div class="bg-surface-container rounded-2xl border border-outline-variant overflow-hidden shadow-sm">
+<div class="px-8 py-6 border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">history</span>
+                            Observation Logs
+                        </h3>
+<div class="flex items-center gap-4">
+<button class="px-4 py-2 text-label-md font-bold text-primary border border-primary rounded-lg hover:bg-primary/5 transition-colors">Export CSV</button>
+<button class="px-4 py-2 text-label-md font-bold text-on-primary bg-primary rounded-lg hover:opacity-90 transition-opacity">Add Log</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high border-b border-outline-variant">
+<th class="px-8 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Date</th>
+<th class="px-8 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Location</th>
+<th class="px-8 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Researcher</th>
+<th class="px-8 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Notes</th>
+<th class="px-8 py-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<tr class="hover:bg-white/50 transition-colors">
+<td class="px-8 py-5 font-body-md text-body-md">Oct 24, 2023</td>
+<td class="px-8 py-5 font-body-md text-body-md">Ba Vi National Park, Ha Noi</td>
+<td class="px-8 py-5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-secondary-container flex items-center justify-center text-[10px] font-bold">TH</div>
+<span class="font-body-md text-body-md">Tran Hoang</span>
+</div>
+</td>
+<td class="px-8 py-5 font-body-md text-body-md text-on-surface-variant">Found on Ficus virens at dusk. Healthy adult male.</td>
+<td class="px-8 py-5 text-right">
+<button class="text-primary hover:underline font-label-md">View details</button>
+</td>
+</tr>
+<tr class="bg-surface/30 hover:bg-white/50 transition-colors">
+<td class="px-8 py-5 font-body-md text-body-md">Sep 12, 2023</td>
+<td class="px-8 py-5 font-body-md text-body-md">Cuc Phuong National Park</td>
+<td class="px-8 py-5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-tertiary-container flex items-center justify-center text-[10px] font-bold text-on-tertiary-container">LM</div>
+<span class="font-body-md text-body-md">Le Minh</span>
+</div>
+</td>
+<td class="px-8 py-5 font-body-md text-body-md text-on-surface-variant">Secondary mating pair observed near scientific base.</td>
+<td class="px-8 py-5 text-right">
+<button class="text-primary hover:underline font-label-md">View details</button>
+</td>
+</tr>
+<tr class="hover:bg-white/50 transition-colors">
+<td class="px-8 py-5 font-body-md text-body-md">Aug 05, 2023</td>
+<td class="px-8 py-5 font-body-md text-body-md">Cat Tien National Park</td>
+<td class="px-8 py-5">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center text-[10px] font-bold text-on-primary-fixed">NV</div>
+<span class="font-body-md text-body-md">Nguyen Van A</span>
+</div>
+</td>
+<td class="px-8 py-5 font-body-md text-body-md text-on-surface-variant">Specimen caught in light trap. Wingspan 27cm measured.</td>
+<td class="px-8 py-5 text-right">
+<button class="text-primary hover:underline font-label-md">View details</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</div>
+</main>
+<script>
+        // Micro-interaction for gallery thumbnails
+        document.querySelectorAll('img').forEach(img => {
+            img.addEventListener('click', function() {
+                if(this.closest('.grid-cols-3')) {
+                    const mainImg = document.querySelector('.col-span-7 .aspect-\\[4\\/3\\] img');
+                    const tempSrc = mainImg.src;
+                    const tempAlt = mainImg.getAttribute('data-alt');
+                    
+                    mainImg.src = this.src;
+                    mainImg.setAttribute('data-alt', this.getAttribute('data-alt'));
+                    
+                    this.src = tempSrc;
+                    this.setAttribute('data-alt', tempAlt);
+                }
+            });
+        });
+
+        // Hover effect for side nav
+        const sideNavItems = document.querySelectorAll('aside nav a');
+        sideNavItems.forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                if(!item.classList.contains('bg-primary-container')) {
+                    item.style.transform = 'translateX(4px)';
+                }
+            });
+            item.addEventListener('mouseleave', () => {
+                item.style.transform = 'translateX(0)';
+            });
+        });
+    </script>
+</body></html>

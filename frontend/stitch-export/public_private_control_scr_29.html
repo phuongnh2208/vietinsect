@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SCR-29 — Public/Private Control | VI Entomological Archive</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed-dim": "#e5c368",
+                    "surface-container-lowest": "#ffffff",
+                    "error": "#ba1a1a",
+                    "on-tertiary-fixed-variant": "#584400",
+                    "on-primary-fixed-variant": "#005306",
+                    "background": "#F8FAF6",
+                    "on-secondary-fixed": "#00210e",
+                    "on-surface-variant": "#40493c",
+                    "surface-variant": "#c8ebd1",
+                    "primary-container": "#35852f",
+                    "on-secondary-container": "#3d6f4d",
+                    "secondary": "#366847",
+                    "on-surface": "#022111",
+                    "inverse-primary": "#87da78",
+                    "on-primary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "surface-container-highest": "#c8ebd1",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "surface-dim": "#c0e2c9",
+                    "on-secondary-fixed-variant": "#1d5031",
+                    "primary-fixed": "#a2f792",
+                    "surface-container": "#EEF4E9",
+                    "secondary-fixed": "#b8f0c5",
+                    "surface": "#F8FAF6",
+                    "outline": "#707a6b",
+                    "on-error": "#ffffff",
+                    "on-primary-container": "#f8fff0",
+                    "secondary-container": "#b8f0c5",
+                    "surface-container-high": "#cef1d7",
+                    "tertiary-container": "#c7a850",
+                    "on-background": "#022111",
+                    "on-tertiary-fixed": "#241a00",
+                    "inverse-on-surface": "#d6f9df",
+                    "secondary-fixed-dim": "#9dd3aa",
+                    "surface-bright": "#F8FAF6",
+                    "tertiary-fixed": "#ffe08e",
+                    "surface-container-low": "#d9fce2",
+                    "on-primary-fixed": "#002201",
+                    "inverse-surface": "#183625",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-container": "#4f3d00",
+                    "primary-fixed-dim": "#87da78",
+                    "tertiary": "#745b04",
+                    "outline-variant": "#DCE6D5",
+                    "surface-tint": "#1a6d19",
+                    "primary": "#1A4D2E"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "margin-mobile": "16px",
+                    "gutter": "24px",
+                    "margin-desktop": "64px",
+                    "container-max": "1440px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Manrope"],
+                    "caption": ["Inter"],
+                    "headline-md": ["Manrope"],
+                    "headline-lg-mobile": ["Manrope"],
+                    "headline-lg": ["Manrope"],
+                    "body-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { background-color: #F8FAF6; color: #022111; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #4B9B42;
+        }
+        .toggle-checkbox:checked + .toggle-label .toggle-dot {
+            transform: translateX(100%);
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="font-body-md text-body-md overflow-hidden flex h-screen">
+<!-- SideNavBar (Shared Component) -->
+<aside class="fixed left-0 top-0 h-full w-64 bg-surface-container border-r border-outline-variant flex flex-col p-4 gap-2 z-50">
+<div class="mb-8 px-2">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">V-Insecta</h1>
+<p class="font-label-md text-label-md text-on-surface-variant opacity-70">Research Admin</p>
+</div>
+<nav class="flex flex-col gap-1 flex-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 bg-primary-container text-on-primary-container rounded-lg transition-all scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Admin</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">bug_report</span>
+<span class="font-label-md text-label-md">Catalog</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-md text-label-md">Maps</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">biotech</span>
+<span class="font-label-md text-label-md">Lab</span>
+</a>
+</nav>
+<button class="mt-4 bg-primary text-white py-2 px-4 rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            Add Specimen
+        </button>
+<div class="mt-auto border-t border-outline-variant pt-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-error hover:bg-error-container/20 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 ml-64 flex flex-col relative h-full">
+<!-- TopNavBar (Shared Component) -->
+<header class="sticky top-0 z-40 bg-surface border-b border-outline-variant w-full">
+<div class="flex justify-between items-center w-full px-margin-desktop py-unit max-w-container-max mx-auto h-16">
+<div class="flex items-center gap-8">
+<span class="font-headline-md text-headline-md font-bold text-primary">Public/Private Control</span>
+<div class="hidden md:flex gap-6">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-body-md text-body-md" href="#">Visibility Admin</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-body-md text-body-md" href="#">Audit Logs</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 px-4 py-2 border border-primary text-primary rounded-lg font-label-md text-label-md hover:bg-primary/5 transition-colors" onclick="toggleModal('preview-modal')">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+                        Preview User View
+                    </button>
+<div class="h-8 w-[1px] bg-outline-variant"></div>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">notifications</span>
+<img class="w-8 h-8 rounded-full border border-outline-variant" data-alt="A professional high-resolution headshot of a scientific researcher in a clean white environment, wearing a minimalist lab coat with a subtle emblem, lit by soft directional natural light to create a focused and authoritative yet approachable atmosphere, matching a scientific ivory and green aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCylKooH2QRvPIn9zwlrEAKbBiwHy0nEFilTVWSiOSb5_TUlpCW86WfgX0Jy-nHTnkZawNajv9GdX1QVr0sBHl6vxOayOReZhVq1M85LWjmtYQLZZNBKCBfWeyHUrg43Ms2PMB1phIjgNeAK3u-_mZEnuMHepaUwt09eTv9ncOcV5svfb_ooi6QIzgfPHn1nlAEXxhRARJw00TOI5-Vf6ezoHivTwDKe7wblZ2oSbaE4GNObFC55XrI"/>
+</div>
+</div>
+</header>
+<!-- Table Container -->
+<div class="flex-1 overflow-auto p-margin-desktop bg-surface">
+<div class="max-w-container-max mx-auto">
+<!-- Table Header Controls -->
+<div class="flex justify-between items-end mb-6">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Specimen Records</h2>
+<p class="text-on-surface-variant font-body-md mt-1">Manage public accessibility for the national entomological collection.</p>
+</div>
+<div class="flex gap-3">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container border border-outline-variant rounded-lg font-body-md focus:ring-2 focus:ring-primary focus:outline-none w-64" placeholder="Search ID or Name..." type="text"/>
+</div>
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container border border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors font-label-md">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                            Filter
+                        </button>
+</div>
+</div>
+<!-- High-Density Data Table -->
+<div class="bg-surface-container border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high border-b border-outline-variant">
+<th class="p-4 w-12">
+<input class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary" id="master-checkbox" onchange="toggleAllCheckboxes(this)" type="checkbox"/>
+</th>
+<th class="p-4 font-label-md text-label-md text-primary uppercase tracking-wider">ID</th>
+<th class="p-4 font-label-md text-label-md text-primary uppercase tracking-wider">Specimen Name</th>
+<th class="p-4 font-label-md text-label-md text-primary uppercase tracking-wider">Author</th>
+<th class="p-4 font-label-md text-label-md text-primary uppercase tracking-wider">Last Modified</th>
+<th class="p-4 font-label-md text-label-md text-primary uppercase tracking-wider text-right">Visibility</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<!-- Row 1 -->
+<tr class="hover:bg-white/50 transition-colors">
+<td class="p-4"><input class="row-checkbox w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary" onchange="updateBulkBar()" type="checkbox"/></td>
+<td class="p-4 font-label-md text-on-surface">VI-2023-0842</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-white overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="Microscopic extreme macro photography of a vibrant green beetle with iridescent metallic shell, captured with high clinical precision against a soft neutral background. Professional scientific lighting highlights every anatomical detail for taxonomic study, fitting a high-end minimalist museum aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKxuNMvH0pj9lTJvssc_44QzXoeTQBhEOzL4BIXN2qWJMoG8OUDR_CGmFdYskpXn73AvoptjI4-CUXV9EsF6aSASPlJrDb3Rub5pxrABKMDHXYW-vMloDce-qvXn0lnqpH6fuWHnGW62BQGHSgzLUPaMLDy3J6UXmXK-MurO84OGP_sgUeD2zJIkIsBOAJ0iguYRA-Vr5Wi79qoH-otMbKdL9CtzcQ3Y2bCvANzENbtBfcSTISZfSU"/>
+</div>
+<span class="font-body-md font-semibold italic">Cicindela chinensis</span>
+</div>
+</td>
+<td class="p-4 text-on-surface-variant">Dr. Nguyen T. Van</td>
+<td class="p-4 text-on-surface-variant">Oct 12, 2023</td>
+<td class="p-4 text-right">
+<div class="inline-flex items-center cursor-pointer">
+<span class="mr-3 text-caption font-bold text-on-secondary-fixed-variant uppercase">Public</span>
+<div class="relative inline-block w-10 h-5 transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-2 border-outline-variant appearance-none cursor-pointer checked:right-0 z-10 transition-all duration-200" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-outline-variant cursor-pointer transition-colors duration-200"></label>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="bg-surface-container-low/30 hover:bg-white/50 transition-colors">
+<td class="p-4"><input class="row-checkbox w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary" onchange="updateBulkBar()" type="checkbox"/></td>
+<td class="p-4 font-label-md text-on-surface">VI-2023-1109</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-white overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A detailed scientific illustration of a rare mountain butterfly from Vietnam, showcasing intricate wing patterns and deep earthy brown and ochre colors. The style is clean and academic, reminiscent of a high-resolution specimen archive for professional entomologists, set against a pristine ivory background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqJNVUpuEgEiJaYHGV83mNmVSVLuXSa2uNiqHCPtHE15MsOWVvWDvjQiTPwlvfBuqV5-lRhOHiT1iDyh5T2sRCcETTouSzRr_e1Hkn5Wyecyccmz7yYgWJtjhPcYUWZjfkrZQpEROx-hRsjorEJi3VdQjh7dRftEMQnNHKWnoG8XqjX3-lvtRQby_CPqzr5sR-7JdS4noJloJhtSDg7Vd8mxoexVhQN-1x7izyT5VzgEt8iSKcyPks"/>
+</div>
+<span class="font-body-md font-semibold italic">Teinopalpus aureus</span>
+</div>
+</td>
+<td class="p-4 text-on-surface-variant">L. H. Giang</td>
+<td class="p-4 text-on-surface-variant">Oct 09, 2023</td>
+<td class="p-4 text-right">
+<div class="inline-flex items-center cursor-pointer">
+<span class="mr-3 text-caption font-bold text-on-surface-variant uppercase opacity-50">Private</span>
+<div class="relative inline-block w-10 h-5 transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-2 border-outline-variant appearance-none cursor-pointer checked:right-0 z-10 transition-all duration-200" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-outline-variant cursor-pointer transition-colors duration-200"></label>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-white/50 transition-colors">
+<td class="p-4"><input class="row-checkbox w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary" onchange="updateBulkBar()" type="checkbox"/></td>
+<td class="p-4 font-label-md text-on-surface">VI-2023-0421</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-white overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A high-magnification macro shot of an atlas moth's wing scales, displaying a complex tapestry of warm autumnal oranges and deep forest greens. The focus is sharp, highlighting the organic geometry found in nature, presented in a scientific gallery format with soft, even studio lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvAQGSdQDT4PAp_NoR2Q05icwS5jMz2J_ImwTC7OgwSO4Oy4-wAL7LFLudKmrSivz6UpCEe1_cz6js49Vpg9pfGvyZ4XBy04vEpMdg2ue0aS7yUqyqPVk1kEbYAySE2tqLho9O0u3ruO6x8hsMk-5jO7VXf8thpipgDxveTL8nhacbdN6tBZNE7tBnnJPG0YcS_wOgBvvf5iuOP0gAZ0dFFeKNJxGtjkKuSF9UcwYvp_8EW36PlfLC"/>
+</div>
+<span class="font-body-md font-semibold italic">Attacus atlas</span>
+</div>
+</td>
+<td class="p-4 text-on-surface-variant">Dr. Nguyen T. Van</td>
+<td class="p-4 text-on-surface-variant">Sep 28, 2023</td>
+<td class="p-4 text-right">
+<div class="inline-flex items-center cursor-pointer">
+<span class="mr-3 text-caption font-bold text-on-secondary-fixed-variant uppercase">Public</span>
+<div class="relative inline-block w-10 h-5 transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-2 border-outline-variant appearance-none cursor-pointer checked:right-0 z-10 transition-all duration-200" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-outline-variant cursor-pointer transition-colors duration-200"></label>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="bg-surface-container-low/30 hover:bg-white/50 transition-colors">
+<td class="p-4"><input class="row-checkbox w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary" onchange="updateBulkBar()" type="checkbox"/></td>
+<td class="p-4 font-label-md text-on-surface">VI-2023-1566</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-white overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="Scientific photograph of a Vietnamese stick insect against a plain light-grey background. The insect is positioned diagonally to show full limb detail. Sharp focus, high depth of field, neutral white balance, suitable for a professional entomological database." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkzKawW9jPzslPk16-4eFa_1suKN1686XYQQ3EUHRQdFt8Lgi_HcfPSsArTCn3G0eppQ9KDErHxXh02whZNdOn54yYHrUQK7HcMVWRZXju1_brkFN9VcaZgRgkp71YG0IZFDzOhgNGSyEqlZL6siFKFUVf1AvexY9ORNKsEJVkSmD7gTdtckzYmiIgQDHO6qIdkOoOM9F5DCJC9X0UGtmn_9i7uXvqY7vjpBNN4efODywZm7371nao"/>
+</div>
+<span class="font-body-md font-semibold italic">Baculum sp.</span>
+</div>
+</td>
+<td class="p-4 text-on-surface-variant">Prof. Tran Minh</td>
+<td class="p-4 text-on-surface-variant">Sep 15, 2023</td>
+<td class="p-4 text-right">
+<div class="inline-flex items-center cursor-pointer">
+<span class="mr-3 text-caption font-bold text-on-secondary-fixed-variant uppercase">Public</span>
+<div class="relative inline-block w-10 h-5 transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-2 border-outline-variant appearance-none cursor-pointer checked:right-0 z-10 transition-all duration-200" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-outline-variant cursor-pointer transition-colors duration-200"></label>
+</div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="mt-6 flex items-center justify-between">
+<span class="text-on-surface-variant text-caption">Showing 1-4 of 1,248 specimens</span>
+<div class="flex gap-2">
+<button class="p-2 border border-outline-variant rounded-lg hover:bg-surface-container transition-colors disabled:opacity-30" disabled="">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="px-4 py-2 bg-primary text-white rounded-lg font-label-md">1</button>
+<button class="px-4 py-2 hover:bg-surface-container rounded-lg font-label-md transition-colors">2</button>
+<button class="px-4 py-2 hover:bg-surface-container rounded-lg font-label-md transition-colors">3</button>
+<button class="p-2 border border-outline-variant rounded-lg hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Bulk Action Bar -->
+<div class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-slide-up" id="bulk-action-bar">
+<div class="bg-primary text-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-8 border border-white/10 backdrop-blur-md">
+<div class="flex items-center gap-3">
+<span class="bg-white/20 px-3 py-1 rounded-full font-bold text-label-md" id="selected-count">0</span>
+<span class="font-body-md">Specimens Selected</span>
+</div>
+<div class="h-6 w-[1px] bg-white/20"></div>
+<div class="flex gap-4">
+<button class="bg-[#4B9B42] hover:bg-[#3D8136] text-white px-6 py-2 rounded-lg font-label-md flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[18px]">public</span>
+                        Make Public
+                    </button>
+<button class="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-lg font-label-md flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[18px]">lock</span>
+                        Make Private
+                    </button>
+<button class="text-white/70 hover:text-white transition-colors" onclick="deselectAll()">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Modal: Preview User View -->
+<div class="hidden fixed inset-0 z-[60] flex items-center justify-center p-6 bg-[#1A4D2E]/40 backdrop-blur-sm" id="preview-modal">
+<div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[921px]">
+<div class="p-6 border-b border-outline-variant flex justify-between items-center bg-[#F8FAF6]">
+<div>
+<h3 class="font-headline-md text-headline-md text-primary">Public Archive Preview</h3>
+<p class="text-on-surface-variant text-caption uppercase tracking-widest font-bold">Live Data Sync: V-Insecta Portal</p>
+</div>
+<button class="p-2 hover:bg-outline-variant/20 rounded-full transition-colors" onclick="toggleModal('preview-modal')">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-auto p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Mock Specimen Card 1 -->
+<div class="border border-outline-variant rounded-xl p-4 bg-white hover:shadow-lg transition-shadow">
+<div class="aspect-video rounded-lg bg-surface-container mb-4 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Professional archival specimen photography of a majestic Atlas Moth with wings fully spread, showing intense detail of orange, yellow, and black patterns. The lighting is soft and shadowless, highlighting the texture of the wings for academic review within a clean scientific digital interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdctT-A0cn2S0GPXATqbBFz0U0QxZl6abCgie8PREo2It2IptfDyPuSJDTkmrgeWXqgn2-TQHxuDhVCS1jPe_VGCsErn50biyokSgcULOQ6Q_S8xMUNwqemec3qn-klM6YLO1GwrrhijesyPt6m0_WbQIGIqRhj35nq4TnopD7ooMaQW8C5lyD3cuxTTsI2V1opPpMBwhp6A-37feTvM73NnEw9OreA1wE4yfmDjkMpiTOQteLNVeP"/>
+</div>
+<span class="text-caption font-bold text-[#4B9B42] uppercase bg-[#EEF4E9] px-2 py-1 rounded">Public Access</span>
+<h4 class="font-headline-md text-headline-md italic mt-2">Attacus atlas</h4>
+<p class="text-on-surface-variant font-body-md line-clamp-2 mt-1">One of the largest lepidopterans in the world, with a wingspan measuring up to 24 cm...</p>
+<div class="mt-4 pt-4 border-t border-outline-variant flex justify-between">
+<span class="text-caption text-on-surface-variant">ID: VI-2023-0421</span>
+<span class="text-caption font-bold text-primary">View Details →</span>
+</div>
+</div>
+<!-- Mock Specimen Card 2 -->
+<div class="border border-outline-variant rounded-xl p-4 bg-white hover:shadow-lg transition-shadow">
+<div class="aspect-video rounded-lg bg-surface-container mb-4 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Taxonomic macro photography of a Tiger Beetle, focusing on its large iridescent jaws and colorful exoskeleton. The image is presented with scientific clarity, featuring a minimalist background and balanced studio lighting that emphasizes the specimen's complex anatomy for professional entomological research." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDuSy4VB7SrIO_DW8YsuxBnhZzKPE6TGJnOw2tax1j0tMmGBjrGIaiFdKs1bGsZjz89F94a5wjb0Jy7GJgntwRVHzmJNlOVzL9A1n_EOTg3BsOTWCCziWYHfR1uf6GZSDcsKkKGQ7mDy-7iDjvbMIgfw7v8K_saHLneWyl8To4hxxTmZE3QJl0OYQFUFbXkDbUVHqsHfIJTyeOwEam8evF2dujeiUxegnIyye665q9QCXbLlMWGj5E1"/>
+</div>
+<span class="text-caption font-bold text-[#4B9B42] uppercase bg-[#EEF4E9] px-2 py-1 rounded">Public Access</span>
+<h4 class="font-headline-md text-headline-md italic mt-2">Cicindela chinensis</h4>
+<p class="text-on-surface-variant font-body-md line-clamp-2 mt-1">Commonly known as the Chinese Tiger Beetle, a predatory species found in open woodland habitats...</p>
+<div class="mt-4 pt-4 border-t border-outline-variant flex justify-between">
+<span class="text-caption text-on-surface-variant">ID: VI-2023-0842</span>
+<span class="text-caption font-bold text-primary">View Details →</span>
+</div>
+</div>
+</div>
+<div class="p-6 bg-[#EEF4E9] border-t border-outline-variant flex justify-center italic text-on-surface-variant text-body-md">
+                "Private" records are currently suppressed from this view.
+            </div>
+</div>
+</div>
+<script>
+        function toggleModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.toggle('hidden');
+        }
+
+        function toggleAllCheckboxes(master) {
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            checkboxes.forEach(cb => cb.checked = master.checked);
+            updateBulkBar();
+        }
+
+        function updateBulkBar() {
+            const selected = document.querySelectorAll('.row-checkbox:checked');
+            const bulkBar = document.getElementById('bulk-action-bar');
+            const countLabel = document.getElementById('selected-count');
+            
+            if (selected.length > 0) {
+                bulkBar.classList.remove('hidden');
+                countLabel.innerText = selected.length;
+            } else {
+                bulkBar.classList.add('hidden');
+            }
+        }
+
+        function deselectAll() {
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updateBulkBar();
+        }
+
+        // Close modal on escape
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.getElementById('preview-modal').classList.add('hidden');
+            }
+        });
+    </script>
+</body></html>

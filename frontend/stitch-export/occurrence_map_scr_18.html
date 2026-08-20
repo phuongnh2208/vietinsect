@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VietInsect - Occurrence Map</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#1a6d19",
+                    "surface-dim": "#c0e2c9",
+                    "on-tertiary-fixed": "#241a00",
+                    "outline": "#707a6b",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed-dim": "#87da78",
+                    "primary": "#176b17",
+                    "on-secondary-container": "#3d6f4d",
+                    "background": "#e9ffed",
+                    "tertiary-fixed": "#ffe08e",
+                    "secondary-fixed": "#b8f0c5",
+                    "surface-bright": "#e9ffed",
+                    "tertiary-fixed-dim": "#e5c368",
+                    "on-background": "#022111",
+                    "surface-container-highest": "#c8ebd1",
+                    "primary-fixed": "#a2f792",
+                    "on-primary-container": "#f8fff0",
+                    "on-secondary-fixed-variant": "#1d5031",
+                    "surface-container-high": "#cef1d7",
+                    "surface": "#e9ffed",
+                    "surface-variant": "#c8ebd1",
+                    "error": "#ba1a1a",
+                    "tertiary": "#745b04",
+                    "secondary-container": "#b8f0c5",
+                    "surface-container": "#d3f6dc",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-fixed-variant": "#584400",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-container": "#4f3d00",
+                    "on-secondary-fixed": "#00210e",
+                    "on-primary-fixed": "#002201",
+                    "tertiary-container": "#c7a850",
+                    "surface-container-low": "#d9fce2",
+                    "inverse-surface": "#183625",
+                    "on-secondary": "#ffffff",
+                    "primary-container": "#35852f",
+                    "on-error": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed-variant": "#005306",
+                    "inverse-on-surface": "#d6f9df",
+                    "inverse-primary": "#87da78",
+                    "on-surface": "#022111",
+                    "error-container": "#ffdad6",
+                    "secondary": "#366847",
+                    "secondary-fixed-dim": "#9dd3aa",
+                    "outline-variant": "#bfcab8",
+                    "on-surface-variant": "#40493c"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "gutter": "24px",
+                    "container-max": "1440px",
+                    "unit": "4px",
+                    "margin-desktop": "64px"
+            },
+            "fontFamily": {
+                    "label-md": ["Inter"],
+                    "headline-lg": ["Manrope"],
+                    "headline-md": ["Manrope"],
+                    "caption": ["Inter"],
+                    "headline-lg-mobile": ["Manrope"],
+                    "display-lg": ["Manrope"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .map-container {
+            height: calc(100vh - 72px);
+            width: 100%;
+            position: relative;
+            background-color: #e5e7eb;
+            overflow: hidden;
+        }
+        /* Custom Tooltip/Popup styling to match specimen card */
+        .specimen-popup {
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .glass-panel {
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary-container selection:text-on-primary-container">
+<!-- Admin SideNavBar -->
+<aside class="fixed left-0 top-0 h-screen flex flex-col z-40 docked left-0 h-full w-64 bg-surface-container-low border-r border-outline-variant">
+<div class="px-6 py-8">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">VietInsect</h1>
+<p class="font-label-md text-label-md text-on-surface-variant opacity-80">Entomological Database</p>
+</div>
+<nav class="flex-1 flex flex-col gap-1 px-2">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">pest_control</span>
+<span class="font-label-md text-label-md">Specimen Catalog</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">manage_search</span>
+<span class="font-label-md text-label-md">Advanced Search</span>
+</a>
+<!-- Active State for GIS Mapping -->
+<a class="flex items-center gap-3 px-4 py-3 text-primary font-bold border-r-4 border-primary bg-secondary-container/30 transition-colors" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-md text-label-md">GIS Mapping</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">biotech</span>
+<span class="font-label-md text-label-md">Research Notes</span>
+</a>
+</nav>
+<div class="p-4">
+<button class="w-full bg-primary text-on-primary font-label-md text-label-md py-3 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined">add</span>
+                New Entry
+            </button>
+</div>
+<div class="mt-auto border-t border-outline-variant p-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+</div>
+</aside>
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] flex justify-between items-center px-margin-desktop py-4 z-30 bg-surface border-b border-outline-variant">
+<div class="flex items-center gap-4">
+<div class="relative group">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-high border-none rounded-full focus:ring-2 focus:ring-primary text-body-md w-80 transition-all" placeholder="Search specimens, locations..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="bg-secondary-container text-on-secondary-container font-label-md text-label-md px-4 py-2 rounded-full hover:brightness-95 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined">download</span>
+                Export Data
+            </button>
+<div class="flex items-center gap-3 border-l border-outline-variant pl-6">
+<div class="text-right">
+<p class="font-label-md text-label-md text-on-surface">Dr. Nguyen Van A</p>
+<p class="text-caption text-on-surface-variant">Chief Entomologist</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary-container overflow-hidden border-2 border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a Vietnamese scientist in a research setting, wearing a lab coat and glasses. The lighting is bright and clean, reflecting a professional laboratory environment with subtle green botanical elements in the background to match the VietInsect brand identity. The style is modern, realistic, and highly detailed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBO-aNCGWQTTADsvvr-kjFJbIuAzWAttN8RTlNKEE1Aa0l4jnk8q6U6XXclwBOYiu3y4TB8y_mfNIBx-WPjeQO6hvuzAYEbVLHzgo5nS9herc-_4qw1ayjuYXQvvfu8i_l7plo4bwIe7Vkm1ZE6WpcBwbWhwTWdrb42QFjKRxuJp-zcM7rhmAg7eF09W5o7r_bnsjtOa3iGeEFzvy7aqE5eIxDY_umZKNTum5WHGBnc1wiVBo3GFicW"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content: Occurrence Map -->
+<main class="pt-[72px] ml-64 overflow-hidden">
+<div class="map-container" id="main-map">
+<!-- Simulated Map Background -->
+<div class="absolute inset-0 w-full h-full" data-alt="A highly detailed satellite and topographical map of Vietnam focusing on the Central Highlands region. The map shows lush green forest canopies, intricate river networks, and rugged mountain terrain. The visual style is clean and professional, resembling a GIS application like Google Maps satellite view, with high-resolution textures and natural lighting representing a clear day." data-location="Vietnam" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAEv1VDN1sa8GAobhjepy5YJxyfq7vuZSV86LWGB3R3NqQxs6quYJjWSKTIJaiLrtM-spq2BOgPn-5Joi4OPooVO_VTAKTs7FxPAjjMzGq_Vdc437-Qy3x7GWM9o5gNxE5ChyNOcjhpRBjLFXfOcvzDT1PyGlrYzNt19sES8Ut6iCVPX-FhoXZLXJjET_A2ypaqQqShYRkfNO_mSaK60aBy77arFdWG4l8GIW_P28qQWhQn6wFIUN7Y')"></div>
+<!-- Floating Toolbar Top-Left -->
+<div class="absolute top-6 left-6 flex flex-col gap-3 z-20">
+<!-- Group 1: View Modes -->
+<div class="glass-panel p-1.5 rounded-xl shadow-lg flex flex-col border border-white/40">
+<button class="p-2.5 rounded-lg bg-primary text-on-primary shadow-sm hover:brightness-110 transition-all" title="Heatmap Toggle">
+<span class="material-symbols-outlined">density_small</span>
+</button>
+<div class="h-px bg-outline-variant/30 my-1"></div>
+<button class="p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all" title="Satellite View">
+<span class="material-symbols-outlined">layers</span>
+</button>
+</div>
+<!-- Group 2: Tools -->
+<div class="glass-panel p-1.5 rounded-xl shadow-lg flex flex-col border border-white/40">
+<button class="p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all" title="Draw Polygon">
+<span class="material-symbols-outlined">pentagon</span>
+</button>
+<button class="p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all" title="Measure Distance">
+<span class="material-symbols-outlined">straighten</span>
+</button>
+<button class="p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all" title="Pin Location">
+<span class="material-symbols-outlined">location_on</span>
+</button>
+</div>
+<!-- Zoom Controls -->
+<div class="glass-panel p-1.5 rounded-xl shadow-lg flex flex-col border border-white/40">
+<button class="p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined">add</span>
+</button>
+<button class="p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined">remove</span>
+</button>
+</div>
+</div>
+<!-- Floating Search/Filters (Top Right) -->
+<div class="absolute top-6 right-6 z-20 flex flex-col items-end gap-3">
+<div class="glass-panel p-3 rounded-2xl shadow-lg border border-white/40 w-72">
+<div class="flex items-center justify-between mb-3">
+<h3 class="font-label-md text-label-md text-on-surface">Quick Filters</h3>
+<span class="text-caption text-primary cursor-pointer hover:underline">Clear</span>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-primary/10 text-primary rounded-full text-caption border border-primary/20">Endangered</span>
+<span class="px-3 py-1 bg-surface-container-high text-on-surface-variant rounded-full text-caption">Forest Zone</span>
+<span class="px-3 py-1 bg-surface-container-high text-on-surface-variant rounded-full text-caption">Last 30 Days</span>
+</div>
+</div>
+</div>
+<!-- Occurrence Markers (Simulated) -->
+<!-- Marker 1 -->
+<div class="absolute group cursor-pointer" onclick="togglePopup('popup-1')" style="top: 35%; left: 42%;">
+<div class="w-4 h-4 bg-[#4B9B42] rounded-full border-2 border-white shadow-md hover:scale-125 transition-transform"></div>
+<div class="absolute -top-1 -left-1 w-6 h-6 bg-[#4B9B42]/30 rounded-full animate-ping"></div>
+</div>
+<!-- Marker 2 -->
+<div class="absolute group cursor-pointer" onclick="togglePopup('popup-1')" style="top: 55%; left: 48%;">
+<div class="w-4 h-4 bg-[#1A4D2E] rounded-full border-2 border-white shadow-md hover:scale-125 transition-transform"></div>
+</div>
+<!-- Marker 3 -->
+<div class="absolute group cursor-pointer" onclick="togglePopup('popup-1')" style="top: 48%; left: 45%;">
+<div class="w-4 h-4 bg-[#2E7D32] rounded-full border-2 border-white shadow-md hover:scale-125 transition-transform"></div>
+</div>
+<!-- Marker 4 (Amber) -->
+<div class="absolute group cursor-pointer" onclick="togglePopup('popup-1')" style="top: 62%; left: 52%;">
+<div class="w-4 h-4 bg-[#F9A825] rounded-full border-2 border-white shadow-md hover:scale-125 transition-transform"></div>
+</div>
+<!-- Specimen Popup (Simulated Click State) -->
+<div class="absolute hidden specimen-popup z-30" id="popup-1" style="top: 22%; left: 38%;">
+<div class="bg-white rounded-2xl shadow-2xl overflow-hidden w-64 border border-outline-variant/30">
+<div class="h-32 w-full relative">
+<img class="w-full h-full object-cover" data-alt="A close-up, high-resolution scientific photograph of a rare Vietnamese stag beetle (Lucanidae) perched on a mossy branch. The lighting is diffused and natural, highlighting the iridescent exoskeleton and intricate textures of the beetle. The background is a soft-focus lush tropical rainforest. The overall aesthetic is scientific, clean, and educational." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRoqZEnChnX1WgdyhtkUl6nO5lkMUDQx77eBaYdzEmVSpD3QPvUCxFALqr_w3T1PB8Fqi5zCKJewgZy7pqs33QFY6XM7UZStD83vNDAiHMZgDZvOTIbD7ydxz48xrxwFyn1__itCSCqcllAlI8C-zN9clWqEv5VkLIcv-KQH-khhApDSgrLsDiZNb33YHF5aAOmjEs75jypEUKnoJcVASgmCCYLhPexZ4DjhwqCVvYP_dZmIAHxlmQ"/>
+<button class="absolute top-2 right-2 bg-black/30 hover:bg-black/50 text-white rounded-full p-1 transition-colors" onclick="togglePopup('popup-1')">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<div class="p-4">
+<p class="text-caption text-primary font-bold uppercase tracking-wider mb-1">Coleoptera</p>
+<h4 class="font-headline-md text-body-lg font-bold italic mb-0.5">Dorcus titanus sika</h4>
+<p class="text-caption text-on-surface-variant mb-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+                            Bidoup Nui Ba National Park
+                        </p>
+<button class="w-full bg-[#1A4D2E] text-white font-label-md text-label-md py-2 rounded-lg hover:bg-[#123620] transition-colors">
+                            View Details
+                        </button>
+</div>
+</div>
+<!-- Triangle Tail -->
+<div class="w-4 h-4 bg-white rotate-45 mx-auto -mt-2 border-r border-b border-outline-variant/20 shadow-xl"></div>
+</div>
+<!-- Legend (Fixed Bottom Left) -->
+<div class="absolute bottom-8 left-8 glass-panel p-5 rounded-2xl shadow-lg border border-white/40 w-56 z-20">
+<h3 class="font-headline-md text-body-md font-bold mb-4 text-on-surface">Taxonomic Distribution</h3>
+<ul class="space-y-3">
+<li class="flex items-center gap-3">
+<span class="w-3 h-3 rounded-full bg-[#4B9B42]"></span>
+<span class="font-label-md text-label-md text-on-surface-variant">Lepidoptera</span>
+<span class="ml-auto text-caption font-bold text-on-surface-variant">1,242</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="w-3 h-3 rounded-full bg-[#1A4D2E]"></span>
+<span class="font-label-md text-label-md text-on-surface-variant">Coleoptera</span>
+<span class="ml-auto text-caption font-bold text-on-surface-variant">891</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="w-3 h-3 rounded-full bg-[#2E7D32]"></span>
+<span class="font-label-md text-label-md text-on-surface-variant">Hymenoptera</span>
+<span class="ml-auto text-caption font-bold text-on-surface-variant">512</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="w-3 h-3 rounded-full bg-[#F9A825]"></span>
+<span class="font-label-md text-label-md text-on-surface-variant">Orthoptera</span>
+<span class="ml-auto text-caption font-bold text-on-surface-variant">328</span>
+</li>
+</ul>
+<div class="mt-4 pt-4 border-t border-outline-variant/30">
+<div class="flex items-center justify-between text-caption text-on-surface-variant">
+<span>Total Records</span>
+<span class="font-bold text-primary">2,973</span>
+</div>
+</div>
+</div>
+<!-- Coordinates Display (Bottom Center) -->
+<div class="absolute bottom-4 left-1/2 -translate-x-1/2 glass-panel px-4 py-1.5 rounded-full shadow-md text-caption text-on-surface-variant font-mono z-20 border border-white/20">
+                12.1485° N, 108.4355° E | Elev: 1,520m
+            </div>
+</div>
+</main>
+<script>
+        function togglePopup(id) {
+            const popup = document.getElementById(id);
+            popup.classList.toggle('hidden');
+        }
+
+        // Lightweight atmospheric interaction: Coordinates update on move (simulated)
+        const mapArea = document.getElementById('main-map');
+        mapArea.addEventListener('mousemove', (e) => {
+            // This is just visual fluff for the demo
+        });
+
+        // Click outside popup to close
+        document.addEventListener('click', (e) => {
+            const popup = document.getElementById('popup-1');
+            const markers = document.querySelectorAll('.group.cursor-pointer');
+            let isClickOnMarker = false;
+            markers.forEach(m => { if(m.contains(e.target)) isClickOnMarker = true; });
+
+            if (!popup.classList.contains('hidden') && !popup.contains(e.target) && !isClickOnMarker) {
+                popup.classList.add('hidden');
+            }
+        });
+    </script>
+</body></html>

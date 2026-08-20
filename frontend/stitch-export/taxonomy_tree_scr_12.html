@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SCR-12 — Cây phân loại học (Taxonomy Tree)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed-dim": "#e5c368",
+                    "error": "#ba1a1a",
+                    "surface-variant": "#c8ebd1",
+                    "on-tertiary": "#ffffff",
+                    "primary-container": "#35852f",
+                    "on-primary-fixed": "#002201",
+                    "on-error-container": "#93000a",
+                    "on-primary": "#ffffff",
+                    "primary-fixed": "#a2f792",
+                    "background": "#f8faf6", // Overridden by prompt "Ivory #F8FAF6"
+                    "outline": "#707a6b",
+                    "on-surface-variant": "#40493c",
+                    "on-secondary-container": "#3d6f4d",
+                    "on-tertiary-fixed-variant": "#584400",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container": "#d3f6dc",
+                    "surface-dim": "#c0e2c9",
+                    "outline-variant": "#bfcab8",
+                    "surface-container-low": "#d9fce2",
+                    "secondary-container": "#b8f0c5",
+                    "on-error": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed-variant": "#005306",
+                    "inverse-surface": "#183625",
+                    "surface-container-highest": "#c8ebd1",
+                    "on-tertiary-fixed": "#241a00",
+                    "primary": "#176b17",
+                    "on-tertiary-container": "#4f3d00",
+                    "surface-tint": "#1a6d19",
+                    "primary-fixed-dim": "#87da78",
+                    "on-secondary-fixed-variant": "#1d5031",
+                    "on-primary-container": "#f8fff0",
+                    "error-container": "#ffdad6",
+                    "surface-bright": "#e9ffed",
+                    "inverse-primary": "#87da78",
+                    "tertiary-container": "#c7a850",
+                    "surface-container-high": "#cef1d7",
+                    "tertiary": "#745b04",
+                    "on-background": "#022111",
+                    "inverse-on-surface": "#d6f9df",
+                    "tertiary-fixed": "#ffe08e",
+                    "secondary-fixed": "#b8f0c5",
+                    "surface": "#e9ffed",
+                    "on-surface": "#022111",
+                    "secondary-fixed-dim": "#9dd3aa",
+                    "secondary": "#366847",
+                    "on-secondary-fixed": "#00210e",
+                    "node-badge": "#EEF4E9",
+                    "node-highlight": "#C1A24B"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "unit": "4px",
+                    "margin-mobile": "16px",
+                    "margin-desktop": "64px",
+                    "container-max": "1440px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Manrope"],
+                    "headline-lg-mobile": ["Manrope"],
+                    "caption": ["Inter"],
+                    "label-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Manrope"],
+                    "headline-lg": ["Manrope"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #F8FAF6;
+            font-family: 'Manrope', sans-serif;
+            color: #022111;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .tree-line {
+            position: absolute;
+            left: -18px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background-color: #bfcab8;
+        }
+        .tree-node:last-child > .tree-line {
+            height: 12px;
+        }
+        .taxonomy-italic {
+            font-style: italic;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .node-selected {
+            background-color: rgba(193, 162, 75, 0.15);
+            border-left: 4px solid #C1A24B;
+        }
+        .chevron-green {
+            color: #4B9B42;
+        }
+    </style>
+</head>
+<body class="antialiased">
+<!-- SideNavBar (from JSON) -->
+<nav class="bg-surface-container-low dark:bg-surface-dim h-screen w-64 fixed left-0 top-0 border-r border-outline-variant dark:border-outline flex flex-col h-full py-gutter px-4 z-50">
+<div class="mb-8 px-2">
+<h1 class="font-display-lg text-display-lg font-bold text-primary dark:text-primary-fixed leading-tight">Insecta VN</h1>
+<p class="font-body-md text-body-md text-on-surface-variant opacity-70">Research Database</p>
+</div>
+<div class="flex-1 space-y-1 overflow-y-auto scrollbar-hide">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant dark:text-on-secondary-fixed-variant hover:bg-surface-container-highest dark:hover:bg-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-body-md text-body-md text-primary dark:text-primary-fixed font-bold border-r-4 border-primary dark:border-primary-fixed bg-secondary-container/30" href="#">
+<span class="material-symbols-outlined" data-icon="bug_report">bug_report</span>
+<span>Catalog</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant dark:text-on-secondary-fixed-variant hover:bg-surface-container-highest dark:hover:bg-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary" data-icon="map">map</span>
+<span>Maps</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant dark:text-on-secondary-fixed-variant hover:bg-surface-container-highest dark:hover:bg-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary" data-icon="biotech">biotech</span>
+<span>Lab</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant dark:text-on-secondary-fixed-variant hover:bg-surface-container-highest dark:hover:bg-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary" data-icon="admin_panel_settings">admin_panel_settings</span>
+<span>Admin</span>
+</a>
+</div>
+<button class="mt-4 mb-8 mx-2 bg-primary text-on-primary py-3 px-4 rounded-xl font-label-md text-label-md flex items-center justify-center gap-2 shadow-sm active:scale-[0.99] transition-transform">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+            New Specimen
+        </button>
+<div class="pt-4 border-t border-outline-variant space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span>Support</span>
+</a>
+</div>
+</nav>
+<!-- TopAppBar (from JSON) -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] z-40 bg-surface/95 dark:bg-surface-dim/95 backdrop-blur-md flex justify-between items-center h-16 px-gutter ml-auto">
+<div class="flex items-center flex-1 max-w-xl">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-full py-2 pl-10 pr-4 font-body-md text-body-md focus:ring-2 ring-primary/20 outline-none text-on-surface transition-all" placeholder="Search taxonomy, specimens, or researchers..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6 ml-gutter">
+<div class="flex items-center gap-2 font-label-md text-label-md">
+<button class="text-primary font-bold">VI</button>
+<span class="text-outline-variant">|</span>
+<button class="text-on-surface-variant hover:text-primary transition-colors">EN</button>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+<div class="h-10 w-10 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional portrait of a senior entomologist in a scientific research laboratory setting. The background shows blurred lab equipment and specimen jars. The lighting is bright and even, reinforcing a scientific and authoritative mood with a clean light-mode aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2s-z8x4ZWx5639d4PQHo2PNHKYCXoISRyfa7TM7mXDgDEKNsLt9Corovm6JGeJrkbSDBQEaYCe9ukuX8zloBVA1koqO8W4_4g1YtHxYDQkR22fWIsPDwb-lT7MgEkwYR4XudJu3M8zBiNkv91XYkg07uWjbkbi3MYNsQaFVZtEXzQZ4LICxLcgLAiMyMVLcyLeEbQ6tfRYmu2dZJwSzPpnKjXkPe2kDMh1MKoQ8LUmstko0JaSc1N"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-64 pt-20 p-gutter min-h-screen">
+<div class="max-w-6xl mx-auto">
+<!-- Breadcrumbs / Hierarchy Header -->
+<div class="mb-8 flex items-center justify-between">
+<div>
+<nav class="flex items-center gap-2 text-on-surface-variant font-label-md text-label-md mb-2">
+<span>Kingdom Animalia</span>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span>Phylum Arthropoda</span>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="text-primary">Class Insecta</span>
+</nav>
+<h2 class="font-headline-lg text-headline-lg text-on-background">Taxonomy Tree Explorer</h2>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 border border-outline-variant rounded-lg font-label-md text-label-md hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-sm">unfold_less</span>
+                        Collapse All
+                    </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg font-label-md text-label-md shadow-sm active:scale-95 transition-all">
+<span class="material-symbols-outlined text-sm">publish</span>
+                        Export Data
+                    </button>
+</div>
+</div>
+<!-- Bento Layout Content -->
+<div class="grid grid-cols-12 gap-6 items-start">
+<!-- Tree Navigation Pane (Left) -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden min-h-[700px] flex flex-col">
+<div class="p-4 border-b border-outline-variant bg-surface-container-low/30">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">manage_search</span>
+<input class="w-full border border-outline-variant rounded-lg py-2 pl-10 pr-4 font-body-md text-body-md focus:ring-2 ring-primary/20 outline-none" id="taxonomy-search" placeholder="Quick find scientific name..." type="text"/>
+<div class="hidden absolute top-full left-0 right-0 mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-xl z-10" id="autocomplete">
+<!-- Autocomplete suggestions injected here -->
+</div>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
+<ul class="space-y-1">
+<!-- Kingdom -->
+<li>
+<div class="flex items-center gap-2 group py-1.5 px-3 hover:bg-surface-container rounded-lg cursor-pointer transition-colors">
+<span class="material-symbols-outlined chevron-green text-xl transition-transform" style="font-variation-settings: 'opsz' 20;">expand_more</span>
+<div class="flex items-center gap-2 flex-1">
+<span class="font-label-md text-label-md text-outline-variant">Kingdom</span>
+<span class="font-bold taxonomy-italic text-on-surface">Animalia</span>
+<span class="font-body-md text-sm text-on-surface-variant">(Animals)</span>
+</div>
+<span class="bg-node-badge px-2 py-0.5 rounded-full text-[10px] font-bold text-on-secondary-fixed-variant">1.2M+</span>
+</div>
+<ul class="ml-6 mt-1 border-l border-outline-variant/50 pl-4 space-y-1">
+<!-- Phylum -->
+<li>
+<div class="flex items-center gap-2 group py-1.5 px-3 hover:bg-surface-container rounded-lg cursor-pointer transition-colors">
+<span class="material-symbols-outlined chevron-green text-xl">expand_more</span>
+<div class="flex items-center gap-2 flex-1">
+<span class="font-label-md text-label-md text-outline-variant">Phylum</span>
+<span class="font-bold taxonomy-italic text-on-surface">Arthropoda</span>
+<span class="font-body-md text-sm text-on-surface-variant">(Arthropods)</span>
+</div>
+<span class="bg-node-badge px-2 py-0.5 rounded-full text-[10px] font-bold text-on-secondary-fixed-variant">900K</span>
+</div>
+<ul class="ml-6 mt-1 border-l border-outline-variant/50 pl-4 space-y-1">
+<!-- Class -->
+<li>
+<div class="flex items-center gap-2 group py-1.5 px-3 bg-surface-container-highest rounded-lg cursor-pointer transition-colors">
+<span class="material-symbols-outlined chevron-green text-xl">expand_more</span>
+<div class="flex items-center gap-2 flex-1">
+<span class="font-label-md text-label-md text-outline-variant">Class</span>
+<span class="font-bold taxonomy-italic text-on-surface">Insecta</span>
+<span class="font-body-md text-sm text-on-surface-variant">(Insects)</span>
+</div>
+<span class="bg-node-badge px-2 py-0.5 rounded-full text-[10px] font-bold text-on-secondary-fixed-variant">142,501</span>
+</div>
+<ul class="ml-6 mt-1 border-l border-outline-variant/50 pl-4 space-y-1">
+<!-- Order -->
+<li>
+<div class="flex items-center gap-2 group py-1.5 px-3 hover:bg-surface-container rounded-lg cursor-pointer transition-colors">
+<span class="material-symbols-outlined chevron-green text-xl">expand_more</span>
+<div class="flex items-center gap-2 flex-1">
+<span class="font-label-md text-label-md text-outline-variant">Order</span>
+<span class="font-bold taxonomy-italic text-on-surface">Lepidoptera</span>
+<span class="font-body-md text-sm text-on-surface-variant">(Butterflies and Moths)</span>
+</div>
+<span class="bg-node-badge px-2 py-0.5 rounded-full text-[10px] font-bold text-on-secondary-fixed-variant">18,200</span>
+</div>
+<ul class="ml-6 mt-1 border-l border-outline-variant/50 pl-4 space-y-1">
+<!-- Family -->
+<li>
+<div class="flex items-center gap-2 group py-1.5 px-3 hover:bg-surface-container rounded-lg cursor-pointer transition-colors">
+<span class="material-symbols-outlined chevron-green text-xl">expand_more</span>
+<div class="flex items-center gap-2 flex-1">
+<span class="font-label-md text-label-md text-outline-variant">Family</span>
+<span class="font-bold taxonomy-italic text-on-surface">Saturniidae</span>
+<span class="font-body-md text-sm text-on-surface-variant">(Giant Silkworm Moths)</span>
+</div>
+<span class="bg-node-badge px-2 py-0.5 rounded-full text-[10px] font-bold text-on-secondary-fixed-variant">2,300</span>
+</div>
+<ul class="ml-6 mt-1 border-l border-outline-variant/50 pl-4 space-y-1">
+<!-- Genus -->
+<li>
+<div class="flex items-center gap-2 group py-1.5 px-3 hover:bg-surface-container rounded-lg cursor-pointer transition-colors">
+<span class="material-symbols-outlined chevron-green text-xl">expand_more</span>
+<div class="flex items-center gap-2 flex-1">
+<span class="font-label-md text-label-md text-outline-variant">Genus</span>
+<span class="font-bold taxonomy-italic text-on-surface">Attacus</span>
+<span class="font-body-md text-sm text-on-surface-variant">(Atlas Moths)</span>
+</div>
+<span class="bg-node-badge px-2 py-0.5 rounded-full text-[10px] font-bold text-on-secondary-fixed-variant">42</span>
+</div>
+<ul class="ml-6 mt-1 border-l border-outline-variant/50 pl-4 space-y-1">
+<!-- Species (Selected) -->
+<li class="relative">
+<div class="flex items-center gap-2 group py-2 px-3 node-selected rounded-r-lg cursor-pointer transition-all">
+<span class="material-symbols-outlined text-outline-variant text-xl">fiber_manual_record</span>
+<div class="flex items-center gap-2 flex-1">
+<span class="font-label-md text-label-md text-outline-variant">Species</span>
+<span class="font-bold taxonomy-italic text-on-surface">Attacus atlas</span>
+<span class="font-body-md text-sm text-on-surface-variant">(Atlas Moth / Bướm khế)</span>
+</div>
+<span class="bg-primary/10 px-2 py-0.5 rounded-full text-[10px] font-bold text-primary">12 Samples</span>
+</div>
+</li>
+<li>
+<div class="flex items-center gap-2 group py-1.5 px-3 hover:bg-surface-container rounded-lg cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-outline-variant text-xl">fiber_manual_record</span>
+<div class="flex items-center gap-2 flex-1">
+<span class="font-label-md text-label-md text-outline-variant">Species</span>
+<span class="font-bold taxonomy-italic text-on-surface">Attacus caesar</span>
+</div>
+<span class="bg-node-badge px-2 py-0.5 rounded-full text-[10px] font-bold text-on-secondary-fixed-variant">5</span>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<!-- Info Pane (Right) -->
+<div class="col-span-12 lg:col-span-4 space-y-6">
+<!-- Selected Species Detail Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+<div class="h-48 w-full bg-surface-dim relative group">
+<img class="w-full h-full object-cover" data-alt="A hyper-detailed macro photograph of an Attacus atlas moth, showcasing the intricate translucent wing patterns and vibrant orange and brown colors. The lighting is laboratory-grade, soft and diffused, highlighting textures of the scales. The style is scientific documentation photography with a clean, ivory-toned light-mode background context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5Bd30S7A0CPc-Lq-lESZVP7k-IKo9RvpFJ2uAjEem-wzBdm3P12ZujnCbdytpIiLUdENEXizLaLqLDBzaqwJPPQOhKzzclWz11xQeIKp8fsq2gcpg6GTEpg4QuUmvqUZJuJSxgEZJaxxtejic8sGHnv2LmfUdrLKXzgg3Y_iO5vc_MZp3aKlp85o5evr3LHHdDizLosLRSWXGqBzO2QSRe1lB6w_iWjBmH0ITRab792MBBM-LlcGM"/>
+<div class="absolute inset-0 bg-gradient-to-t from-on-background/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+<p class="text-white font-label-md text-label-md">Visual Documentation #ATT-042</p>
+</div>
+</div>
+<div class="p-6">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="font-headline-md text-headline-md taxonomy-italic">Attacus atlas</h3>
+<p class="text-on-surface-variant font-body-md">Commonly: Atlas Moth</p>
+</div>
+<span class="bg-primary text-on-primary px-3 py-1 rounded-full text-[12px] font-bold">LC</span>
+</div>
+<div class="space-y-4">
+<div class="flex items-center gap-3 p-3 bg-surface-container-low rounded-lg border border-outline-variant/30">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">dataset</span>
+<div>
+<p class="text-xs text-outline-variant font-bold uppercase tracking-wider">Specimen Records</p>
+<p class="font-body-md font-bold">12 Georeferenced</p>
+</div>
+</div>
+<div class="flex items-center gap-3 p-3 bg-surface-container-low rounded-lg border border-outline-variant/30">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<div>
+<p class="text-xs text-outline-variant font-bold uppercase tracking-wider">Primary Region</p>
+<p class="font-body-md font-bold">Southeast Asia</p>
+</div>
+</div>
+</div>
+<div class="mt-6 pt-6 border-t border-outline-variant">
+<p class="text-on-surface-variant text-body-md leading-relaxed">
+                                    One of the largest lepidopterans in the world with a wingspan measuring up to 24 cm. Known for the cobra-like patterns on its wingtips which act as a visual deterrent to predators.
+                                </p>
+</div>
+<button class="w-full mt-6 py-3 border border-primary text-primary rounded-lg font-label-md text-label-md hover:bg-primary hover:text-on-primary transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">open_in_new</span>
+                                Full Species Portal
+                            </button>
+</div>
+</div>
+<!-- Mini Map or Contextual Graph -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4">
+<div class="flex items-center justify-between mb-4">
+<h4 class="font-label-md text-label-md">Recent Observations</h4>
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary transition-colors">filter_list</span>
+</div>
+<div class="space-y-3">
+<div class="flex items-center gap-3 p-2 hover:bg-surface-container rounded-lg transition-colors cursor-pointer border border-transparent hover:border-outline-variant/20">
+<div class="w-10 h-10 rounded-md bg-outline-variant/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">camera</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-bold">Sapa, Lao Cai</p>
+<p class="text-[11px] text-on-surface-variant">Observer: Nguyen H. | 2 days ago</p>
+</div>
+</div>
+<div class="flex items-center gap-3 p-2 hover:bg-surface-container rounded-lg transition-colors cursor-pointer border border-transparent hover:border-outline-variant/20">
+<div class="w-10 h-10 rounded-md bg-outline-variant/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">smb_share</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-bold">Cuc Phuong Park</p>
+<p class="text-[11px] text-on-surface-variant">Observer: Lab Alpha | 5 days ago</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action for Quick Add -->
+<button class="fixed bottom-8 right-8 bg-primary text-on-primary w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50">
+<span class="material-symbols-outlined" style="font-variation-settings: 'wght' 600;">add</span>
+</button>
+<script>
+        // Micro-interactions for Tree Expand/Collapse
+        document.querySelectorAll('.chevron-green').forEach(chevron => {
+            chevron.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const parentLi = chevron.closest('li');
+                const subUl = parentLi.querySelector('ul');
+                if (subUl) {
+                    const isHidden = subUl.classList.contains('hidden');
+                    if (isHidden) {
+                        subUl.classList.remove('hidden');
+                        chevron.style.transform = 'rotate(0deg)';
+                    } else {
+                        subUl.classList.add('hidden');
+                        chevron.style.transform = 'rotate(-90deg)';
+                    }
+                }
+            });
+        });
+
+        // Search Autocomplete Simulation
+        const searchInput = document.getElementById('taxonomy-search');
+        const autocomplete = document.getElementById('autocomplete');
+        const specimens = ["Attacus atlas", "Attacus caesar", "Attacus lorquinii", "Lepidoptera", "Saturniidae"];
+
+        searchInput.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            if (val.length < 2) {
+                autocomplete.classList.add('hidden');
+                return;
+            }
+
+            const matches = specimens.filter(s => s.toLowerCase().includes(val));
+            if (matches.length > 0) {
+                autocomplete.innerHTML = matches.map(m => `
+                    <div class="px-4 py-2 hover:bg-surface-container cursor-pointer font-body-md text-sm border-b border-outline-variant/30 last:border-0 taxonomy-italic">
+                        ${m}
+                    </div>
+                `).join('');
+                autocomplete.classList.remove('hidden');
+            } else {
+                autocomplete.classList.add('hidden');
+            }
+        });
+
+        document.addEventListener('click', () => {
+            autocomplete.classList.add('hidden');
+        });
+    </script>
+</body></html>

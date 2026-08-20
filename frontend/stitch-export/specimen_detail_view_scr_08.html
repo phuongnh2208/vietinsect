@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EntoViet | Specimen Detail View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        .specimen-title { font-style: italic; color: #133120; }
+        .glass-overlay { backdrop-filter: blur(8px); background: rgba(255, 255, 255, 0.7); }
+        .dna-card:hover .dna-icon { transform: rotate(15deg); }
+        /* Custom scrollbar for data density */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #bfcab8; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #707a6b; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#1a6d19",
+                        "secondary-fixed-dim": "#9dd3aa",
+                        "on-tertiary-fixed-variant": "#584400",
+                        "inverse-primary": "#87da78",
+                        "surface-container-low": "#d9fce2",
+                        "on-secondary-fixed-variant": "#1d5031",
+                        "primary-fixed-dim": "#87da78",
+                        "on-tertiary-fixed": "#241a00",
+                        "tertiary-container": "#c7a850",
+                        "tertiary": "#745b04",
+                        "on-background": "#022111",
+                        "primary-fixed": "#a2f792",
+                        "on-surface": "#022111",
+                        "error": "#ba1a1a",
+                        "on-primary-container": "#f8fff0",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#e5c368",
+                        "outline": "#707a6b",
+                        "secondary-container": "#b8f0c5",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed": "#00210e",
+                        "surface-dim": "#c0e2c9",
+                        "surface-bright": "#e9ffed",
+                        "background": "#e9ffed",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#366847",
+                        "surface": "#e9ffed",
+                        "on-primary-fixed": "#002201",
+                        "primary-container": "#35852f",
+                        "tertiary-fixed": "#ffe08e",
+                        "secondary-fixed": "#b8f0c5",
+                        "on-tertiary": "#ffffff",
+                        "primary": "#176b17",
+                        "on-secondary-container": "#3d6f4d",
+                        "inverse-surface": "#183625",
+                        "surface-container-highest": "#c8ebd1",
+                        "surface-variant": "#c8ebd1",
+                        "inverse-on-surface": "#d6f9df",
+                        "on-surface-variant": "#40493c",
+                        "on-error-container": "#93000a",
+                        "error-container": "#ffdad6",
+                        "outline-variant": "#bfcab8",
+                        "on-error": "#ffffff",
+                        "surface-container": "#d3f6dc",
+                        "on-primary-fixed-variant": "#005306",
+                        "on-tertiary-container": "#4f3d00",
+                        "surface-container-high": "#cef1d7"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-max": "1440px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "64px",
+                        "gutter": "24px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "caption": ["Inter"],
+                        "headline-md": ["Manrope"],
+                        "headline-lg": ["Manrope"],
+                        "display-lg": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "caption": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md">
+<!-- Admin SideNavBar Shell -->
+<aside class="fixed left-0 top-0 h-full flex flex-col bg-surface-container-low dark:bg-surface-dim h-screen w-64 border-r border-outline-variant z-50">
+<div class="px-6 py-8">
+<h1 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed-dim tracking-tight">EntoViet</h1>
+<p class="text-on-surface-variant font-caption">Database Côn trùng</p>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<!-- Navigation Items Mapping -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-secondary-container dark:hover:bg-secondary-fixed-dim hover:text-on-secondary-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-secondary-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="flutter_dash">flutter_dash</span>
+<span class="font-label-md text-label-md">Catalog</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-secondary-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-label-md text-label-md">Maps</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-secondary-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="biotech">biotech</span>
+<span class="font-label-md text-label-md">Lab</span>
+</a>
+<!-- Active Tab: Admin -->
+<a class="flex items-center gap-3 px-4 py-3 text-primary dark:text-primary-fixed-dim font-bold border-r-4 border-primary dark:border-primary-fixed-dim bg-secondary-container/30 rounded-l-lg" href="#">
+<span class="material-symbols-outlined" data-icon="admin_panel_settings">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Admin</span>
+</a>
+</nav>
+<div class="p-4 border-t border-outline-variant">
+<button class="w-full flex items-center justify-center gap-2 bg-primary text-on-primary py-2 rounded-lg font-label-md hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[18px]" data-icon="ios_share">ios_share</span>
+                Export Data
+            </button>
+<div class="mt-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings">settings</span>
+<span class="font-caption">Settings</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 min-h-screen">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-margin-desktop py-4 bg-surface-container-lowest dark:bg-surface-dim border-b border-outline-variant sticky top-0 z-40">
+<div class="flex items-center gap-4">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant" data-icon="search">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container border-none rounded-full text-label-md focus:ring-2 focus:ring-primary w-64 transition-all" placeholder="Tìm kiếm mẫu vật..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<span class="font-label-md text-label-md text-on-surface-variant cursor-pointer hover:text-primary transition-colors">VI | EN</span>
+<div class="flex gap-4 text-on-surface-variant">
+<span class="material-symbols-outlined cursor-pointer hover:text-primary" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-primary" data-icon="settings">settings</span>
+</div>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a middle-aged scientist with salt-and-pepper hair, wearing a clean white lab coat and a focused, expert expression. The background is a blurred high-end biological laboratory with microscopes and glass containers. The lighting is bright and clean, emphasizing a professional scientific atmosphere in a modern green-toned research institution." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnV0X_4DKYPdwOvsZ1CrZBsWEa8fanFHe1bbhWA8Cb947lG8df52Q8s6z1BVkCySxO13ZstRsjmQgAl2V4K0xS2aeeaKjvK0-lpZXNBv0Q8GoP63A90GFmalbvDG8fC1X8ycpjSUCwuJ1pm_g6_kXefzHsD4WPVmNKei5Qyo_TyeicRXPIfsOp4wBiZ9chHOZ5BaWUdopa6zmbklSRF1TsS3Yrn9j8_TIHGsBeOr4TkNwNtLC4RNTS"/>
+</div>
+</div>
+</header>
+<!-- Specimen Detail Canvas -->
+<div class="px-margin-desktop py-8 max-w-container-max mx-auto">
+<!-- Breadcrumbs & Actions Row -->
+<div class="flex justify-between items-start mb-8">
+<div>
+<nav class="flex items-center gap-2 text-caption text-on-surface-variant mb-2">
+<span>Catalog</span>
+<span class="material-symbols-outlined text-[12px]" data-icon="chevron_right">chevron_right</span>
+<span>Lepidoptera</span>
+<span class="material-symbols-outlined text-[12px]" data-icon="chevron_right">chevron_right</span>
+<span class="text-primary">Saturniidae</span>
+</nav>
+<div class="flex items-center gap-4">
+<h2 class="font-headline-lg text-headline-lg specimen-title italic">Attacus atlas</h2>
+<span class="bg-[#ba1a1a] text-white px-3 py-1 rounded-full font-label-md text-[12px] uppercase tracking-wider">Vulnerable (VU)</span>
+</div>
+</div>
+<!-- Admin Actions -->
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container border border-outline-variant rounded-lg font-label-md text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="print">print</span>
+                        In nhãn
+                    </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container border border-outline-variant rounded-lg font-label-md text-on-surface-variant hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="edit">edit</span>
+                        Sửa
+                    </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-error-container text-on-error-container rounded-lg font-label-md hover:bg-red-100 transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="delete">delete</span>
+                        Xóa
+                    </button>
+</div>
+</div>
+<!-- Main Specimen Layout -->
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Left: Media Gallery -->
+<div class="col-span-12 lg:col-span-7">
+<div class="relative group aspect-[4/3] rounded-xl overflow-hidden bg-surface-container-highest shadow-sm">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A stunning, high-resolution macro photograph of an Attacus atlas moth, known as the Atlas Moth, resting on a broad green leaf. The wings showcase intricate orange, brown, and white patterns with distinctive translucent 'windows'. The lighting is natural, soft daylight filtering through a forest canopy, highlighting the velvety texture of the wings. The scientific minimalist style is preserved with crisp clarity and natural earth-inspired colors." id="main-gallery-img" src="https://lh3.googleusercontent.com/aida-public/AB6AXuByXF_51ctbwpmv6WZLy82Wm5LFIaYqr8IxQ-vMPFmr2MQILYW12bReqr6ukEGfAz9HP_HvkZGa8-BSWlBHhO5N3F62vp3uqUD3ijUH1VKjkZk6wlkmaYYjVRJmvAOJNoKfWnYQ3oCnxeUNtQKOGYYlpPTZXBKsqJ6JiShJo_RNn0vSYfu4NtCZajT2pGpVtBzuJVK2hRNkV-iBFEUduqKkyYySyW2tPEC1FPxe3fvnfPd8pQvderGu"/>
+<!-- Gallery Navigation -->
+<div class="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none">
+<button class="w-10 h-10 rounded-full glass-overlay flex items-center justify-center text-[#4B9B42] pointer-events-auto hover:bg-[#4B9B42] hover:text-white transition-all shadow-md">
+<span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="w-10 h-10 rounded-full glass-overlay flex items-center justify-center text-[#4B9B42] pointer-events-auto hover:bg-[#4B9B42] hover:text-white transition-all shadow-md">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<!-- Thumbnail Strip Overlay -->
+<div class="absolute bottom-4 inset-x-0 flex justify-center gap-2 px-4">
+<div class="w-16 h-12 rounded-lg border-2 border-white overflow-hidden cursor-pointer shadow-lg">
+<img class="w-full h-full object-cover" data-alt="Macro close-up of the Atlas Moth wing patterns focusing on the eye-like spots and translucent triangles. High detail, scientific photography, soft studio lighting on neutral olive background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3_x3gn19qTmjeuDEANiouq7T13V4EC64wGdqCzvDsVT6w8PyvMvfhzp-ZXsC1uG6UqE-ydgZ5laDsPvpUVdyWP8xxn9nsd0pUU0CI9kTqBwUqx-eohxMtyUbfxmFYsHJxnMDK98dWjxGqogjc9kMXuEYPdGHQZEpaibyrYLHCjMjb2Bc0uPvmd1qUDpnY8UKivAi_guG0vOQY0tKySgsAEZoXnvw03lt7GLjm73x7JXDPSipdbQN9"/>
+</div>
+<div class="w-16 h-12 rounded-lg border-2 border-transparent opacity-70 hover:opacity-100 overflow-hidden cursor-pointer shadow-lg transition-all">
+<img class="w-full h-full object-cover" data-alt="A wide angle biological documentation shot of an Atlas Moth specimen pinned in a professional collection box. Precise alignment, bright museum lighting, scientific documentation style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBX8jYCABz0fKyaTR1tzGXBZ9awHJdkkHcOkEGoj0pQJ1gIJ68wpqjDqXMR3UpTXe_1R8Eqcc4s_2GTuCq_5yuSpDwD6UXh22bbMmaxxIF3KD3JWmObR0puaHjaa8GtffEtZGE9vwphHGIdUXopTSBOOJFoxFVXQZknHIEGGRBsWWEhk0CNIcxpaNIZDuT3KXrRfgTZuef8FJO2bQc949prQOrZvEgr1IiFprZivyrNAbk_St7MV7C5"/>
+</div>
+<div class="w-16 h-12 rounded-lg border-2 border-transparent opacity-70 hover:opacity-100 overflow-hidden cursor-pointer shadow-lg transition-all">
+<img class="w-full h-full object-cover" data-alt="Detailed view of the feathered antennae of a male Attacus atlas. Extreme macro photography, shallow depth of field, natural green forest background, high precision." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeo-jJOmqjdzwFEfdv9EN7V7BxA_A6gKXxvGrN-woGqjmxMpE2kPHFE5-cy_KEoScPjF6wkT4p50wGxMjcGfNnRvMV7lR4SYgvmvRsic8SOb3V33QVC1rb-oTgwXGy-Nyjir-Q59SizBn5NVyFkoch9bB0_tTxkO19qPBa3pW9TlSdV0GVrICuv9HoyOCtzSXITx6Z8LkOuemQzgwoT_KbOS5iUH_ITJbXTrsrwDXxaIUK7811bmnX"/>
+</div>
+</div>
+</div>
+<!-- DNA Section -->
+<div class="mt-8">
+<h3 class="font-headline-md text-headline-md mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="dna">strikethrough_s</span>
+                            Dữ liệu DNA
+                        </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- DNA Cards -->
+<div class="dna-card bg-surface-container-lowest border border-outline-variant p-4 rounded-xl flex items-center justify-between group hover:border-primary transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<div class="dna-icon w-10 h-10 bg-secondary-container rounded-full flex items-center justify-center text-primary transition-transform duration-300">
+<span class="material-symbols-outlined" data-icon="helix">files</span>
+</div>
+<div>
+<p class="font-label-md text-label-md">COI-5P Sequence</p>
+<p class="text-caption text-on-surface-variant">GB: KM243810.1 • 658 bp</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary" data-icon="open_in_new">open_in_new</span>
+</div>
+<div class="dna-card bg-surface-container-lowest border border-outline-variant p-4 rounded-xl flex items-center justify-between group hover:border-primary transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<div class="dna-icon w-10 h-10 bg-secondary-container rounded-full flex items-center justify-center text-primary transition-transform duration-300">
+<span class="material-symbols-outlined" data-icon="helix">files</span>
+</div>
+<div>
+<p class="font-label-md text-label-md">ND5 Sequence</p>
+<p class="text-caption text-on-surface-variant">GB: AY123456.2 • 842 bp</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary" data-icon="open_in_new">open_in_new</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Metadata Grid -->
+<div class="col-span-12 lg:col-span-5">
+<div class="bg-[#EEF4E9] rounded-xl p-6 border border-[#DCE6D5]">
+<h3 class="font-headline-md text-headline-md mb-6 border-b border-[#DCE6D5] pb-4">Thông tin phân loại</h3>
+<div class="grid grid-cols-2 gap-y-6">
+<!-- Data Row -->
+<div class="flex flex-col gap-1">
+<span class="text-caption text-on-surface-variant font-bold uppercase tracking-tight">Mã số mẫu (ID)</span>
+<span class="font-body-md text-primary font-bold">EV-2023-AT-001</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-caption text-on-surface-variant font-bold uppercase tracking-tight">Ngày thu thập</span>
+<span class="font-body-md text-on-surface">15 tháng 10, 2023</span>
+</div>
+<div class="col-span-2 h-[1px] bg-[#DCE6D5]"></div>
+<div class="flex flex-col gap-1">
+<span class="text-caption text-on-surface-variant font-bold uppercase tracking-tight">Bộ (Order)</span>
+<span class="font-body-md text-on-surface">Lepidoptera</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-caption text-on-surface-variant font-bold uppercase tracking-tight">Họ (Family)</span>
+<span class="font-body-md text-on-surface">Saturniidae</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-caption text-on-surface-variant font-bold uppercase tracking-tight">Giống (Genus)</span>
+<span class="font-body-md text-on-surface italic">Attacus</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-caption text-on-surface-variant font-bold uppercase tracking-tight">Loài (Species)</span>
+<span class="font-body-md text-on-surface italic">A. atlas</span>
+</div>
+<div class="col-span-2 h-[1px] bg-[#DCE6D5]"></div>
+<div class="flex flex-col gap-1">
+<span class="text-caption text-on-surface-variant font-bold uppercase tracking-tight">Người thu thập</span>
+<span class="font-body-md text-on-surface">Nguyễn Văn A</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-caption text-on-surface-variant font-bold uppercase tracking-tight">Phương pháp</span>
+<span class="font-body-md text-on-surface">Light Trap</span>
+</div>
+<div class="col-span-2 flex flex-col gap-1">
+<span class="text-caption text-on-surface-variant font-bold uppercase tracking-tight">Địa điểm thu thập</span>
+<div class="flex items-start gap-2 mt-1">
+<span class="material-symbols-outlined text-secondary mt-0.5" data-icon="location_on">location_on</span>
+<div>
+<p class="font-body-md text-on-surface">Vườn quốc gia Cúc Phương, Ninh Bình</p>
+<p class="text-caption text-on-surface-variant">20.2500° N, 105.7167° E</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Mini Map Implementation -->
+<div class="mt-6 rounded-lg overflow-hidden border border-[#DCE6D5] h-48 relative">
+<div class="absolute inset-0 bg-secondary-container/20 flex items-center justify-center">
+<img class="w-full h-full object-cover" data-location="Ninh Binh, Vietnam" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTvtRz638bqVjVglr_4eN6zebggu84eVzdYwb-V_QKkwAQaLrMXyu_3nC7r_WsW72B-iqkfvO5shXyiT4K0PEgcmfdK13_OESwx1KF_N9DjZzd_8TvtZWDvRADRpJy09wGdgijJry5ewED_Y1mzh1x65RESm55sWcfpDNzTPjTeMX2Gq2LYJU2p4eG5nb8CAopxQKCQNhNV1351nWTDIFuYWYMMhDanlC_ojt7_YZkoXHqCFsQu24r"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+<div class="absolute bottom-3 left-3 flex items-center gap-2 bg-white/90 px-3 py-1.5 rounded-full text-caption font-bold shadow-sm">
+<span class="material-symbols-outlined text-primary text-[16px]" data-icon="explore">explore</span>
+                                    Xem bản đồ chi tiết
+                                </div>
+</div>
+</div>
+</div>
+<!-- Additional Context/Notes -->
+<div class="mt-6 p-6 border border-outline-variant rounded-xl bg-surface-container-lowest">
+<h4 class="font-label-md text-label-md mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="description">description</span>
+                            Ghi chú nghiên cứu
+                        </h4>
+<p class="text-body-md text-on-surface-variant italic leading-relaxed">
+                            "Mẫu vật được tìm thấy trong tình trạng bảo quản tốt. Cánh có sải rộng 24cm, là một trong những cá thể lớn nhất được ghi nhận tại khu vực phía Bắc trong mùa này."
+                        </p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Simple micro-interaction for gallery buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('mousedown', () => {
+                btn.style.transform = 'scale(0.95)';
+            });
+            btn.addEventListener('mouseup', () => {
+                btn.style.transform = 'scale(1)';
+            });
+            btn.addEventListener('mouseleave', () => {
+                btn.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body></html>
