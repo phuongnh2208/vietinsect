@@ -4,9 +4,8 @@ const authRepository = require("./auth.repository");
 const AuthError = require("./auth.errors");
 const AppError = require("../../utils/appError");
 const logger = require("../../config/logger");
+const { JWT_SECRET, JWT_EXPIRES_IN } = require("../../config/jwt");
 
-const JWT_SECRET = process.env.JWT_SECRET || "doi_chuoi_bi_mat_nay_sau";
-const JWT_EXPIRES_IN = "24h";
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_DURATION_MINUTES = 30;
 

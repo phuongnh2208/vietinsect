@@ -133,6 +133,7 @@ a { color: inherit; text-decoration: none; }
 .status-public { background: #D8ECD9; color: var(--vi-secondary); }
 .status-private { background: #E5E8E2; color: #5B625C; }
 .status-warning { background: #F1E8C9; color: #71570B; }
+.status-danger { background: #F6D9D5; color: var(--vi-danger); }
 .status-danger { background: #F6D9D5; color: #852016; }
 
 .dashboard-grid { display: grid; grid-template-columns: 1.3fr .7fr; gap: 16px; margin-top: 16px; }
@@ -231,6 +232,20 @@ a { color: inherit; text-decoration: none; }
 .taxonomy-rank { color: var(--vi-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; }
 .taxonomy-name { font-style: italic; font-weight: 700; }
 .taxonomy-common { color: var(--vi-muted); font-size: 12px; }
+
+.async-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 220px; padding: 40px 20px; color: var(--vi-muted); text-align: center; }
+.async-state strong { color: var(--vi-ink); font-size: 14px; }
+.async-state span { font-size: 12px; max-width: 320px; }
+.async-state-empty svg { color: var(--vi-muted); }
+.async-spinner { width: 26px; height: 26px; border: 3px solid var(--vi-surface-2); border-top-color: var(--vi-primary); border-radius: 50%; animation: spin 800ms linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.external-link-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0; }
+.external-link-chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border: 1px solid var(--vi-border); border-radius: 999px; color: var(--vi-primary); font-size: 11px; font-weight: 700; transition: background 150ms var(--ease-out), border-color 150ms var(--ease-out); }
+.external-link-chip:hover { background: var(--vi-surface-2); border-color: var(--vi-border-strong); }
+
+.species-tab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.species-tab-heading { margin: 0 0 8px; font: 800 13px/1.2 Manrope, Inter, sans-serif; color: var(--vi-muted); text-transform: uppercase; letter-spacing: .04em; }
 
 .tabs-row { display: flex; gap: 6px; border-bottom: 1px solid var(--vi-border); margin-bottom: 20px; overflow-x: auto; }
 .tab-button { padding: 10px 16px; border: 0; background: transparent; color: var(--vi-muted); font-size: 13px; font-weight: 700; border-bottom: 2px solid transparent; white-space: nowrap; }

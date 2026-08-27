@@ -32,6 +32,7 @@ app.get("/api/health", (req, res) => {
 
 // TODO: đăng ký routes các module tại đây khi có
 app.use("/api/auth", require("./src/modules/auth/auth.routes"));
+app.use("/api/taxonomy", require("./src/modules/taxonomy/taxonomy.routes"));
 
 // 404 handler
 app.use((req, res) => {

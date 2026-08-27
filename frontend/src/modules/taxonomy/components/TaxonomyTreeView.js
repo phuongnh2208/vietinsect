@@ -1,68 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Icon from "../../../components/ui/Icon";
-
-const MOCK_TREE = {
-  id: "kingdom-animalia",
-  rank: "Kingdom",
-  name: "Animalia",
-  common: "Animals",
-  count: "1.2M+",
-  children: [
-    {
-      id: "phylum-arthropoda",
-      rank: "Phylum",
-      name: "Arthropoda",
-      common: "Arthropods",
-      count: "900K",
-      children: [
-        {
-          id: "class-insecta",
-          rank: "Class",
-          name: "Insecta",
-          common: "Insects",
-          count: "142,501",
-          children: [
-            {
-              id: "order-lepidoptera",
-              rank: "Order",
-              name: "Lepidoptera",
-              common: "Butterflies and Moths",
-              count: "18,200",
-              children: [
-                {
-                  id: "family-saturniidae",
-                  rank: "Family",
-                  name: "Saturniidae",
-                  common: "Giant Silkworm Moths",
-                  count: "2,300",
-                  children: [
-                    {
-                      id: "genus-attacus",
-                      rank: "Genus",
-                      name: "Attacus",
-                      common: "Atlas Moths",
-                      count: "42",
-                      children: [
-                        { id: "species-attacus-atlas", rank: "Species", name: "Attacus atlas", common: "Atlas Moth / Bướm khế", count: "12 Samples", slug: "attacus-atlas" },
-                        { id: "species-attacus-caesar", rank: "Species", name: "Attacus caesar", common: "", count: "5", slug: "attacus-caesar" },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-  ],
-};
-
-function flatten(node, acc = []) {
-  acc.push(node);
-  (node.children || []).forEach((child) => flatten(child, acc));
-  return acc;
-}
+import taxonomyService from "../taxonomy.service";
 
 function TreeNode({ node, depth, expandedIds, onToggle, selectedNodeId, onSelect }) {
   const hasChildren = node.children && node.children.length > 0;
@@ -92,9 +30,9 @@ function TreeNode({ node, depth, expandedIds, onToggle, selectedNodeId, onSelect
           <span style={{ width: 22, display: "inline-block" }} />
         )}
         <span className="taxonomy-rank">{node.rank}</span>
-        <span className="taxonomy-name">{node.name}</span>
-        {node.common ? <span className="taxonomy-common">({node.common})</span> : null}
-        <span className="status-badge status-public" style={{ marginLeft: "auto" }}>{node.count}</span>
+        <span className="taxonomy-name">{node.scientificName}</span>
+        {node.vernacularNameVn ? <span className="taxonomy-common">({node.vernacularNameVn})</span> : null}
+        <span className="status-badge status-public" style={{ marginLeft: "auto" }}>{node.specimenCount}</span>
       </div>
       {hasChildren && expanded ? (
         <ul className="taxonomy-children">
@@ -115,16 +53,29 @@ function TreeNode({ node, depth, expandedIds, onToggle, selectedNodeId, onSelect
   );
 }
 
-export default function TaxonomyTreeView({ selectedNodeId, onSelectNode }) {
-  const [expandedIds, setExpandedIds] = useState({});
+export default function TaxonomyTreeView({ nodes, selectedNodeId, onSelectNode, expandedIds, onToggleExpanded }) {
   const [query, setQuery] = useState("");
-  const allNodes = useMemo(() => flatten(MOCK_TREE), []);
-  const suggestions = useMemo(
-    () => (query.length < 2 ? [] : allNodes.filter((node) => node.name.toLowerCase().includes(query.toLowerCase())).slice(0, 6)),
-    [query, allNodes]
-  );
+  const [suggestions, setSuggestions] = useState([]);
+  const debounceRef = useRef(null);
 
-  const toggle = (id) => setExpandedIds((current) => ({ ...current, [id]: current[id] === false ? true : false }));
+  useEffect(() => {
+    if (query.trim().length < 2) {
+      setSuggestions([]);
+      return undefined;
+    }
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const results = await taxonomyService.searchTaxa(query.trim());
+        setSuggestions(results);
+      } catch {
+        setSuggestions([]);
+      }
+    }, 300);
+    return () => clearTimeout(debounceRef.current);
+  }, [query]);
+
+  const roots = useMemo(() => nodes || [], [nodes]);
 
   return (
     <div className="card panel taxonomy-tree-pane">
@@ -138,22 +89,25 @@ export default function TaxonomyTreeView({ selectedNodeId, onSelectNode }) {
         {suggestions.length > 0 ? (
           <div className="taxonomy-suggestions">
             {suggestions.map((node) => (
-              <div key={node.id} className="taxonomy-suggestion-item" onClick={() => { onSelectNode(node); setQuery(""); }}>
-                <em>{node.name}</em> <span>{node.rank}</span>
+              <div key={node.id} className="taxonomy-suggestion-item" onClick={() => { onSelectNode(node); setQuery(""); setSuggestions([]); }}>
+                <em>{node.scientificName}</em> <span>{node.rank}</span>
               </div>
             ))}
           </div>
         ) : null}
       </div>
       <ul className="taxonomy-tree-root">
-        <TreeNode
-          node={MOCK_TREE}
-          depth={0}
-          expandedIds={expandedIds}
-          onToggle={toggle}
-          selectedNodeId={selectedNodeId}
-          onSelect={onSelectNode}
-        />
+        {roots.map((node) => (
+          <TreeNode
+            key={node.id}
+            node={node}
+            depth={0}
+            expandedIds={expandedIds}
+            onToggle={onToggleExpanded}
+            selectedNodeId={selectedNodeId}
+            onSelect={onSelectNode}
+          />
+        ))}
       </ul>
     </div>
   );
