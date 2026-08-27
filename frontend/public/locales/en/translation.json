@@ -1,0 +1,58 @@
+{
+  "appName": "VietInsect",
+  "appSubtitle": "Vietnam Insect Biodiversity Data System",
+  "nav": {
+    "dashboard": "Overview",
+    "catalog": "Specimens",
+    "taxonomy": "Taxonomy",
+    "map": "Map",
+    "dna": "DNA & GenBank",
+    "analytics": "Analytics",
+    "reports": "Reports",
+    "settings": "Settings"
+  },
+  "common": {
+    "search": "Search",
+    "language": "Language",
+    "light": "Light",
+    "dark": "Dark",
+    "notifications": "Notifications",
+    "logout": "Sign out",
+    "viewAll": "View all",
+    "comingSoon": "This feature is being prepared",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "public": "Public",
+    "private": "Private",
+    "admin": "Administrator"
+  },
+  "dashboard": {
+    "eyebrow": "Admin workspace",
+    "title": "System overview",
+    "description": "Monitor biodiversity data, digitization progress, and signals that need attention.",
+    "specimen": "Specimens",
+    "species": "Identified species",
+    "media": "Media assets",
+    "dna": "DNA sequences",
+    "digitization": "Digitization progress",
+    "alerts": "Data alerts",
+    "recent": "Recent activity"
+  },
+  "auth": {
+    "loginTitle": "Admin sign in",
+    "loginDescription": "Enter the VietInsect data management workspace.",
+    "username": "Username",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Authenticating...",
+    "lockNotice": "The account will be locked after 5 failed attempts.",
+    "passwordHint": "Minimum 12 characters",
+    "welcome": "Preserve data, understand nature."
+  },
+  "toast": {
+    "success": "Action completed",
+    "error": "Something went wrong",
+    "warning": "Please review"
+  }
+}

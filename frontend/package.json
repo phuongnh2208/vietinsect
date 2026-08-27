@@ -10,7 +10,9 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.18.1",
     "bootstrap": "^5.3.8",
+    "cross-env": "^7.0.3",
     "i18next": "^23.16.8",
+    "i18next-http-backend": "^2.6.2",
     "leaflet": "^1.9.4",
     "react": "^19.2.7",
     "react-bootstrap": "^2.10.10",
@@ -19,13 +21,14 @@
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.18.1",
     "react-scripts": "5.0.1",
+    "recharts": "^2.15.1",
     "web-vitals": "^2.1.4",
     "zustand": "^5.0.14"
   },
   "scripts": {
-    "start": "set NODE_OPTIONS=--openssl-legacy-provider && craco start",
-    "build": "set NODE_OPTIONS=--openssl-legacy-provider && craco build",
-    "test": "craco test",
+    "start": "cross-env NODE_OPTIONS=--openssl-legacy-provider craco start",
+    "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider craco build",
+    "test": "cross-env CI=true craco test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

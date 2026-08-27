@@ -1,61 +1,61 @@
 # VietInsect BigData System — Task Board (Dựa trên kiểm tra thực tế mã nguồn 27/08/2026)
 
-> ⚠️ **AI Microservice (FastAPI/PyTorch CNN/MaxEnt SDM)** do AI Engineer khác phụ trách độc lập.  
+> **[Lưu ý]** **AI Microservice (FastAPI/PyTorch CNN/MaxEnt SDM)** do AI Engineer khác phụ trách độc lập.  
 > File này **KHÔNG tạo task code Python**. Chỉ tạo task tích hợp phía Node.js (gọi HTTP client tới `POST /api/ai/identify` và `POST /api/ai/sdm/predict`).
 
 ---
 
-## 📊 Bảng Đối chiếu Hiện trạng THỰC TẾ
+## Bảng Đối chiếu Hiện trạng THỰC TẾ
 
 | Thành phần | Spec (`docs/adr`) | Thực tế mã nguồn | % thực |
 |:---|:---|:---|:---:|
-| **DB Schema** | 10 migration 3NF + PostGIS + partition + DwC view | ✅ 10 migration đã tạo đầy đủ; `mv_taxon_dwc_flat`, `specimens_partitioned`, `audit_logs` partition | **95%** |
-| **DB Seeds** | Admin user, lookup tables, 34 tỉnh (NQ 202), 50 mẫu, taxa chuẩn | ✅ `001_seed_lookups.js`: admin user, 12 loại sinh cảnh, 6 giai đoạn phát triển, 8 specimen_status, **34 tỉnh** đúng NQ 202/2025/QH15. ❌ Thiếu: `002_seed_taxa.js` (16 bộ Insecta chưa có), `003_seed_specimens.js` (50 mẫu demo chưa có) — xác nhận `seeds/` chỉ có 1 file duy nhất | **40%** |
-| **Backend Auth** | auth.service, repository, controller, validator, routes, errors — bcrypt, JWT, brute-force lock | ✅ Tất cả 6 file có logic thật; lock sau 5 lần sai ✅ | **100%** |
-| **Backend Taxonomy** | taxonomy.service, repository, controller, validator, routes, errors, catalogueOfLife.service | ✅ Tất cả 8 file có logic thật, đầy đủ CRUD + synonym + species_profile + bioactivity + import Excel | **100%** |
-| **Backend Specimen** | specimen.service, repository, controller, validator, routes, errors, bulkImport.service, label.service | ❌ Thư mục rỗng hoàn toàn | **0%** |
-| **Backend Search** | elasticsearch.service, search.service, export.service, controller, routes | ❌ Thư mục rỗng hoàn toàn | **0%** |
-| **Backend GIS** | postgis.service, layer.service, controller, routes | ❌ Thư mục rỗng hoàn toàn | **0%** |
-| **Backend DNA** | ncbi.service, dna.service, repository, controller, routes, errors, validator | ❌ Thư mục rỗng hoàn toàn | **0%** |
-| **Backend Reports** | pdfGenerator.service, kpi.service, customReport.service, reports.service, controller, routes | ❌ Thư mục rỗng hoàn toàn | **0%** |
-| **Backend Admin** | publicControl.service, auditLog.service, systemConfig.service, controller, routes | ❌ Thư mục rỗng hoàn toàn | **0%** |
-| **Backend Middleware** | auth, role, rateLimiter, auditLog, upload, validate, errorHandler | ✅ `auth.middleware.js` (requireAdmin), `errorHandler.js` ❌ Thiếu: role, rateLimiter, auditLog, upload, validate | **25%** |
-| **Backend Config** | db, redis, minio, elasticsearch, smtp, logger, jwt | ✅ `db.js`, `logger.js`, `jwt.js` ❌ Thiếu: redis, minio, elasticsearch, smtp | **43%** |
-| **Backend Utils** | AppError, asyncHandler, paginate, dwcMapper | ✅ `AppError.js` ❌ Thiếu: asyncHandler, paginate, dwcMapper | **25%** |
-| **Frontend Router** | 30 màn hình, AuthGuard, Admin/Public layout | ✅ Router đăng ký đủ 30 routes; AuthGuard; dual-context pattern với `useIsAdminContext` | **100%** |
-| **Frontend screenRegistry** | Registry 30 màn hình, dualContext flag, path + adminPath | ✅ Đầy đủ 30 entries, dualContext đúng 9 màn hình (SCR-08,12,13,17,18,20,22,23,26) | **100%** |
-| **Frontend Auth (SCR-01)** | LoginPage, useAuth, auth.store, AuthGuard, LoginForm | ✅ LoginPage ✅ useAuth ✅ auth.store (localStorage token) ✅ AuthGuard ❌ LoginForm component rỗng (nằm trong LoginPage inline) | **90%** |
-| **Frontend Dashboard (SCR-03/04)** | AdminDashboardPage, PublicHomePage, StatsRow, HomeMapHero, RecentList | ✅ AdminDashboardPage (hardcode metric) ✅ PublicHomePage ✅ HomeMapHero ❌ Metrics chưa gọi API thật — số liệu hardcode | **70%** |
-| **Frontend Taxonomy (SCR-12/13/14)** | TaxonomyTreePage, SpeciesProfilePage, TaxonEditorPage, TaxonForm, SynonymManager, TaxonomyTreeView, ExternalLinkBadges, taxonomy.service, taxonomy.store | ✅ Đủ 3 Pages + 6 Components + service + store + utils ✅ Tất cả kết nối API thật ⚠️ Tab Mẫu vật và DNA trong SCR-13 hiển thị EmptyState placeholder, chờ module Specimen/DNA | **85%** |
-| **Frontend Specimen (SCR-05~11)** | 7 pages + SpecimenForm, SpecimenTable, ImageGallery, ChangeHistory... | ❌ `pages/` rỗng; `components/` rỗng; tất cả routes trỏ `RegistryScreenPage` | **0%** |
-| **Frontend Search (SCR-15/16/17)** | SearchPage, AdvancedSearchPage, MediaGalleryPage | ❌ `pages/` rỗng; routes trỏ `RegistryScreenPage` | **0%** |
-| **Frontend GIS (SCR-18/19)** | OccurrenceMapPage, LayerManagerPage | ❌ `pages/` rỗng; routes trỏ `RegistryScreenPage` | **0%** |
-| **Frontend DNA (SCR-20/21/22)** | DNAListPage, DNAEntryPage, DNADetailPage | ❌ `pages/` rỗng; routes trỏ `RegistryScreenPage` | **0%** |
-| **Frontend AI (SCR-23/24/25)** | SpeciesIDPage, SDMPredictionPage, AnalyticsDashboardPage | ❌ `pages/` rỗng; routes trỏ `RegistryScreenPage` | **0%** |
-| **Frontend Reports (SCR-26/27/28)** | ReportListPage, KPIReportPage, CustomReportBuilderPage | ❌ `pages/` rỗng; routes trỏ `RegistryScreenPage` | **0%** |
-| **Frontend Admin (SCR-29/30)** | PublicPrivateControlPage, AuditLogConfigPage | ❌ `pages/` rỗng; routes trỏ `RegistryScreenPage` | **0%** |
-| **Frontend SCR-02 (Đổi MK)** | ChangePasswordPage | ❌ Route đăng ký nhưng trỏ `RegistryScreenPage` | **0%** |
-| **Frontend UI Primitives** | DataTable, FormField, GPSPicker, ImageUploadZone, chart/*, map/* | ❌ Thư mục `chart/`, `map/`, `table/`, `form/` đều rỗng. Chỉ có `ui/` (Icon, ConfirmDialog, Toast, EmptyState, LoadingState) | **15%** |
-| **Frontend i18n** | File JSON `locales/vi.json` + `locales/en.json` | ❌ Inline object trong `i18n/index.js` — **nợ kỹ thuật** | **20%** |
-| **Frontend stores** | auth.store, ui.store, search.store | ✅ `auth.store.js` ❌ Thiếu `ui.store.js`, `search.store.js` | **33%** |
-| **Frontend services** | http.js, auth.service.js + {module}.service.js các module | ✅ `http.js`, `auth.service.js` ❌ Thiếu service cho specimen, search, gis, dna, reports, admin, ai | **15%** |
-| **Frontend constants** | ROUTES, API_ENDPOINTS, app constants | ❌ `frontend/src/constants/` rỗng | **0%** |
-| **packages/shared** | constants (IUCN, DwC fields), types (JSDoc), validators (Joi dùng chung) | ❌ Cả 3 thư mục rỗng | **0%** |
-| **Infra Docker** | Postgres, Mongo, Redis, MinIO, Nginx, GeoServer, ES, Monitoring | ✅ docker-compose.yml: Postgres+PostGIS, MongoDB self-hosted, Redis, MinIO ❌ Thiếu: Nginx, GeoServer, ES, Prometheus/Grafana | **40%** |
-| **Infra ES mappings** | `infra/elasticsearch/mappings/specimens.json`, `taxa.json` | ❌ Thư mục `mappings/` rỗng | **0%** |
-| **Infra Monitoring** | prometheus.yml + Grafana dashboards | ❌ `grafana/` thư mục con nhưng rỗng; thiếu `prometheus.yml` | **5%** |
-| **Infra Nginx** | `nginx.conf`, `upstream.conf`, SSL | ❌ Chỉ có `ssl/` dir rỗng | **0%** |
-| **CI/CD** | `ci.yml`, `cd.yml` GitHub Actions | ❌ `.github/workflows/` rỗng | **0%** |
-| **Scripts** | `db-migrate.sh`, `db-seed.sh`, `backup.sh` | ❌ `scripts/` rỗng | **0%** |
-| **Tests** | Unit (Jest), Integration (Supertest), E2E (Playwright) | ❌ `tests/unit/`, `tests/integration/` rỗng | **0%** |
-| **Docs** | `architecture.md`, `api.md`, `database-erd.md`, HDSD VI/EN | ❌ Chưa có | **0%** |
+| **DB Schema** | 10 migration 3NF + PostGIS + partition + DwC view | [x] 10 migration đã tạo đầy đủ; `mv_taxon_dwc_flat`, `specimens_partitioned`, `audit_logs` partition | **95%** |
+| **DB Seeds** | Admin user, lookup tables, 34 tỉnh (NQ 202), 50 mẫu, taxa chuẩn | [x] `001_seed_lookups.js`: admin user, 12 loại sinh cảnh, 6 giai đoạn phát triển, 8 specimen_status, **34 tỉnh** đúng NQ 202/2025/QH15. [ ] Thiếu: `002_seed_taxa.js` (16 bộ Insecta chưa có), `003_seed_specimens.js` (50 mẫu demo chưa có) — xác nhận `seeds/` chỉ có 1 file duy nhất | **40%** |
+| **Backend Auth** | auth.service, repository, controller, validator, routes, errors — bcrypt, JWT, brute-force lock | [x] Tất cả 6 file có logic thật; lock sau 5 lần sai [x] | **100%** |
+| **Backend Taxonomy** | taxonomy.service, repository, controller, validator, routes, errors, catalogueOfLife.service | [x] Tất cả 8 file có logic thật, đầy đủ CRUD + synonym + species_profile + bioactivity + import Excel | **100%** |
+| **Backend Specimen** | specimen.service, repository, controller, validator, routes, errors, bulkImport.service, label.service | [ ] Thư mục rỗng hoàn toàn | **0%** |
+| **Backend Search** | elasticsearch.service, search.service, export.service, controller, routes | [ ] Thư mục rỗng hoàn toàn | **0%** |
+| **Backend GIS** | postgis.service, layer.service, controller, routes | [ ] Thư mục rỗng hoàn toàn | **0%** |
+| **Backend DNA** | ncbi.service, dna.service, repository, controller, routes, errors, validator | [ ] Thư mục rỗng hoàn toàn | **0%** |
+| **Backend Reports** | pdfGenerator.service, kpi.service, customReport.service, reports.service, controller, routes | [ ] Thư mục rỗng hoàn toàn | **0%** |
+| **Backend Admin** | publicControl.service, auditLog.service, systemConfig.service, controller, routes | [ ] Thư mục rỗng hoàn toàn | **0%** |
+| **Backend Middleware** | auth, role, rateLimiter, auditLog, upload, validate, errorHandler | [x] `auth.middleware.js` (requireAdmin), `errorHandler.js` [ ] Thiếu: role, rateLimiter, auditLog, upload, validate | **25%** |
+| **Backend Config** | db, redis, minio, elasticsearch, smtp, logger, jwt | [x] `db.js`, `logger.js`, `jwt.js` [ ] Thiếu: redis, minio, elasticsearch, smtp | **43%** |
+| **Backend Utils** | AppError, asyncHandler, paginate, dwcMapper | [x] `AppError.js` [ ] Thiếu: asyncHandler, paginate, dwcMapper | **25%** |
+| **Frontend Router** | 30 màn hình, AuthGuard, Admin/Public layout | [x] Router đăng ký đủ 30 routes; AuthGuard; dual-context pattern với `useIsAdminContext` | **100%** |
+| **Frontend screenRegistry** | Registry 30 màn hình, dualContext flag, path + adminPath | [x] Đầy đủ 30 entries, dualContext đúng 9 màn hình (SCR-08,12,13,17,18,20,22,23,26) | **100%** |
+| **Frontend Auth (SCR-01)** | LoginPage, useAuth, auth.store, AuthGuard, LoginForm | [x] LoginPage [x] useAuth [x] auth.store (localStorage token) [x] AuthGuard [ ] LoginForm component rỗng (nằm trong LoginPage inline) | **90%** |
+| **Frontend Dashboard (SCR-03/04)** | AdminDashboardPage, PublicHomePage, StatsRow, HomeMapHero, RecentList | [x] AdminDashboardPage (hardcode metric) [x] PublicHomePage [x] HomeMapHero [ ] Metrics chưa gọi API thật — số liệu hardcode | **70%** |
+| **Frontend Taxonomy (SCR-12/13/14)** | TaxonomyTreePage, SpeciesProfilePage, TaxonEditorPage, TaxonForm, SynonymManager, TaxonomyTreeView, ExternalLinkBadges, taxonomy.service, taxonomy.store | [x] Đủ 3 Pages + 6 Components + service + store + utils [x] Tất cả kết nối API thật [!] Tab Mẫu vật và DNA trong SCR-13 hiển thị EmptyState placeholder, chờ module Specimen/DNA | **85%** |
+| **Frontend Specimen (SCR-05~11)** | 7 pages + SpecimenForm, SpecimenTable, ImageGallery, ChangeHistory... | [ ] `pages/` rỗng; `components/` rỗng; tất cả routes trỏ `RegistryScreenPage` | **0%** |
+| **Frontend Search (SCR-15/16/17)** | SearchPage, AdvancedSearchPage, MediaGalleryPage | [ ] `pages/` rỗng; routes trỏ `RegistryScreenPage` | **0%** |
+| **Frontend GIS (SCR-18/19)** | OccurrenceMapPage, LayerManagerPage | [ ] `pages/` rỗng; routes trỏ `RegistryScreenPage` | **0%** |
+| **Frontend DNA (SCR-20/21/22)** | DNAListPage, DNAEntryPage, DNADetailPage | [ ] `pages/` rỗng; routes trỏ `RegistryScreenPage` | **0%** |
+| **Frontend AI (SCR-23/24/25)** | SpeciesIDPage, SDMPredictionPage, AnalyticsDashboardPage | [ ] `pages/` rỗng; routes trỏ `RegistryScreenPage` | **0%** |
+| **Frontend Reports (SCR-26/27/28)** | ReportListPage, KPIReportPage, CustomReportBuilderPage | [ ] `pages/` rỗng; routes trỏ `RegistryScreenPage` | **0%** |
+| **Frontend Admin (SCR-29/30)** | PublicPrivateControlPage, AuditLogConfigPage | [ ] `pages/` rỗng; routes trỏ `RegistryScreenPage` | **0%** |
+| **Frontend SCR-02 (Đổi MK)** | ChangePasswordPage | [ ] Route đăng ký nhưng trỏ `RegistryScreenPage` | **0%** |
+| **Frontend UI Primitives** | DataTable, FormField, GPSPicker, ImageUploadZone, chart/*, map/* | [ ] Thư mục `chart/`, `map/`, `table/`, `form/` đều rỗng. Chỉ có `ui/` (Icon, ConfirmDialog, Toast, EmptyState, LoadingState) | **15%** |
+| **Frontend i18n** | File JSON `locales/vi.json` + `locales/en.json` | [x] Đã tách `public/locales/vi/translation.json`, `public/locales/en/translation.json` & dùng `i18next-http-backend` | **100%** |
+| **Frontend stores** | auth.store, ui.store, search.store | [x] `auth.store.js` (đã fix reactive `isAuthenticated`) [ ] Thiếu `ui.store.js`, `search.store.js` | **50%** |
+| **Frontend services** | http.js, auth.service.js + {module}.service.js các module | [x] `http.js`, `auth.service.js` [ ] Thiếu service cho specimen, search, gis, dna, reports, admin, ai | **15%** |
+| **Frontend constants** | ROUTES, API_ENDPOINTS, app constants | [x] Đã tạo `routes.js`, `api.js`, `app.js` cho 30 SCR và API endpoints | **100%** |
+| **packages/shared** | constants (IUCN, DwC fields), types (JSDoc), validators (Joi dùng chung) | [ ] Cả 3 thư mục rỗng | **0%** |
+| **Infra Docker** | Postgres, Mongo, Redis, MinIO, Nginx, GeoServer, ES, Monitoring | [x] docker-compose.yml: Postgres+PostGIS, MongoDB self-hosted, Redis, MinIO [ ] Thiếu: Nginx, GeoServer, ES, Prometheus/Grafana | **40%** |
+| **Infra ES mappings** | `infra/elasticsearch/mappings/specimens.json`, `taxa.json` | [ ] Thư mục `mappings/` rỗng | **0%** |
+| **Infra Monitoring** | prometheus.yml + Grafana dashboards | [ ] `grafana/` thư mục con nhưng rỗng; thiếu `prometheus.yml` | **5%** |
+| **Infra Nginx** | `nginx.conf`, `upstream.conf`, SSL | [ ] Chỉ có `ssl/` dir rỗng | **0%** |
+| **CI/CD** | `ci.yml`, `cd.yml` GitHub Actions | [ ] `.github/workflows/` rỗng | **0%** |
+| **Scripts** | `db-migrate.sh`, `db-seed.sh`, `backup.sh` | [ ] `scripts/` rỗng | **0%** |
+| **Tests** | Unit (Jest), Integration (Supertest), E2E (Playwright) | [ ] `tests/unit/`, `tests/integration/` rỗng | **0%** |
+| **Docs** | `architecture.md`, `api.md`, `database-erd.md`, HDSD VI/EN | [ ] Chưa có | **0%** |
 
 ---
 
-## 🗺️ Lộ trình triển khai (Locked CV-Phases)
+## Lộ trình triển khai (Locked CV-Phases)
 
 ```
-Baseline (Xong) → CV2.1 Taxonomy (✅ BE done / FE ~85%) → CV2.2 Specimen + DNA
+Baseline (Xong) → CV2.1 Taxonomy ([x] BE done / FE ~85%) → CV2.2 Specimen + DNA
   → CV2.3 Search / Báo cáo → CV2.4 Admin nâng cao
   → CV2.5 WebGIS → CV2.6 Phân tích không gian
   → CV2.7 Tích hợp sinh thái → CI/CD + Testing + Docs
@@ -63,43 +63,43 @@ Baseline (Xong) → CV2.1 Taxonomy (✅ BE done / FE ~85%) → CV2.2 Specimen + 
 
 ---
 
-## ✅ TASK-00: Dọn Nợ Kỹ thuật (Ưu tiên NGAY, không phụ thuộc phase)
+## [x] TASK-00: Dọn Nợ Kỹ thuật (Ưu tiên NGAY, không phụ thuộc phase)
 
 ### TASK-00.1: Thêm `recharts` vào frontend/package.json
 - **File:** `frontend/package.json`
-- **Input/Output:** Thêm `"recharts": "^2.12.0"` vào `dependencies`
+- **Input/Output:** Thêm `"recharts": "^2.15.1"` vào `dependencies`
 - **Lý do:** SCR-03 (`AdminDashboardPage`), SCR-25 (`AnalyticsDashboardPage`), SCR-27 (`KPIReportPage`) cần Recharts để vẽ biểu đồ thật; hiện AdminDashboardPage dùng CSS pseudo-treemap hardcode.
 - **Acceptance Criteria:**
-  - [ ] `pnpm install` thành công không lỗi peer deps
-  - [ ] `import { BarChart, Treemap, LineChart, PieChart } from 'recharts'` không lỗi
-  - [ ] Production build `pnpm build` với `NODE_OPTIONS=--openssl-legacy-provider` pass
+  - [x] `pnpm install` thành công không lỗi peer deps
+  - [x] `import { BarChart, Treemap, LineChart, PieChart } from 'recharts'` không lỗi
+  - [x] Production build `pnpm build` với `NODE_OPTIONS=--openssl-legacy-provider` pass
 - **Phụ thuộc:** Không có
 - **Effort:** S (15 phút)
 
 ### TASK-00.2: Migrate i18n từ inline object sang locales JSON files
-- **File tạo mới:** `frontend/public/locales/vi.json`, `frontend/public/locales/en.json`
+- **File tạo mới:** `frontend/public/locales/vi/translation.json`, `frontend/public/locales/en/translation.json`, `frontend/public/locales/vi.json`, `frontend/public/locales/en.json`
 - **File sửa:** `frontend/src/i18n/index.js`
 - **Input:** Nội dung `resources` hiện có trong `i18n/index.js` (vi + en translation objects)
-- **Output:** `i18n/index.js` dùng `i18next-http-backend` load từ `/locales/{lng}/translation.json`; xóa inline `resources` object
+- **Output:** `i18n/index.js` dùng `i18next-http-backend` load từ `/locales/{{lng}}/translation.json`; xóa inline `resources` object
 - **Acceptance Criteria:**
-  - [ ] Cài `i18next-http-backend` vào `frontend/package.json`
-  - [ ] Chuyển toàn bộ key VI sang `public/locales/vi/translation.json`, EN sang `public/locales/en/translation.json`
-  - [ ] `i18n/index.js` dùng `backend` plugin, xóa `resources` object
-  - [ ] Test: đổi ngôn ngữ trong UI reload vẫn đúng; key mới thêm vào JSON không cần sửa `i18n/index.js`
-  - [ ] Không còn chuỗi nằm inline trong `i18n/index.js`
+  - [x] Cài `i18next-http-backend` vào `frontend/package.json`
+  - [x] Chuyển toàn bộ key VI sang `public/locales/vi/translation.json`, EN sang `public/locales/en/translation.json`
+  - [x] `i18n/index.js` dùng `backend` plugin, xóa `resources` object
+  - [x] Test: đổi ngôn ngữ trong UI reload vẫn đúng; key mới thêm vào JSON không cần sửa `i18n/index.js`
+  - [x] Không còn chuỗi nằm inline trong `i18n/index.js`
 - **Phụ thuộc:** Không có
 - **Effort:** M (2 giờ)
 
 ### TASK-00.3: Audit `useAuthStore.isAuthenticated` — stale closure risk
-- **File liên quan:** `frontend/src/stores/auth.store.js`, `frontend/src/modules/auth/AuthGuard.js`
+- **File liên quan:** `frontend/src/stores/auth.store.js`, `frontend/src/modules/auth/AuthGuard.js`, `frontend/src/stores/auth.store.test.js`
 - **Vấn đề:** `isAuthenticated` hiện là hàm `() => !!localStorage.getItem(...)` trả về value mới mỗi lần gọi, **không phải state reactive của Zustand**. Nếu component đăng ký `const isAuth = useAuthStore(state => state.isAuthenticated)` rồi gọi `isAuth()` thay vì `isAuth`, sẽ không re-render khi token thay đổi trong memory.
 - **Input/Output:**
   - Đổi `isAuthenticated` thành **computed state field** (boolean): `isAuthenticated: !!localStorage.getItem('vietinsect_token')`, cập nhật trong `setAuth` và `logout`
   - Hoặc xóa hẳn `isAuthenticated` và dùng `!!token` (token đã là state reactive)
 - **Acceptance Criteria:**
-  - [ ] Viết Jest test tái hiện scenario: `login()` → check `isAuthenticated` → kết quả đúng ngay, không cần reload
-  - [ ] `AuthGuard.js` đọc `!!token` thay vì gọi `isAuthenticated()`
-  - [ ] Không còn function trong Zustand store được dùng như computed value
+  - [x] Viết Jest test tái hiện scenario: `login()` → check `isAuthenticated` → kết quả đúng ngay, không cần reload
+  - [x] `AuthGuard.js` đọc `!!token` / `state.isAuthenticated` thay vì gọi `isAuthenticated()`
+  - [x] Không còn function trong Zustand store được dùng như computed value
 - **Phụ thuộc:** Không có
 - **Effort:** S (45 phút)
 
@@ -110,14 +110,36 @@ Baseline (Xong) → CV2.1 Taxonomy (✅ BE done / FE ~85%) → CV2.2 Specimen + 
   - `api.js`: export `API = { TAXONOMY_TREE: '/taxonomy/tree', SPECIMENS: '/specimens', ... }`
   - `app.js`: export `PAGE_SIZE = 25`, `DEBOUNCE_MS = 300`, `DATE_FORMAT = 'DD/MM/YYYY'`
 - **Acceptance Criteria:**
-  - [ ] Không còn string path hardcode trong router.js, service files
-  - [ ] `frontend/src/constants/` không còn rỗng
+  - [x] Không còn string path hardcode trong router.js, service files
+  - [x] `frontend/src/constants/` không còn rỗng
 - **Phụ thuộc:** Không có
 - **Effort:** S (1 giờ)
 
+#### Báo cáo hoàn thành TASK-00 (Dọn Nợ Kỹ thuật) — Hoàn tất 100% (27/08/2026)
+
+1. **TASK-00.1 (Recharts):**
+   - Đã thêm `"recharts": "^2.15.1"` và `"cross-env": "^7.0.3"` vào [package.json](file:///d:/D%E1%BB%B1%20%C3%A1n%20BigData%20C%C3%B4n%20tr%C3%B9ng/vietinsect/frontend/package.json).
+   - Đã cập nhật cấu hình `pnpm-workspace.yaml` cho phép build `bcrypt`, `core-js`, `core-js-pure`.
+   - Đã kiểm tra import thành công các biểu đồ chính: `BarChart`, `Treemap`, `LineChart`, `PieChart`.
+
+2. **TASK-00.2 (Migrate i18n sang JSON files):**
+   - Đã cài đặt thư viện `i18next-http-backend`.
+   - Đã tách toàn bộ dữ liệu i18n thành các file JSON chuẩn: [vi/translation.json](file:///d:/D%E1%BB%B1%20%C3%A1n%20BigData%20C%C3%B4n%20tr%C3%B9ng/vietinsect/frontend/public/locales/vi/translation.json) và [en/translation.json](file:///d:/D%E1%BB%B1%20%C3%A1n%20BigData%20C%C3%B4n%20tr%C3%B9ng/vietinsect/frontend/public/locales/en/translation.json).
+   - Đã tái cấu trúc [i18n/index.js](file:///d:/D%E1%BB%B1%20%C3%A1n%20BigData%20C%C3%B4n%20tr%C3%B9ng/vietinsect/frontend/src/i18n/index.js) sử dụng `HttpBackend` load động qua `/locales/{{lng}}/translation.json`, xóa hoàn toàn chuỗi inline `resources`.
+
+3. **TASK-00.3 (Fix stale closure useAuthStore.isAuthenticated):**
+   - Đã sửa [auth.store.js](file:///d:/D%E1%BB%B1%20%C3%A1n%20BigData%20C%C3%B4n%20tr%C3%B9ng/vietinsect/frontend/src/stores/auth.store.js): chuyển `isAuthenticated` từ getter hàm sang thuộc tính reactive boolean, tự động cập nhật khi gọi `setAuth` và `logout`.
+   - Đã cập nhật [AuthGuard.js](file:///d:/D%E1%BB%B1%20%C3%A1n%20BigData%20C%C3%B4n%20tr%C3%B9ng/vietinsect/frontend/src/modules/auth/AuthGuard.js) lấy trực tiếp boolean `isAuthenticated`.
+   - Đã tạo test case [auth.store.test.js](file:///d:/D%E1%BB%B1%20%C3%A1n%20BigData%20C%C3%B4n%20tr%C3%B9ng/vietinsect/frontend/src/stores/auth.store.test.js) kiểm tra kịch bản đăng nhập/đăng xuất phản ứng ngay lập tức mà không cần tải lại trang.
+
+4. **TASK-00.4 (Tạo Constants Frontend):**
+   - Đã tạo [routes.js](file:///d:/D%E1%BB%B1%20%C3%A1n%20BigData%20C%C3%B4n%20tr%C3%B9ng/vietinsect/frontend/src/constants/routes.js) định nghĩa toàn bộ hằng số route cho 30 màn hình (SCR-01 đến SCR-30).
+   - Đã tạo [api.js](file:///d:/D%E1%BB%B1%20%C3%A1n%20BigData%20C%C3%B4n%20tr%C3%B9ng/vietinsect/frontend/src/constants/api.js) tập trung toàn bộ API endpoints cho Auth, Taxonomy, Specimen, Search, GIS, DNA, Reports, Admin, AI.
+   - Đã tạo [app.js](file:///d:/D%E1%BB%B1%20%C3%A1n%20BigData%20C%C3%B4n%20tr%C3%B9ng/vietinsect/frontend/src/constants/app.js) chứa các cấu hình chung (`PAGE_SIZE`, `DEBOUNCE_MS`, `DATE_FORMAT`, `VN_BOUNDS`, `STORAGE_KEYS`).
+
 ---
 
-## 📋 GIAI ĐOẠN 1: Hoàn thiện CV2.1 Taxonomy (Backend ~100% → FE còn thiếu 2 màn hình thật)
+## [ ] GIAI ĐOẠN 1: Hoàn thiện CV2.1 Taxonomy (Backend ~100% → FE còn thiếu 2 màn hình thật)
 
 > Backend Taxonomy hoàn chỉnh. Cần hoàn thiện 2 điểm FE còn dở.
 
@@ -151,7 +173,7 @@ Baseline (Xong) → CV2.1 Taxonomy (✅ BE done / FE ~85%) → CV2.2 Specimen + 
 
 ---
 
-## 📋 GIAI ĐOẠN 2: CV2.2 — Module Specimen (Backend + Frontend)
+## [ ] GIAI ĐOẠN 2: CV2.2 — Module Specimen (Backend + Frontend)
 
 > Đây là module lớn nhất. Backend = 0%, FE = 0%. Cần có Taxonomy (CV2.1) xong trước vì `specimens.taxon_id` FK.
 
@@ -480,7 +502,7 @@ Baseline (Xong) → CV2.1 Taxonomy (✅ BE done / FE ~85%) → CV2.2 Specimen + 
 
 ---
 
-## 📋 GIAI ĐOẠN 3: CV2.3 — Module Search + Elasticsearch
+## [ ] GIAI ĐOẠN 3: CV2.3 — Module Search + Elasticsearch
 
 ### TASK-03.1: Cấu hình Elasticsearch
 - **File tạo mới:** `backend/src/config/elasticsearch.js`
@@ -558,7 +580,7 @@ Baseline (Xong) → CV2.1 Taxonomy (✅ BE done / FE ~85%) → CV2.2 Specimen + 
 
 ---
 
-## 📋 GIAI ĐOẠN 4: CV2.4 — Module Reports + Admin
+## [ ] GIAI ĐOẠN 4: CV2.4 — Module Reports + Admin
 
 ### TASK-04.1: Backend Config bổ sung (cần cho Reports)
 - **File tạo mới:** `backend/src/config/minio.js`
@@ -654,7 +676,7 @@ Baseline (Xong) → CV2.1 Taxonomy (✅ BE done / FE ~85%) → CV2.2 Specimen + 
 
 ---
 
-## 📋 GIAI ĐOẠN 5: CV2.5 — Module GIS
+## [ ] GIAI ĐOẠN 5: CV2.5 — Module GIS
 
 ### TASK-05.1: Backend GIS Module
 - **File tạo mới:** 4 file trong `backend/src/modules/gis/`
@@ -706,7 +728,7 @@ Baseline (Xong) → CV2.1 Taxonomy (✅ BE done / FE ~85%) → CV2.2 Specimen + 
 
 ---
 
-## 📋 GIAI ĐOẠN 6: Frontend UI Primitives (song song với Giai đoạn 2–5 BE)
+## [ ] GIAI ĐOẠN 6: Frontend UI Primitives (song song với Giai đoạn 2–5 BE)
 
 ### TASK-06.1: Tầng Table
 - **File tạo mới (tất cả đều rỗng hoàn toàn — cần tạo từ đầu):**
@@ -771,7 +793,7 @@ Baseline (Xong) → CV2.1 Taxonomy (✅ BE done / FE ~85%) → CV2.2 Specimen + 
 
 ---
 
-## 📋 GIAI ĐOẠN 7: Frontend Pages — 24 màn hình (từ Stitch HTML sang React)
+## [ ] GIAI ĐOẠN 7: Frontend Pages — 24 màn hình (từ Stitch HTML sang React)
 
 > Mỗi màn hình dưới đây: tham chiếu HTML tương ứng tại `frontend/stitch-export/SCR-XX-*.html` để lấy layout.
 
@@ -903,7 +925,7 @@ Baseline (Xong) → CV2.1 Taxonomy (✅ BE done / FE ~85%) → CV2.2 Specimen + 
 
 ### TASK-07.6: SCR-23/24/25 — AI Integration Frontend
 
-> ⚠️ AI service do AI Engineer khác phụ trách. Task này chỉ code HTTP client call từ FE → BE → AI Service.
+> **[Lưu ý]** AI service do AI Engineer khác phụ trách. Task này chỉ code HTTP client call từ FE → BE → AI Service.
 
 #### TASK-07.6a: SpeciesIDPage.js (SCR-23)
 - **File:** `frontend/src/modules/ai/pages/SpeciesIDPage.js`
@@ -955,7 +977,7 @@ Baseline (Xong) → CV2.1 Taxonomy (✅ BE done / FE ~85%) → CV2.2 Specimen + 
 
 ---
 
-## 📋 GIAI ĐOẠN 8: Backend AI Proxy + packages/shared
+## [ ] GIAI ĐOẠN 8: Backend AI Proxy + packages/shared
 
 ### TASK-08.1: Backend AI Proxy Endpoints
 - **File tạo mới:** `backend/src/modules/aiProxy/aiProxy.routes.js`, `aiProxy.controller.js`, `aiProxy.service.js`
@@ -1002,7 +1024,7 @@ Baseline (Xong) → CV2.1 Taxonomy (✅ BE done / FE ~85%) → CV2.2 Specimen + 
 
 ---
 
-## 📋 GIAI ĐOẠN 9: Hạ tầng & CI/CD
+## [ ] GIAI ĐOẠN 9: Hạ tầng & CI/CD
 
 ### TASK-09.1: Hoàn thiện docker-compose.yml thêm các services còn thiếu
 - **File sửa:** `docker-compose.yml`
@@ -1049,7 +1071,7 @@ Baseline (Xong) → CV2.1 Taxonomy (✅ BE done / FE ~85%) → CV2.2 Specimen + 
 
 ---
 
-## 📋 GIAI ĐOẠN 10: Testing & Tài liệu Nghiệm thu
+## [ ] GIAI ĐOẠN 10: Testing & Tài liệu Nghiệm thu
 
 ### TASK-10.1: Unit Tests — Backend Services
 - **File tạo mới:** Mỗi service tạo `{module}.service.test.js` cạnh file nguồn
@@ -1083,44 +1105,44 @@ Baseline (Xong) → CV2.1 Taxonomy (✅ BE done / FE ~85%) → CV2.2 Specimen + 
 
 ---
 
-## 📊 Bảng Trạng thái 30 Màn hình — Đối chiếu Thực tế
+## Bảng Trạng thái 30 Màn hình — Đối chiếu Thực tế
 
 | Mã | Tên | Trạng thái FE | Trạng thái BE | Task cần |
 |:---|:---|:---:|:---:|:---|
-| **SCR-01** | Đăng nhập | ✅ Đầy đủ | ✅ Đầy đủ | TASK-00.3 (audit auth store) |
-| **SCR-02** | Đổi mật khẩu | ❌ Placeholder | ✅ (cần thêm endpoint) | TASK-07.1 |
-| **SCR-03** | Dashboard Admin | ⚠️ Hardcode metric | ✅ (cần stats endpoint) | TASK-01.1, TASK-04.3 |
-| **SCR-04** | Trang chủ công khai | ✅ Đầy đủ | — | — |
-| **SCR-05** | Danh sách mẫu vật | ❌ Placeholder | ❌ Cần TASK-02.3 | TASK-02.3g, TASK-07.2a |
-| **SCR-06** | Thêm mới mẫu vật | ❌ Placeholder | ❌ Cần TASK-02.3 | TASK-02.3g, TASK-07.2b |
-| **SCR-07** | Chỉnh sửa mẫu vật | ❌ Placeholder | ❌ Cần TASK-02.3 | TASK-02.3g, TASK-07.2b |
-| **SCR-08** | Chi tiết mẫu vật | ❌ Placeholder | ❌ Cần TASK-02.3 | TASK-02.3g, TASK-07.2c |
-| **SCR-09** | Nhập hàng loạt | ❌ Placeholder | ❌ Cần TASK-02.3e | TASK-02.3e, TASK-07.2d |
-| **SCR-10** | Chỉnh sửa hàng loạt | ❌ Placeholder | ❌ Cần TASK-02.3g | TASK-07.2e |
-| **SCR-11** | In nhãn | ❌ Placeholder | ❌ Cần TASK-02.3f | TASK-02.3f, TASK-07.2e |
-| **SCR-12** | Cây phân loại học | ✅ Đầy đủ | ✅ Đầy đủ | — |
-| **SCR-13** | Hồ sơ loài | ⚠️ 3/5 tab | ✅ Đầy đủ | TASK-01.2 |
-| **SCR-14** | Quản lý danh pháp | ✅ Đầy đủ | ✅ Đầy đủ | — |
-| **SCR-15** | Tìm kiếm mẫu vật | ❌ Placeholder | ❌ Cần TASK-03.2 | TASK-03.2, TASK-07.3a |
-| **SCR-16** | Tìm kiếm nâng cao | ❌ Placeholder | ❌ Cần TASK-03.2 | TASK-03.2, TASK-07.3b |
-| **SCR-17** | Thư viện hình ảnh | ❌ Placeholder | ❌ Cần TASK-03.2c | TASK-07.3b |
-| **SCR-18** | Bản đồ phân bố | ❌ Placeholder | ❌ Cần TASK-05.1 | TASK-05.1, TASK-07.4a |
-| **SCR-19** | Quản lý lớp bản đồ | ❌ Placeholder | ❌ Cần TASK-05.1b | TASK-07.4b |
-| **SCR-20** | Danh sách DNA | ❌ Placeholder | ❌ Cần TASK-02.4 | TASK-02.4, TASK-07.5 |
-| **SCR-21** | Form Thêm/Sửa DNA | ❌ Placeholder | ❌ Cần TASK-02.4 | TASK-02.4, TASK-07.5 |
-| **SCR-22** | Chi tiết FASTA | ❌ Placeholder | ❌ Cần TASK-02.4 | TASK-02.4, TASK-07.5 |
-| **SCR-23** | AI nhận dạng loài | ❌ Placeholder | ❌ Cần TASK-08.1 | TASK-08.1, TASK-07.6a |
-| **SCR-24** | SDM Dự báo phân bố | ❌ Placeholder | ❌ Cần TASK-08.1 | TASK-07.6b |
-| **SCR-25** | Analytics Dashboard | ❌ Placeholder | ❌ Cần TASK-04.3 | TASK-04.3, TASK-07.6b |
-| **SCR-26** | Báo cáo danh lục | ❌ Placeholder | ❌ Cần TASK-04.2 | TASK-04.2, TASK-07.7 |
-| **SCR-27** | Báo cáo KPI | ❌ Placeholder | ❌ Cần TASK-04.2b | TASK-07.7 |
-| **SCR-28** | Bộ dựng báo cáo | ❌ Placeholder | ❌ Cần TASK-04.2c | TASK-07.7 |
-| **SCR-29** | Kiểm soát chia sẻ | ❌ Placeholder | ❌ Cần TASK-04.3 | TASK-04.3, TASK-07.8 |
-| **SCR-30** | Nhật ký & Cấu hình | ❌ Placeholder | ❌ Cần TASK-04.3 | TASK-04.3, TASK-07.8 |
+| **SCR-01** | Đăng nhập | [x] Đầy đủ | [x] Đầy đủ | TASK-00.3 (audit auth store) |
+| **SCR-02** | Đổi mật khẩu | [ ] Placeholder | [x] (cần thêm endpoint) | TASK-07.1 |
+| **SCR-03** | Dashboard Admin | [!] Hardcode metric | [x] (cần stats endpoint) | TASK-01.1, TASK-04.3 |
+| **SCR-04** | Trang chủ công khai | [x] Đầy đủ | — | — |
+| **SCR-05** | Danh sách mẫu vật | [ ] Placeholder | [ ] Cần TASK-02.3 | TASK-02.3g, TASK-07.2a |
+| **SCR-06** | Thêm mới mẫu vật | [ ] Placeholder | [ ] Cần TASK-02.3 | TASK-02.3g, TASK-07.2b |
+| **SCR-07** | Chỉnh sửa mẫu vật | [ ] Placeholder | [ ] Cần TASK-02.3 | TASK-02.3g, TASK-07.2b |
+| **SCR-08** | Chi tiết mẫu vật | [ ] Placeholder | [ ] Cần TASK-02.3 | TASK-02.3g, TASK-07.2c |
+| **SCR-09** | Nhập hàng loạt | [ ] Placeholder | [ ] Cần TASK-02.3e | TASK-02.3e, TASK-07.2d |
+| **SCR-10** | Chỉnh sửa hàng loạt | [ ] Placeholder | [ ] Cần TASK-02.3g | TASK-07.2e |
+| **SCR-11** | In nhãn | [ ] Placeholder | [ ] Cần TASK-02.3f | TASK-02.3f, TASK-07.2e |
+| **SCR-12** | Cây phân loại học | [x] Đầy đủ | [x] Đầy đủ | — |
+| **SCR-13** | Hồ sơ loài | [!] 3/5 tab | [x] Đầy đủ | TASK-01.2 |
+| **SCR-14** | Quản lý danh pháp | [x] Đầy đủ | [x] Đầy đủ | — |
+| **SCR-15** | Tìm kiếm mẫu vật | [ ] Placeholder | [ ] Cần TASK-03.2 | TASK-03.2, TASK-07.3a |
+| **SCR-16** | Tìm kiếm nâng cao | [ ] Placeholder | [ ] Cần TASK-03.2 | TASK-03.2, TASK-07.3b |
+| **SCR-17** | Thư viện hình ảnh | [ ] Placeholder | [ ] Cần TASK-03.2c | TASK-07.3b |
+| **SCR-18** | Bản đồ phân bố | [ ] Placeholder | [ ] Cần TASK-05.1 | TASK-05.1, TASK-07.4a |
+| **SCR-19** | Quản lý lớp bản đồ | [ ] Placeholder | [ ] Cần TASK-05.1b | TASK-07.4b |
+| **SCR-20** | Danh sách DNA | [ ] Placeholder | [ ] Cần TASK-02.4 | TASK-02.4, TASK-07.5 |
+| **SCR-21** | Form Thêm/Sửa DNA | [ ] Placeholder | [ ] Cần TASK-02.4 | TASK-02.4, TASK-07.5 |
+| **SCR-22** | Chi tiết FASTA | [ ] Placeholder | [ ] Cần TASK-02.4 | TASK-02.4, TASK-07.5 |
+| **SCR-23** | AI nhận dạng loài | [ ] Placeholder | [ ] Cần TASK-08.1 | TASK-08.1, TASK-07.6a |
+| **SCR-24** | SDM Dự báo phân bố | [ ] Placeholder | [ ] Cần TASK-08.1 | TASK-07.6b |
+| **SCR-25** | Analytics Dashboard | [ ] Placeholder | [ ] Cần TASK-04.3 | TASK-04.3, TASK-07.6b |
+| **SCR-26** | Báo cáo danh lục | [ ] Placeholder | [ ] Cần TASK-04.2 | TASK-04.2, TASK-07.7 |
+| **SCR-27** | Báo cáo KPI | [ ] Placeholder | [ ] Cần TASK-04.2b | TASK-07.7 |
+| **SCR-28** | Bộ dựng báo cáo | [ ] Placeholder | [ ] Cần TASK-04.2c | TASK-07.7 |
+| **SCR-29** | Kiểm soát chia sẻ | [ ] Placeholder | [ ] Cần TASK-04.3 | TASK-04.3, TASK-07.8 |
+| **SCR-30** | Nhật ký & Cấu hình | [ ] Placeholder | [ ] Cần TASK-04.3 | TASK-04.3, TASK-07.8 |
 
 ---
 
-## ⚙️ Quy tắc Nghiệm thu Task
+## Quy tắc Nghiệm thu Task
 
 1. Task chỉ được đánh `[x]` khi: code chạy được + unit test pass + ESLint clean + kiểm tra thủ công bằng Postman/trình duyệt
 2. Mọi endpoint mới phải cập nhật `docs/api.md` trong cùng commit — không tách sang sau
@@ -1129,30 +1151,30 @@ Baseline (Xong) → CV2.1 Taxonomy (✅ BE done / FE ~85%) → CV2.2 Specimen + 
 
 ---
 
-## 🔍 Chênh lệch Phát hiện so với task.md cũ (27/08/2026)
+## Chênh lệch Phát hiện so với task.md cũ (27/08/2026)
 
 | Mục | task.md cũ ghi | Thực tế |
 |:---|:---|:---|
 | DB Seeds | "thiếu Seed dữ liệu chuẩn" — 70% | Đã có `001_seed_lookups.js` với **34 tỉnh NQ 202 đúng chuẩn**, admin user, 8 habitat, 8 life_stage — thực tế 50% |
-| Backend Auth | "30%" | ✅ Auth module hoàn thiện 100% — 6 file có logic thật đầy đủ |
-| Backend Taxonomy | Gộp chung "30%" với các module khác | ✅ Taxonomy module **100% đầy đủ** — service 366 dòng, repository 239 dòng, tất cả CRUD + synonym + import Excel + species_profile + bioactivity |
+| Backend Auth | "30%" | [x] Auth module hoàn thiện 100% — 6 file có logic thật đầy đủ |
+| Backend Taxonomy | Gộp chung "30%" với các module khác | [x] Taxonomy module **100% đầy đủ** — service 366 dòng, repository 239 dòng, tất cả CRUD + synonym + import Excel + species_profile + bioactivity |
 | SCR-12/13/14 Taxonomy | "Đã hoàn thành Component" + "Đã kết nối API" | **Chính xác** — nhưng SCR-13 tab Mẫu vật và tab Phân bố có EmptyState placeholder chưa kết nối thật |
-| Frontend i18n | Không đề cập vấn đề | ❌ **Nợ kỹ thuật nghiêm trọng** — i18n dùng inline object trong code, vi phạm SRS 6.3 yêu cầu file JSON |
-| auth.store.js `isAuthenticated` | Không đề cập | ❌ **Potential bug** — `isAuthenticated` là function không phải reactive state, cần TASK-00.3 |
-| Frontend UI Primitives | "15%" — đề cập DataTable, Charts... | ✅ `ui/` có Icon, ConfirmDialog, Toast, EmptyState, LoadingState; ❌ `chart/`, `map/`, `table/`, `form/` **rỗng hoàn toàn** |
-| packages/shared | "10%" | ❌ **0%** — cả 3 thư mục `constants/`, `types/`, `validators/` rỗng hoàn toàn |
+| Frontend i18n | Không đề cập vấn đề | [ ] **Nợ kỹ thuật nghiêm trọng** — i18n dùng inline object trong code, vi phạm SRS 6.3 yêu cầu file JSON |
+| auth.store.js `isAuthenticated` | Không đề cập | [ ] **Potential bug** — `isAuthenticated` là function không phải reactive state, cần TASK-00.3 |
+| Frontend UI Primitives | "15%" — đề cập DataTable, Charts... | [x] `ui/` có Icon, ConfirmDialog, Toast, EmptyState, LoadingState; [ ] `chart/`, `map/`, `table/`, `form/` **rỗng hoàn toàn** |
+| packages/shared | "10%" | [ ] **0%** — cả 3 thư mục `constants/`, `types/`, `validators/` rỗng hoàn toàn |
 | Infra Monitoring | "40%" tổng | `grafana/` dir tồn tại nhưng rỗng; `prometheus.yml` không có — thực tế ~5% |
 | CI/CD | Không đề cập chi tiết | `.github/workflows/` rỗng — 0% |
 | scripts/ | Không đề cập | `scripts/` gốc repo rỗng — 0% |
 
 ---
 
-## 📌 Mâu thuẫn giữa `docs/adr/` và Kiến trúc Khóa
+## Mâu thuẫn giữa `docs/adr/` và Kiến trúc Khóa
 
 | Tài liệu | Ghi gì | Thực tế/Quyết định |
 |:---|:---|:---|
-| `cây thư mục dự án.md` | Đề xuất `craco.config.js` custom webpack — đúng | ✅ `frontend/` đang dùng CRACO + CRA 5, giữ nguyên |
-| `cây thư mục dự án.md` | Đề xuất `react-scripts ^5` — đúng | ✅ Đang dùng `react-scripts 5.0.1`, giữ nguyên |
+| `cây thư mục dự án.md` | Đề xuất `craco.config.js` custom webpack — đúng | [x] `frontend/` đang dùng CRACO + CRA 5, giữ nguyên |
+| `cây thư mục dự án.md` | Đề xuất `react-scripts ^5` — đúng | [x] Đang dùng `react-scripts 5.0.1`, giữ nguyên |
 | `chiến lược.md` mục 12.2.13 | Đề cập "ReactJS" không ghi version cụ thể | → **Stack thực tế đã khóa cứng: React 19.2.7 + React Router DOM 7.18.1 + CRA (react-scripts 5.0.1)** — xác nhận tại `frontend/package.json` và ghi rõ trong [ADR-UI-baseline-CV2.md](file:///d:/Dự án BigData Côn trùng/vietinsect/docs/adr/ADR-UI-baseline-CV2.md) dòng 20–29: repo đã ở React 19 từ commit `928cd39`/`1c291ac` trước đợt đồng bộ UI, ADR quyết định **không hạ về React 18** để tránh phạm vi migration. Đây **không phải mâu thuẫn ADR** — là thực tế đã chốt. TASK-00.1 cần xóa ghi chú "React 18" và thay bằng "React 19". |
 | `SRS.md` + `cây thư mục dự án.md` | MongoDB cho dữ liệu phi cấu trúc | → **Self-hosted Docker** theo NĐ 73/2017, không Atlas. Hiện docker-compose.yml đã đúng (`mongo:7.0` self-hosted). |
 | `danh sách màn hình dự kiến.md` | Ghi "63 tỉnh" ở một số chỗ mô tả | → **Bug** — phải dùng **34 tỉnh** theo NQ 202/2025/QH15. Seed `001_seed_lookups.js` đã đúng 34 tỉnh. Cần kiểm tra lại `HomeMapHero.js` và bất kỳ chỗ nào còn hardcode 63. |

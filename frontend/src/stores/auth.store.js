@@ -1,20 +1,25 @@
 import { create } from "zustand";
 
+const initialToken = typeof localStorage !== "undefined" ? localStorage.getItem("vietinsect_token") : null;
+
 const useAuthStore = create((set) => ({
   user: null,
-  token: localStorage.getItem("vietinsect_token") || null,
+  token: initialToken || null,
+  isAuthenticated: !!initialToken,
 
   setAuth: (user, token) => {
-    localStorage.setItem("vietinsect_token", token);
-    set({ user, token });
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("vietinsect_token", token);
+    }
+    set({ user, token, isAuthenticated: !!token });
   },
 
   logout: () => {
-    localStorage.removeItem("vietinsect_token");
-    set({ user: null, token: null });
+    if (typeof localStorage !== "undefined") {
+      localStorage.removeItem("vietinsect_token");
+    }
+    set({ user: null, token: null, isAuthenticated: false });
   },
-
-  isAuthenticated: () => !!localStorage.getItem("vietinsect_token"),
 }));
 
 export default useAuthStore;
