@@ -18,6 +18,55 @@ async function findAll() {
   return knex("taxa").select(TAXON_COLUMNS).orderBy("scientific_name", "asc");
 }
 
+async function findByRanks(ranks) {
+  return knex("taxa")
+    .select(TAXON_COLUMNS)
+    .whereIn("taxon_rank", ranks)
+    .orderBy("scientific_name", "asc");
+}
+
+async function countChildrenByParentIds(parentIds) {
+  if (!parentIds || parentIds.length === 0) return [];
+  const rows = await knex("taxa")
+    .whereIn("parent_id", parentIds)
+    .groupBy("parent_id")
+    .select("parent_id")
+    .count("* as count");
+  return rows.map((r) => ({ parent_id: Number(r.parent_id), count: parseInt(r.count, 10) }));
+}
+
+async function findChildren(parentId) {
+  return knex("taxa")
+    .select(TAXON_COLUMNS)
+    .where("parent_id", parentId)
+    .orderBy("scientific_name", "asc");
+}
+
+/**
+ * Cộng dồn số mẫu vật từ bậc sâu (Subspecies/Species/Genus) ngược lên Family/Order
+ * để cây phân loại lazy-load (dừng ở Family) vẫn hiển thị đúng tổng mẫu vật.
+ */
+async function countSpecimensRollup({ includePrivate = false } = {}) {
+  const visSql = includePrivate ? "" : "AND s.is_public = true";
+  const { rows } = await knex.raw(`
+    SELECT
+      COALESCE(
+        CASE WHEN t1.taxon_rank IN ('Kingdom','Phylum','Class','Order','Family') THEN t1.taxon_id END,
+        CASE WHEN t2.taxon_rank IN ('Kingdom','Phylum','Class','Order','Family') THEN t2.taxon_id END,
+        CASE WHEN t3.taxon_rank IN ('Kingdom','Phylum','Class','Order','Family') THEN t3.taxon_id END,
+        t1.taxon_id
+      ) AS taxon_id,
+      COUNT(*)::int AS count
+    FROM specimens s
+    JOIN taxa t1 ON s.taxon_id = t1.taxon_id
+    LEFT JOIN taxa t2 ON t1.parent_id = t2.taxon_id
+    LEFT JOIN taxa t3 ON t2.parent_id = t3.taxon_id
+    WHERE s.deleted_at IS NULL ${visSql}
+    GROUP BY 1
+  `);
+  return rows.map((r) => ({ taxon_id: Number(r.taxon_id), count: Number(r.count) }));
+}
+
 async function findById(taxonId) {
   const row = await knex("taxa").select(TAXON_COLUMNS).where("taxon_id", taxonId).first();
   return row || null;
@@ -37,14 +86,29 @@ async function findByScientificName(scientificName) {
   return row || null;
 }
 
-async function search(query, limit = 10) {
+async function search(query, limit = 15) {
+  const safeQuery = String(query || "").slice(0, 100).replace(/[%_\\]/g, "\\$&");
   return knex("taxa")
     .select(TAXON_COLUMNS)
-    .where("scientific_name", "ilike", `%${query}%`)
-    .orWhere("vernacular_name_vn", "ilike", `%${query}%`)
-    .orWhere("vernacular_name_en", "ilike", `%${query}%`)
+    .whereRaw("scientific_name ILIKE ? ESCAPE '\\'", [`%${safeQuery}%`])
+    .orWhereRaw("vernacular_name_vn ILIKE ? ESCAPE '\\'", [`%${safeQuery}%`])
+    .orWhereRaw("vernacular_name_en ILIKE ? ESCAPE '\\'", [`%${safeQuery}%`])
     .orderBy("scientific_name", "asc")
     .limit(limit);
+}
+
+async function countSpecimensByTaxonIds(taxonIds, { includePrivate = false } = {}) {
+  if (!taxonIds || taxonIds.length === 0) return [];
+  const rows = await knex("specimens")
+    .whereIn("taxon_id", taxonIds)
+    .whereNull("deleted_at")
+    .modify((q) => {
+      if (!includePrivate) q.where("is_public", true);
+    })
+    .groupBy("taxon_id")
+    .select("taxon_id")
+    .count("* as count");
+  return rows.map((r) => ({ taxon_id: Number(r.taxon_id), count: parseInt(r.count, 10) }));
 }
 
 async function countChildren(taxonId) {
@@ -52,9 +116,12 @@ async function countChildren(taxonId) {
   return parseInt(count, 10);
 }
 
-async function countSpecimensByTaxon() {
+async function countSpecimensByTaxon({ includePrivate = false } = {}) {
   const rows = await knex("specimens")
     .whereNull("deleted_at")
+    .modify((q) => {
+      if (!includePrivate) q.where("is_public", true);
+    })
     .groupBy("taxon_id")
     .select("taxon_id")
     .count("* as count");
@@ -62,10 +129,13 @@ async function countSpecimensByTaxon() {
   return rows.map((r) => ({ taxon_id: r.taxon_id, count: parseInt(r.count, 10) }));
 }
 
-async function countSpecimens(taxonId) {
+async function countSpecimens(taxonId, { includePrivate = false } = {}) {
   const [{ count }] = await knex("specimens")
     .where("taxon_id", taxonId)
     .whereNull("deleted_at")
+    .modify((q) => {
+      if (!includePrivate) q.where("is_public", true);
+    })
     .count("* as count");
   return parseInt(count, 10);
 }
@@ -211,6 +281,11 @@ async function removeBioactivity(bioactivityId) {
 module.exports = {
   knex, // Export để service dùng knex.transaction() cho bulk import Specimen
   findAll,
+  findByRanks,
+  findChildren,
+  countChildrenByParentIds,
+  countSpecimensRollup,
+  countSpecimensByTaxonIds,
   findById,
   findBySlug,
   findByScientificName,

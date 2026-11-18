@@ -73,12 +73,8 @@ async function refresh(refreshTokenRaw) {
   const record = await authRepository.findRefreshToken(tokenHash);
   if (!record) throw new AppError(AuthError.INVALID_CREDENTIALS);
 
-  // Lấy thông tin user để embed vào token mới
-  const { rows } = await require("../../config/db").query(
-    "SELECT admin_id, username FROM admin_users WHERE admin_id = $1",
-    [record.admin_id],
-  );
-  const user = rows[0];
+  // SRS §6.5: truy vấn qua Knex repository thay vì raw pg pool
+  const user = await authRepository.findById(record.admin_id);
   if (!user) throw new AppError(AuthError.INVALID_CREDENTIALS);
 
   const accessToken = jwt.sign(
@@ -86,7 +82,15 @@ async function refresh(refreshTokenRaw) {
     JWT_SECRET,
     { expiresIn: JWT_ACCESS_EXPIRES_IN },
   );
-  return { accessToken };
+
+  return {
+    accessToken,
+    user: {
+      adminId: user.admin_id,
+      username: user.username,
+      fullName: user.full_name,
+    },
+  };
 }
 
 async function logout(refreshTokenRaw) {
@@ -99,4 +103,18 @@ async function logoutAll(adminId) {
   await authRepository.revokeAllRefreshTokens(adminId);
 }
 
-module.exports = { login, refresh, logout, logoutAll };
+async function changePassword(adminId, currentPassword, newPassword) {
+  const user = await authRepository.findByIdWithHash(adminId);
+  if (!user) throw new AppError(AuthError.INVALID_CREDENTIALS);
+
+  const ok = await bcrypt.compare(currentPassword, user.password_hash);
+  if (!ok) throw new AppError(AuthError.WRONG_CURRENT_PASSWORD);
+
+  // SRS §5.2: băm bcrypt cost factor 12
+  const newHash = await bcrypt.hash(newPassword, 12);
+  await authRepository.updatePasswordHash(adminId, newHash);
+  await authRepository.revokeAllRefreshTokens(adminId);
+  logger.info(`Admin #${adminId} (${user.username}) đã cập nhật mật khẩu.`);
+}
+
+module.exports = { login, refresh, logout, logoutAll, changePassword };

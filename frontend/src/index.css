@@ -1950,3 +1950,485 @@ a { color: inherit; text-decoration: none; }
 
 
 
+
+/* ==========================================================================
+   6. SPECIMEN DATA TABLE, FILTER WORKBENCH & GIS MAP (SCR-05, SCR-08, SCR-15, SCR-18)
+   ========================================================================== */
+
+.vi-filter-grid {
+  display: grid;
+  grid-template-columns: 1.8fr repeat(3, 1fr);
+  gap: 14px;
+}
+.vi-filter-subbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #E2E8F0;
+}
+.vi-compact-select {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #111111;
+  border-radius: 0px !important;
+  background: #FFFFFF;
+  color: #111111;
+  font-size: 12px;
+  font-weight: 700;
+  outline: none;
+}
+.vi-dropdown-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 35;
+  min-width: 210px;
+  padding: 12px 14px;
+  background: #FFFFFF;
+  border: 1px solid #111111;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.12);
+  display: grid;
+  gap: 8px;
+}
+.vi-dropdown-popover label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.vi-spatial-box {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid #111111;
+  background: #F4F8F3;
+}
+.vi-spatial-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.vi-batch-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  margin-bottom: 14px;
+  background: #0F3820;
+  color: #FFFFFF;
+  border: 1px solid #111111;
+}
+
+.vi-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+.vi-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+.vi-data-table thead tr {
+  background: #F2F7F2;
+  border-bottom: 1px solid #111111;
+}
+.vi-data-table th {
+  padding: 13px 14px;
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #111111;
+  white-space: nowrap;
+}
+.vi-data-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #E2E8F0;
+  vertical-align: middle;
+}
+.vi-data-table tbody tr:hover {
+  background: #F8FBF8;
+}
+.vi-code-link {
+  font-family: 'Manrope', monospace;
+  font-weight: 800;
+  font-size: 12px;
+  color: #0F3820;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.vi-code-link:hover {
+  color: #2E7D32;
+}
+.vi-pagination-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #FFFFFF;
+  border-top: 1px solid #111111;
+}
+
+/* Form Grids & Detail KV Grid */
+.vi-form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.vi-form-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.vi-form-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.vi-kv-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.vi-kv-item {
+  padding: 14px 16px;
+  border: 1px solid #E2E8F0;
+  background: #FAFCFA;
+}
+.vi-kv-item span {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748B;
+}
+.vi-kv-item strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  color: #111111;
+}
+
+/* GIS Map Workbench (SCR-18) */
+.vi-segmented-group {
+  display: inline-flex;
+  border: 1px solid #111111;
+  background: #FFFFFF;
+}
+.vi-segmented-group button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-right: 1px solid #111111;
+  background: #FFFFFF;
+  color: #111111;
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.vi-segmented-group button:last-child {
+  border-right: 0;
+}
+.vi-segmented-group button.active {
+  background: #0F3820;
+  color: #FFFFFF;
+}
+
+.vi-gis-workbench {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.vi-gis-sidebar {
+  max-height: 740px;
+  overflow-y: auto;
+}
+.vi-gis-stage {
+  position: relative;
+  height: 740px;
+  overflow: hidden;
+  border: 1px solid #111111 !important;
+}
+.vi-leaflet-canvas {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+.vi-map-overlay-top {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 500;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  pointer-events: none;
+}
+.vi-map-overlay-top > * {
+  pointer-events: auto;
+}
+.vi-map-counter-chip {
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #111111;
+  font-size: 12px;
+  font-weight: 800;
+  color: #111111;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.vi-map-legend-bar {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 500;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #111111;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+.vi-map-legend-bar span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.vi-map-legend-bar i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1px solid #111111;
+}
+.vi-province-rank-list {
+  display: grid;
+  gap: 5px;
+}
+.vi-province-rank-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border: 1px solid #E2E8F0;
+  background: #FAFCFA;
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+.vi-province-rank-item:hover {
+  border-color: #2E7D32;
+  background: #EEF6EE;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 0px !important;
+  border: 1px solid #111111;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.16) !important;
+}
+
+@media (max-width: 1100px) {
+  .vi-filter-grid,
+  .vi-form-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .vi-form-grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .vi-gis-workbench {
+    grid-template-columns: 1fr;
+  }
+  .vi-gis-sidebar {
+    max-height: none;
+  }
+  .vi-gis-stage {
+    height: 540px;
+  }
+}
+@media (max-width: 640px) {
+  .vi-filter-grid,
+  .vi-form-grid-4,
+  .vi-kv-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   7. DNA BARCODE & FASTA VIEWER (SCR-20, SCR-21, SCR-22)
+   ========================================================================== */
+
+.vi-fasta-terminal {
+  border: 1px solid #111111;
+  background: #0F3820;
+  color: #E8F2E8;
+  overflow: hidden;
+}
+.vi-fasta-terminal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 18px;
+  background: #0A2415;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  font-family: 'Manrope', monospace;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #A2F792;
+}
+.vi-fasta-terminal-body {
+  padding: 18px 20px;
+  max-height: 460px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.68;
+}
+.vi-fasta-header-line {
+  color: #FFE08E;
+  font-weight: 700;
+  margin-bottom: 8px;
+  word-break: break-all;
+}
+.vi-fasta-seq-row {
+  display: flex;
+  gap: 14px;
+  white-space: pre;
+}
+.vi-fasta-pos {
+  color: rgba(255, 255, 255, 0.45);
+  user-select: none;
+  font-size: 11px;
+}
+.vi-fasta-bases {
+  color: #FFFFFF;
+  letter-spacing: 0.05em;
+}
+.vi-fasta-terminal-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 12px 18px;
+  background: #0A2415;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  font-size: 12px;
+  color: #DCE8D2;
+}
+.vi-fasta-terminal-foot strong {
+  color: #A2F792;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.vi-base-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.vi-base-bar-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 12px;
+  border: 1px solid #111111;
+  background: #FAFCFA;
+}
+.vi-base-bar-track {
+  width: 44px;
+  height: 120px;
+  background: #E2E8F0;
+  border: 1px solid #111111;
+  display: flex;
+  align-items: flex-end;
+}
+.vi-base-bar-fill {
+  width: 100%;
+  transition: height 350ms ease;
+}
+
+/* ==========================================================================
+   8. MINIO MEDIA GALLERY PLATES (SCR-17)
+   ========================================================================== */
+
+.vi-media-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.vi-media-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.vi-media-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
+}
+.vi-media-thumb-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #111111;
+  border-bottom: 1px solid #111111;
+  overflow: hidden;
+  cursor: pointer;
+}
+.vi-media-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 280ms ease;
+}
+.vi-media-card:hover .vi-media-thumb {
+  transform: scale(1.04);
+}
+.vi-media-license-chip {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+.vi-media-card-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+@media (max-width: 1100px) {
+  .vi-media-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 780px) {
+  .vi-media-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .vi-media-grid {
+    grid-template-columns: 1fr;
+  }
+}

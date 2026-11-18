@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import TechnicalFrame from "../../../components/ui/TechnicalFrame";
 import Icon from "../../../components/ui/Icon";
 import HomeMapHero from "../components/HomeMapHero";
+import specimenService from "../../specimen/specimen.service";
 
 // GỢI Ý CHO NGƯỜI DÙNG: Đường dẫn ảnh Hero chính trong thư mục public
 const DEFAULT_HERO_IMAGE = process.env.PUBLIC_URL + "/Hero1.png";
@@ -48,9 +48,23 @@ const portalCards = [
 ];
 
 export default function PublicHomePage() {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    specimenService.getStats().then(setStats).catch(() => {});
+  }, []);
+
+  const dynamicCards = useMemo(() => {
+    if (!stats) return portalCards;
+    return portalCards.map((c, idx) => {
+      if (idx === 0) return { ...c, badge: `${(stats.totalSpecimens || 0).toLocaleString()} records` };
+      if (idx === 1) return { ...c, badge: `${stats.provincesCovered || 34} tỉnh thành` };
+      if (idx === 2) return { ...c, badge: `${(stats.dnaCount || 0).toLocaleString()} sequences` };
+      return c;
+    });
+  }, [stats]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -154,23 +168,35 @@ export default function PublicHomePage() {
           <div className="stat-technical-grid">
             <div className="stat-box">
               <span className="stat-label">MẪU VẬT ĐÃ SỐ HÓA</span>
-              <strong className="stat-number">24,680</strong>
-              <span className="stat-sub">Specimens digitized</span>
+              <strong className="stat-number">
+                {stats ? (stats.totalSpecimens || 0).toLocaleString() : "100,134"}
+              </strong>
+              <span className="stat-sub">Specimens digitized (GBIF / DwC)</span>
             </div>
             <div className="stat-box">
-              <span className="stat-label">LOÀI GHI NHẬN</span>
-              <strong className="stat-number">3,842</strong>
-              <span className="stat-sub">Identified species</span>
+              <span className="stat-label">DANH PHÁP PHÂN LOẠI</span>
+              <strong className="stat-number">
+                {stats ? (stats.taxa?.total || 0).toLocaleString() : "114,732"}
+              </strong>
+              <span className="stat-sub">
+                {stats
+                  ? `${(stats.distinctScientificNames || 0).toLocaleString()} loài ghi nhận mẫu`
+                  : "Catalogue of Life synced"}
+              </span>
             </div>
             <div className="stat-box">
               <span className="stat-label">TỈNH / THÀNH DỮ LIỆU</span>
-              <strong className="stat-number">63</strong>
-              <span className="stat-sub">Provinces covered</span>
+              <strong className="stat-number">
+                {stats ? stats.provincesCovered || 34 : "34"}
+              </strong>
+              <span className="stat-sub">Provinces covered (PostGIS)</span>
             </div>
             <div className="stat-box">
-              <span className="stat-label">TRÌNH TỰ GEN COI</span>
-              <strong className="stat-number">1,420</strong>
-              <span className="stat-sub">DNA Barcode sequences</span>
+              <span className="stat-label">MẪU CÓ TỌA ĐỘ GPS</span>
+              <strong className="stat-number">
+                {stats ? (stats.withCoordinates || 0).toLocaleString() : "100,134"}
+              </strong>
+              <span className="stat-sub">Georeferenced occurrences</span>
             </div>
           </div>
         </div>
@@ -188,7 +214,7 @@ export default function PublicHomePage() {
           </div>
 
           <div className="editorial-cards-grid">
-            {portalCards.map((card, idx) => (
+            {dynamicCards.map((card, idx) => (
               <article key={idx} className="editorial-feature-card">
                 {/* Khung ảnh viền mảng đen / xanh đậm sắc nét, gọn gàng */}
                 <div className="card-solid-frame">

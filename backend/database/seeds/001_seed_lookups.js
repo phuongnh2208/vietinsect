@@ -6,13 +6,16 @@ exports.seed = async (knex) => {
   await knex("provinces").del();
   await knex("admin_users").del();
 
-  // ── 1. Admin mặc định ──────────────────────────────────────────
-  // password gốc: Admin@VietInsect2026
-  // hash này tương ứng bcrypt cost=12 — đổi ngay sau khi login lần đầu
+  // ── 1. Admin khởi tạo (bắt buộc truyền SEED_ADMIN_PASSWORD qua biến môi trường, không lưu plaintext) ──
+  const bcrypt = require("bcrypt");
+  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD;
+  if (!seedAdminPassword || seedAdminPassword.length < 12) {
+    throw new Error("Vui lòng đặt biến môi trường SEED_ADMIN_PASSWORD (>= 12 ký tự) trước khi chạy seed.");
+  }
+  const passwordHash = await bcrypt.hash(seedAdminPassword, 12);
   await knex("admin_users").insert({
     username: "admin",
-    password_hash:
-      "$2b$12$TIgVQEIP3wMgg9x4CfL1F.F4K/iNqEU/9lEtN/tsTpceXNK8/F3Ou",
+    password_hash: passwordHash,
     full_name: "Quản trị viên VietInsect",
     email: "admin@vietinsect.vast.vn",
   });

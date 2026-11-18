@@ -41,28 +41,82 @@ function toTaxonDto(taxon, specimenCount = 0) {
   };
 }
 
-// F-TX-01: cây phân cấp Kingdom → Subspecies. Số taxa hiện tại ở quy mô danh lục (hàng nghìn
-// bản ghi), nên build cây trong bộ nhớ là đủ nhanh; khi CSDL lớn hơn nhiều có thể chuyển sang
-// CTE đệ quy phía PostgreSQL.
-async function getTree() {
+const SHALLOW_TREE_RANKS = ["Kingdom", "Phylum", "Class", "Order", "Family"];
+
+// F-TX-01: cây phân cấp Kingdom → Family mặc định (~745 node thay vì 114k+ Genus/Species gây OOM).
+// Các bậc sâu hơn (Genus, Species, Subspecies) được tải lazy qua getChildren(parentId).
+async function getTree({ full = false, isAdmin = false } = {}) {
+  if (full) {
+    const [taxa, specimenCounts] = await Promise.all([
+      taxonomyRepository.findAll(),
+      taxonomyRepository.countSpecimensByTaxon({ includePrivate: isAdmin }),
+    ]);
+    const countByTaxonId = new Map(specimenCounts.map((row) => [Number(row.taxon_id), row.count]));
+    const nodeById = new Map(
+      taxa.map((taxon) => [
+        Number(taxon.taxon_id),
+        { ...toTaxonDto(taxon, countByTaxonId.get(Number(taxon.taxon_id)) || 0), childCount: 0, children: [] },
+      ]),
+    );
+    const roots = [];
+    nodeById.forEach((node) => {
+      const pid = node.parentId ? Number(node.parentId) : null;
+      if (pid && nodeById.has(pid)) {
+        const p = nodeById.get(pid);
+        p.children.push(node);
+        p.childCount += 1;
+      } else {
+        roots.push(node);
+      }
+    });
+    function rollUpFull(node) {
+      let total = node.specimenCount;
+      node.children.forEach((child) => { total += rollUpFull(child); });
+      node.specimenCount = total;
+      return total;
+    }
+    roots.forEach(rollUpFull);
+    return roots;
+  }
+
   const [taxa, specimenCounts] = await Promise.all([
-    taxonomyRepository.findAll(),
-    taxonomyRepository.countSpecimensByTaxon(),
+    taxonomyRepository.findByRanks(SHALLOW_TREE_RANKS),
+    taxonomyRepository.countSpecimensRollup({ includePrivate: isAdmin }),
   ]);
 
+  const familyIds = taxa.filter((t) => t.taxon_rank === "Family").map((t) => Number(t.taxon_id));
+  const familyChildCounts = await taxonomyRepository.countChildrenByParentIds(familyIds);
+  const childCountMap = new Map(familyChildCounts.map((r) => [r.parent_id, r.count]));
   const countByTaxonId = new Map(specimenCounts.map((row) => [row.taxon_id, row.count]));
-  const nodeById = new Map(taxa.map((taxon) => [taxon.taxon_id, { ...toTaxonDto(taxon, countByTaxonId.get(taxon.taxon_id) || 0), children: [] }]));
+
+  const nodeById = new Map(
+    taxa.map((taxon) => {
+      const id = Number(taxon.taxon_id);
+      return [
+        id,
+        {
+          ...toTaxonDto(taxon, countByTaxonId.get(id) || 0),
+          id,
+          parentId: taxon.parent_id ? Number(taxon.parent_id) : null,
+          childCount: childCountMap.get(id) || 0,
+          children: [],
+        },
+      ];
+    }),
+  );
 
   const roots = [];
   nodeById.forEach((node) => {
     if (node.parentId && nodeById.has(node.parentId)) {
-      nodeById.get(node.parentId).children.push(node);
+      const parent = nodeById.get(node.parentId);
+      parent.children.push(node);
+      parent.childCount += 1;
     } else {
       roots.push(node);
     }
   });
 
-  // Cộng dồn specimenCount lên taxon cha (bao gồm số mẫu của toàn bộ nhánh con).
+  // Cộng dồn specimenCount lên taxon cha (Family → Order → Class → Phylum → Kingdom).
   function rollUp(node) {
     let total = node.specimenCount;
     node.children.forEach((child) => {
@@ -76,16 +130,43 @@ async function getTree() {
   return roots;
 }
 
+async function getChildren(parentId, { isAdmin = false } = {}) {
+  const parent = await taxonomyRepository.findById(parentId);
+  if (!parent) throw new AppError(TaxonomyError.TAXON_NOT_FOUND);
+
+  const children = await taxonomyRepository.findChildren(parentId);
+  const childIds = children.map((c) => Number(c.taxon_id));
+
+  const [grandChildCounts, specimenCounts] = await Promise.all([
+    taxonomyRepository.countChildrenByParentIds(childIds),
+    taxonomyRepository.countSpecimensByTaxonIds(childIds, { includePrivate: isAdmin }),
+  ]);
+
+  const gcMap = new Map(grandChildCounts.map((r) => [r.parent_id, r.count]));
+  const spMap = new Map(specimenCounts.map((r) => [r.taxon_id, r.count]));
+
+  return children.map((taxon) => {
+    const id = Number(taxon.taxon_id);
+    return {
+      ...toTaxonDto(taxon, spMap.get(id) || 0),
+      id,
+      parentId: taxon.parent_id ? Number(taxon.parent_id) : null,
+      childCount: gcMap.get(id) || 0,
+      children: [],
+    };
+  });
+}
+
 async function searchTaxa(query) {
   if (!query || query.trim().length < 2) return [];
   const taxa = await taxonomyRepository.search(query.trim(), 10);
   return taxa.map((taxon) => toTaxonDto(taxon));
 }
 
-async function getTaxonById(taxonId) {
+async function getTaxonById(taxonId, { isAdmin = false } = {}) {
   const taxon = await taxonomyRepository.findById(taxonId);
   if (!taxon) throw new AppError(TaxonomyError.TAXON_NOT_FOUND);
-  const specimenCount = await taxonomyRepository.countSpecimens(taxonId);
+  const specimenCount = await taxonomyRepository.countSpecimens(taxonId, { includePrivate: isAdmin });
   return toTaxonDto(taxon, specimenCount);
 }
 
@@ -176,7 +257,7 @@ async function clearSynonym(taxonId) {
 
 // F-TX-05 + F-TX-06 + F-TX-07: hồ sơ loài đầy đủ — thông tin taxon, mô tả hình thái/sinh thái,
 // liên kết CSDL quốc tế và danh sách hoạt tính sinh/hóa học.
-async function getSpeciesProfile(identifier) {
+async function getSpeciesProfile(identifier, { isAdmin = false } = {}) {
   const isNumericId = /^\d+$/.test(identifier);
   const taxon = isNumericId
     ? await taxonomyRepository.findById(Number(identifier))
@@ -187,7 +268,7 @@ async function getSpeciesProfile(identifier) {
   const [profile, bioactivity, specimenCount] = await Promise.all([
     taxonomyRepository.findProfile(taxon.taxon_id),
     taxonomyRepository.listBioactivity(taxon.taxon_id),
-    taxonomyRepository.countSpecimens(taxon.taxon_id),
+    taxonomyRepository.countSpecimens(taxon.taxon_id, { includePrivate: isAdmin }),
   ]);
 
   return {
@@ -354,6 +435,7 @@ async function importChecklist(fileBuffer, adminId) {
 
 module.exports = {
   getTree,
+  getChildren,
   searchTaxa,
   getTaxonById,
   createTaxon,

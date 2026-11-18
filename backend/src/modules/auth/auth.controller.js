@@ -1,4 +1,5 @@
 const authService = require("./auth.service");
+const { logAudit } = require("../system/system.service");
 
 // SRS §3.4: refreshToken lưu HttpOnly; Secure; SameSite=Strict; Path=/api/auth.
 const REFRESH_COOKIE_OPTIONS = {
@@ -16,6 +17,15 @@ async function login(req, res, next) {
 
     // Set refreshToken vào HttpOnly cookie — JS không đọc được
     res.cookie("vietinsect_refresh", result.refreshTokenRaw, REFRESH_COOKIE_OPTIONS);
+
+    await logAudit({
+      adminId: result.user.adminId,
+      actionType: "LOGIN",
+      targetTable: "admin_users",
+      targetId: result.user.adminId,
+      ipAddress: req.headers["x-forwarded-for"] || req.socket?.remoteAddress,
+      details: { username: result.user.username },
+    });
 
     // Chỉ trả accessToken + user ra body
     res.json({
@@ -58,4 +68,25 @@ async function logout(req, res, next) {
   }
 }
 
-module.exports = { login, refresh, logout };
+async function changePassword(req, res, next) {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    await authService.changePassword(req.admin.adminId, currentPassword, newPassword);
+    res.clearCookie("vietinsect_refresh", { path: "/api/auth" });
+
+    await logAudit({
+      adminId: req.admin.adminId,
+      actionType: "CHANGE_PASSWORD",
+      targetTable: "admin_users",
+      targetId: req.admin.adminId,
+      ipAddress: req.headers["x-forwarded-for"] || req.socket?.remoteAddress,
+      details: { revokedAllSessions: true },
+    });
+
+    res.json({ success: true, message: "Đổi mật khẩu thành công, vui lòng đăng nhập lại." });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { login, refresh, logout, changePassword };

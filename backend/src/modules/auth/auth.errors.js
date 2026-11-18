@@ -24,6 +24,11 @@ const AuthError = {
     message: "Bạn không có quyền thực hiện hành động này",
     statusCode: 403,
   },
+  WRONG_CURRENT_PASSWORD: {
+    code: "AUTH.WRONG_CURRENT_PASSWORD",
+    message: "Mật khẩu hiện tại không chính xác",
+    statusCode: 400,
+  },
 };
 
 module.exports = AuthError;

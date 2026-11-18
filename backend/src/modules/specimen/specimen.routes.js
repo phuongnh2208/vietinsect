@@ -1,0 +1,39 @@
+const express = require("express");
+const router = express.Router();
+const specimenController = require("./specimen.controller");
+const { requireAdmin, optionalAdmin } = require("../../middleware/auth.middleware");
+const {
+  validateListSpecimens,
+  validateMapQuery,
+  validateCreateSpecimen,
+  validateUpdateSpecimen,
+  validateTogglePublic,
+  validateBatchPublic,
+} = require("./specimen.validator");
+
+// Danh mục dùng chung (tỉnh/thành, bộ côn trùng, sinh cảnh, giai đoạn sống, trạng thái mẫu)
+router.get("/lookups", specimenController.getLookups);
+
+// Thống kê tổng hợp dữ liệu mẫu vật thực tế
+router.get("/stats", optionalAdmin, specimenController.getStats);
+
+// Xuất gói Darwin Core Archive (.zip chuẩn GBIF), Excel (.xlsx) và GeoJSON (F-SP-11, F-SR-06, F-RP-06)
+router.get("/export", optionalAdmin, specimenController.exportSpecimens);
+
+// Dữ liệu tọa độ, cụm mật độ tỉnh và lưới nhiệt cho Bản đồ phân bố GIS (SCR-18)
+router.get("/map", optionalAdmin, validateMapQuery, specimenController.getMapOccurrences);
+
+// Tìm kiếm & phân trang danh sách mẫu vật (SCR-05 Admin / SCR-15 Public)
+router.get("/", optionalAdmin, validateListSpecimens, specimenController.list);
+
+// Chi tiết 1 mẫu vật (SCR-08)
+router.get("/:id", optionalAdmin, specimenController.getById);
+
+// Quản trị: tạo mới, cập nhật, đổi trạng thái công khai đơn lẻ / hàng loạt, xóa mềm
+router.post("/", requireAdmin, validateCreateSpecimen, specimenController.create);
+router.patch("/batch-public", requireAdmin, validateBatchPublic, specimenController.batchTogglePublic);
+router.put("/:id", requireAdmin, validateUpdateSpecimen, specimenController.update);
+router.patch("/:id/public", requireAdmin, validateTogglePublic, specimenController.togglePublic);
+router.delete("/:id", requireAdmin, specimenController.remove);
+
+module.exports = router;

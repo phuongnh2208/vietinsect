@@ -47,6 +47,8 @@ export function AdminSidebar({ open, onClose }) {
         ))}
       </nav>
       <div className="sidebar-footer">
+        <NavLink to="/admin/media" onClick={onClose} className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}><Icon name="image" size={18} /><span>Thư viện ảnh</span></NavLink>
+        <NavLink to="/admin/sharing" onClick={onClose} className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}><Icon name="lock" size={18} /><span>Chia sẻ Public/Private</span></NavLink>
         <NavLink to="/admin/system" onClick={onClose} className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}><Icon name="settings" size={18} /><span>{t("nav.settings")}</span></NavLink>
         <button className="sidebar-link" onClick={logout}><Icon name="arrow-up-right" size={18} /><span>{t("common.logout")}</span></button>
         <div className="sidebar-screen-count">{adminScreens.length} admin screens · menu rút gọn từ registry · {user?.username || "VietInsect team"}</div>

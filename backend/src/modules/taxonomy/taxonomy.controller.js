@@ -2,8 +2,20 @@ const taxonomyService = require("./taxonomy.service");
 
 async function getTree(req, res, next) {
   try {
-    const tree = await taxonomyService.getTree();
+    const full = req.query.full === "true";
+    const tree = await taxonomyService.getTree({ full, isAdmin: Boolean(req.admin) });
     res.json({ success: true, data: tree });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getChildren(req, res, next) {
+  try {
+    const children = await taxonomyService.getChildren(Number(req.params.id), {
+      isAdmin: Boolean(req.admin),
+    });
+    res.json({ success: true, data: children });
   } catch (err) {
     next(err);
   }
@@ -20,7 +32,9 @@ async function search(req, res, next) {
 
 async function getById(req, res, next) {
   try {
-    const taxon = await taxonomyService.getTaxonById(Number(req.params.id));
+    const taxon = await taxonomyService.getTaxonById(Number(req.params.id), {
+      isAdmin: Boolean(req.admin),
+    });
     res.json({ success: true, data: taxon });
   } catch (err) {
     next(err);
@@ -74,7 +88,9 @@ async function clearSynonym(req, res, next) {
 
 async function getSpeciesProfile(req, res, next) {
   try {
-    const profile = await taxonomyService.getSpeciesProfile(req.params.identifier);
+    const profile = await taxonomyService.getSpeciesProfile(req.params.identifier, {
+      isAdmin: Boolean(req.admin),
+    });
     res.json({ success: true, data: profile });
   } catch (err) {
     next(err);
@@ -122,6 +138,7 @@ async function importChecklist(req, res, next) {
 
 module.exports = {
   getTree,
+  getChildren,
   search,
   getById,
   create,

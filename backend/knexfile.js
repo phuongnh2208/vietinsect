@@ -1,13 +1,14 @@
-// packages/backend/knexfile.js
+require("dotenv").config();
+
 module.exports = {
   development: {
     client: "postgresql",
     connection: {
-      host:     "localhost",
-      port:     5432,
-      database: "vietinsect_db",
-      user:     "vietinsect_user",
-      password: "vietinsect_pass_2026",
+      host: process.env.DB_HOST || "localhost",
+      port: Number(process.env.DB_PORT) || 5432,
+      database: process.env.DB_NAME || "vietinsect_db",
+      user: process.env.DB_USER || "vietinsect_user",
+      password: process.env.DB_PASSWORD,
     },
     migrations: {
       directory: "./database/migrations",

@@ -1,0 +1,38 @@
+const SEX_VALUES = ["male", "female", "unknown"];
+
+const BASIS_OF_RECORD_VALUES = [
+  "PRESERVED_SPECIMEN",
+  "HUMAN_OBSERVATION",
+  "MATERIAL_SAMPLE",
+  "MACHINE_OBSERVATION",
+  "OBSERVATION",
+  "OCCURRENCE",
+  "LIVING_SPECIMEN",
+];
+
+const SORTABLE_FIELDS = [
+  "collectionDate",
+  "createdAt",
+  "specimenId",
+  "scientificName",
+  "individualCount",
+];
+
+const DEFAULT_PAGE_LIMIT = 25;
+const MAX_PAGE_LIMIT = 100;
+const DEFAULT_MAP_LIMIT = 3000;
+const MAX_MAP_LIMIT = 8000;
+const MIN_PARTITION_YEAR = 1800;
+const MAX_PARTITION_YEAR = 2050;
+
+module.exports = {
+  SEX_VALUES,
+  BASIS_OF_RECORD_VALUES,
+  SORTABLE_FIELDS,
+  DEFAULT_PAGE_LIMIT,
+  MAX_PAGE_LIMIT,
+  DEFAULT_MAP_LIMIT,
+  MAX_MAP_LIMIT,
+  MIN_PARTITION_YEAR,
+  MAX_PARTITION_YEAR,
+};

@@ -35,9 +35,14 @@ http.interceptors.response.use(
 
     // Nếu 401 và chưa retry lần nào → thử dùng refreshToken trong cookie
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // Không retry request đến /auth/refresh (tránh vòng lặp vô hạn)
-      if (originalRequest.url?.includes("/auth/refresh")) {
-        if (_logoutFn) _logoutFn();
+      // Không retry request đến /auth/login hoặc /auth/refresh
+      if (
+        originalRequest.url?.includes("/auth/refresh") ||
+        originalRequest.url?.includes("/auth/login")
+      ) {
+        if (originalRequest.url?.includes("/auth/refresh") && _logoutFn) {
+          _logoutFn();
+        }
         return Promise.reject(error);
       }
 
@@ -63,8 +68,8 @@ http.interceptors.response.use(
         );
         const newToken = data.data.accessToken;
 
-        // Cập nhật token mới vào store (in-memory)
-        useAuthStore.getState().setToken(newToken);
+        // Cập nhật token mới (và thông tin user nếu có) vào store (in-memory)
+        useAuthStore.getState().setToken(newToken, data.data.user);
 
         // Giải phóng queue
         _refreshQueue.forEach(({ resolve }) => resolve(newToken));

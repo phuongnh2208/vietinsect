@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const router = express.Router();
 const taxonomyController = require("./taxonomy.controller");
-const { requireAdmin } = require("../../middleware/auth.middleware");
+const { requireAdmin, optionalAdmin } = require("../../middleware/auth.middleware");
 const {
   validateCreateTaxon,
   validateUpdateTaxon,
@@ -16,11 +16,12 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB, đủ cho danh lục vài nghìn dòng
 });
 
-// F-TX-01: đọc cây phân loại / tìm kiếm nhanh — công khai cho cả Admin và User.
-router.get("/tree", taxonomyController.getTree);
-router.get("/search", taxonomyController.search);
-router.get("/species/:identifier", taxonomyController.getSpeciesProfile);
-router.get("/:id", taxonomyController.getById);
+// F-TX-01: đọc cây phân loại / tìm kiếm nhanh — User chỉ thấy số đếm mẫu Public, Admin thấy toàn bộ.
+router.get("/tree", optionalAdmin, taxonomyController.getTree);
+router.get("/search", optionalAdmin, taxonomyController.search);
+router.get("/species/:identifier", optionalAdmin, taxonomyController.getSpeciesProfile);
+router.get("/:id/children", optionalAdmin, taxonomyController.getChildren);
+router.get("/:id", optionalAdmin, taxonomyController.getById);
 
 // F-TX-02 / F-TX-03 / F-TX-04: CRUD, đồng danh pháp và import — chỉ Admin.
 router.post("/", requireAdmin, validateCreateTaxon, taxonomyController.create);

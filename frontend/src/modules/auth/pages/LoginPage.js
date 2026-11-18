@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Navigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import useAuth from "../useAuth";
 import useAuthStore from "../../../stores/auth.store";
+import authService from "../../../services/auth.service";
 import BrandLogo from "../../../components/ui/BrandLogo";
 import Icon from "../../../components/ui/Icon";
 import { useToast } from "../../../components/ui/ToastProvider";
@@ -13,7 +14,21 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const { login, loading, error } = useAuth();
   const token = useAuthStore((state) => state.token);
+  const initialized = useAuthStore((state) => state.initialized);
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const markInitialized = useAuthStore((state) => state.markInitialized);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (initialized || token) return;
+    authService
+      .refreshSession()
+      .then((res) => {
+        if (res?.accessToken) setAuth(res.user || null, res.accessToken);
+        else markInitialized();
+      })
+      .catch(() => markInitialized());
+  }, [initialized, token, setAuth, markInitialized]);
 
   if (token) return <Navigate to="/admin/dashboard" replace />;
 

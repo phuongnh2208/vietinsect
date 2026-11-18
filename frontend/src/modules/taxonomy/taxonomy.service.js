@@ -5,6 +5,11 @@ async function getTree() {
   return data.data;
 }
 
+async function getChildren(parentId) {
+  const { data } = await http.get(`/taxonomy/${parentId}/children`);
+  return data.data;
+}
+
 async function searchTaxa(query) {
   const { data } = await http.get("/taxonomy/search", { params: { q: query } });
   return data.data;
@@ -69,6 +74,7 @@ async function importChecklist(file) {
 
 const taxonomyService = {
   getTree,
+  getChildren,
   searchTaxa,
   getTaxonById,
   getSpeciesProfile,
