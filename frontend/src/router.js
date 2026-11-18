@@ -49,6 +49,10 @@ const publicChildRoutes = [
   ...dualContextRoutes.map(({ publicPath, element }) => ({ path: publicPath, element })),
 ];
 
+const adminChildRoutees = [
+
+]
+
 const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
   { path: "/", element: <PublicLayout />, children: publicChildRoutes },

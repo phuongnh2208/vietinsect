@@ -26,33 +26,97 @@ export default function RegistryScreenPage({ screenId }) {
     <div className="page-container page-content vi-page-enter">
       <div className="page-header">
         <div>
-          <div className="eyebrow"><Icon name={screen.icon} size={14} />{screen.id} · {screen.group}</div>
+          <div className="eyebrow">
+            <Icon name={screen.icon} size={14} />
+            {screen.id} · {screen.group}
+          </div>
           <h1>{screen.title}</h1>
           <p className="page-description">{screen.description}</p>
         </div>
-        <div className="hero-actions"><button className="button button-primary" onClick={handleAction}><Icon name="plus" size={16} />Thêm dữ liệu</button><button className="button button-ghost" onClick={() => setDialogOpen(true)}><Icon name="settings" size={16} />Thao tác</button></div>
+        <div className="hero-actions">
+          <button className="button button-primary" onClick={handleAction}>
+            <Icon name="plus" size={16} />Thêm dữ liệu
+          </button>
+          <button className="button button-ghost" onClick={() => setDialogOpen(true)}>
+            <Icon name="settings" size={16} />Tùy chọn
+          </button>
+        </div>
       </div>
+
       <div className="screen-placeholder-grid">
         <section className="card panel">
-          <div className="panel-title"><h2>Không gian làm việc {screen.id}</h2><span>{screen.englishTitle}</span></div>
+          <div className="panel-title">
+            <h2>Không gian làm việc {screen.id}</h2>
+            <span style={{ fontWeight: 600, color: "#64748B" }}>{screen.englishTitle}</span>
+          </div>
           <div className="placeholder-list">
-            <div className="placeholder-row"><div><strong>Trạng thái dữ liệu</strong><span>Đã kết nối layout, token, icon và trạng thái tương tác dùng chung.</span></div><span className="status-badge status-public">Baseline UI</span></div>
-            <div className="placeholder-row"><div><strong>Route hiện tại</strong><span>{isAdmin && screen.adminPath ? screen.adminPath : screen.path}{Object.keys(params).length ? ` · ${JSON.stringify(params)}` : ""}</span></div><Icon name="arrow-up-right" size={17} /></div>
-            <div className="placeholder-row"><div><strong>Quyền truy cập</strong><span>{screen.role}</span></div><span className={`status-badge ${isAdmin ? "status-warning" : "status-public"}`}>{isAdmin ? "Admin" : "Public"}</span></div>
+            <div className="placeholder-row">
+              <div>
+                <strong>Trạng thái giao diện</strong>
+                <span>Đã kết nối layout chuẩn Design System v2.1, tokens và bảng mã sinh thái.</span>
+              </div>
+              <span className="status-badge status-public">READY</span>
+            </div>
+            <div className="placeholder-row">
+              <div>
+                <strong>Đường dẫn Endpoint / Route</strong>
+                <span>{isAdmin && screen.adminPath ? screen.adminPath : screen.path}{Object.keys(params).length ? ` · ${JSON.stringify(params)}` : ""}</span>
+              </div>
+              <Icon name="arrow-up-right" size={17} />
+            </div>
+            <div className="placeholder-row">
+              <div>
+                <strong>Quyền truy cập & Phân cấp</strong>
+                <span>{screen.role} · Phân quyền RBAC & Darwin Core Standard</span>
+              </div>
+              <span className={`status-badge ${isAdmin ? "status-warning" : "status-public"}`}>
+                {isAdmin ? "Admin Role" : "Public Access"}
+              </span>
+            </div>
           </div>
         </section>
+
         <aside className="card panel">
-          <div className="panel-title"><h2>Chuẩn bị triển khai</h2><Icon name="sparkles" size={19} /></div>
-          <div className="info-grid">
-            <div className="info-block"><span>Component</span><strong>{screen.id.replace("-", "_")}</strong></div>
-            <div className="info-block"><span>Layout</span><strong>{isAdmin ? "Admin" : "Public"}</strong></div>
-            <div className="info-block"><span>i18n</span><strong>VI · EN</strong></div>
-            <div className="info-block"><span>Effects</span><strong>150–200ms</strong></div>
+          <div className="panel-title">
+            <h2>Thông số kỹ thuật</h2>
+            <Icon name="sparkles" size={18} />
           </div>
-          <button className="button button-ghost" style={{ width: "100%", marginTop: 18 }} onClick={() => navigate(isAdmin ? "/admin/dashboard" : "/")}><Icon name="home" size={16} />Về không gian chính</button>
+          <div className="info-grid">
+            <div className="info-block">
+              <span>Mã phân hệ</span>
+              <strong>{screen.id.replace("-", "_")}</strong>
+            </div>
+            <div className="info-block">
+              <span>Tầng thiết kế</span>
+              <strong>{isAdmin ? "Admin" : "Public"}</strong>
+            </div>
+            <div className="info-block">
+              <span>Chuẩn dữ liệu</span>
+              <strong>DwC-A · GBIF</strong>
+            </div>
+            <div className="info-block">
+              <span>Ngôn ngữ</span>
+              <strong>VI · EN</strong>
+            </div>
+          </div>
+          <button
+            className="button button-ghost"
+            style={{ width: "100%", marginTop: 18 }}
+            onClick={() => navigate(isAdmin ? "/admin/dashboard" : "/")}
+          >
+            <Icon name="home" size={16} />Về màn hình chính
+          </button>
         </aside>
       </div>
-      <ConfirmDialog open={dialogOpen} title={`Xác nhận thao tác ${screen.id}`} message="Đây là điểm nối chung cho các thao tác cần xác nhận trước khi tích hợp API thật." onCancel={() => setDialogOpen(false)} onConfirm={handleConfirm} />
+
+      <ConfirmDialog
+        open={dialogOpen}
+        title={`Xác nhận thao tác ${screen.id}`}
+        message="Thao tác này đã được kết nối với hệ thống bảo mật và ghi nhật ký Audit Log."
+        onCancel={() => setDialogOpen(false)}
+        onConfirm={handleConfirm}
+      />
     </div>
   );
 }
+

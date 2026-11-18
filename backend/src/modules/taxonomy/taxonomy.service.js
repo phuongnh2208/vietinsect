@@ -35,7 +35,7 @@ function toTaxonDto(taxon, specimenCount = 0) {
     iucnStatus: taxon.iucn_status,
     isVerified: taxon.is_verified,
     notes: taxon.taxon_notes,
-    slug: slugify(taxon.scientific_name),
+    slug: taxon.slug || slugify(taxon.scientific_name),
     specimenCount,
     externalLinks: toExternalLinks(taxon),
   };
@@ -99,6 +99,7 @@ async function createTaxon(payload, adminId) {
   if (existing) throw new AppError(TaxonomyError.DUPLICATE_SCIENTIFIC_NAME);
 
   const colResult = await catalogueOfLifeService.verifyScientificName(payload.scientificName);
+  payload.slug = slugify(payload.scientificName);
   const taxon = await taxonomyRepository.create(payload, adminId);
 
   if (colResult.exactMatch) {
@@ -123,6 +124,10 @@ async function updateTaxon(taxonId, payload) {
   if (payload.scientificName && payload.scientificName.toLowerCase() !== current.scientific_name.toLowerCase()) {
     const existing = await taxonomyRepository.findByScientificName(payload.scientificName);
     if (existing) throw new AppError(TaxonomyError.DUPLICATE_SCIENTIFIC_NAME);
+  }
+
+  if (payload.scientificName) {
+    payload.slug = slugify(payload.scientificName);
   }
 
   const updated = await taxonomyRepository.update(taxonId, payload);
@@ -206,8 +211,7 @@ async function getSpeciesProfile(identifier) {
 }
 
 async function findBySlug(slug) {
-  const taxa = await taxonomyRepository.findAll();
-  return taxa.find((taxon) => slugify(taxon.scientific_name) === slug) || null;
+  return taxonomyRepository.findBySlug(slug);
 }
 
 async function upsertSpeciesProfile(taxonId, payload) {
@@ -329,7 +333,7 @@ async function importChecklist(fileBuffer, adminId) {
       }
 
       const created = await taxonomyRepository.create(
-        { taxonRank: row.taxonRank, scientificName: row.scientificName, parentId },
+        { taxonRank: row.taxonRank, scientificName: row.scientificName, parentId, slug: slugify(row.scientificName) },
         adminId,
       );
       idByName.set(row.scientificName.toLowerCase(), created.taxon_id);

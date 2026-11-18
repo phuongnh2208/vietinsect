@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import authService from "../../services/auth.service";
 import useAuthStore from "../../stores/auth.store";
+import { setLogoutHandler } from "../../services/http";
 
 function useAuth() {
   const [loading, setLoading] = useState(false);
@@ -15,9 +16,17 @@ function useAuth() {
     setError(null);
     try {
       const result = await authService.login(username, password);
-      setAuth(result.user, result.token);
+      // result = { accessToken, user } — refreshToken đã nằm trong HttpOnly cookie
+      setAuth(result.user, result.accessToken);
+
+      // Đăng ký logout handler cho http interceptor để tránh circular import
+      setLogoutHandler(() => {
+        logoutStore();
+        navigate("/login");
+      });
+
       navigate("/admin/dashboard");
-      return { ok: true, result };
+      return { ok: true };
     } catch (err) {
       const message = err.response?.data?.message || "Đăng nhập thất bại";
       setError(message);
@@ -27,7 +36,12 @@ function useAuth() {
     }
   }
 
-  function logout() {
+  async function logout() {
+    try {
+      await authService.logout(); // Revoke refresh token trên server
+    } catch {
+      // Bỏ qua lỗi logout — vẫn clear state local
+    }
     logoutStore();
     navigate("/login");
   }

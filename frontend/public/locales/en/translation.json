@@ -54,5 +54,8 @@
     "success": "Action completed",
     "error": "Something went wrong",
     "warning": "Please review"
+  },
+  "taxonomy": {
+    "errorNotFound": "Species profile not found."
   }
 }

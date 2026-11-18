@@ -137,11 +137,33 @@ Baseline (Xong) → CV2.1 Taxonomy ([x] BE done / FE ~85%) → CV2.2 Specimen + 
    - Đã tạo [api.js](file:///d:/D%E1%BB%B1%20%C3%A1n%20BigData%20C%C3%B4n%20tr%C3%B9ng/vietinsect/frontend/src/constants/api.js) tập trung toàn bộ API endpoints cho Auth, Taxonomy, Specimen, Search, GIS, DNA, Reports, Admin, AI.
    - Đã tạo [app.js](file:///d:/D%E1%BB%B1%20%C3%A1n%20BigData%20C%C3%B4n%20tr%C3%B9ng/vietinsect/frontend/src/constants/app.js) chứa các cấu hình chung (`PAGE_SIZE`, `DEBOUNCE_MS`, `DATE_FORMAT`, `VN_BOUNDS`, `STORAGE_KEYS`).
 
+5. **TASK-00.5: Đồng bộ phong cách thiết kế giao diện toàn hệ thống theo Design System v2.1 (Editorial & Dual-Tier Design)** — **[x] Đã hoàn thành 100%**
+- **Tài liệu tham chiếu:** [docs/design.md](file:///d:/D%E1%BB%B1%20%C3%A1n%20BigData%20C%C3%B4n%20tr%C3%B9ng/vietinsect/docs/design.md)
+- **Mục tiêu:** Cập nhật toàn bộ các màn hình hiện hữu và chuẩn hóa style cho các màn hình sắp phát triển theo chuẩn **Editorial & Scientific Biodiversity Portal (GBIF-inspired)** với kiến trúc 2 tầng (Tầng Signature cho Hero/Banner và Tầng Modern Functional cho màn hình chức năng/quản trị).
+- **Phạm vi thực hiện:**
+  - [x] Tạo component `BrandLogo` (logo nét phác thảo côn trùng sinh thái) và `TechnicalFrame` (crop-marks, ô vuông góc định vị cho duy nhất Hero Banner chính).
+  - [x] Tái thiết kế `PublicLayout.js` & `PublicHomePage.js` (SCR-04): Menu mới (*Get data, How to, Tools, Community, About*), Manifesto in hoa `FREE AND OPEN ACCESS TO BIODIVERSITY DATA`, ô search bo góc nhẹ 8px lệch phải, lưới dữ liệu thống kê dạng ô kỹ thuật, thẻ tính năng viền mảng đen `#111111` / xanh lá đậm `#1F4E2D`.
+  - [x] Cập nhật `LoginPage.js` (SCR-01): Tích hợp BrandLogo mới, form đăng nhập viền đen sắc nét, typography tương phản cao.
+  - [x] Cập nhật `AdminChrome.js` & `AdminDashboardPage.js` (SCR-03): Tích hợp BrandLogo trên sidebar, đồng bộ thẻ metric viền mảng đen, biểu đồ Recharts chuẩn màu `--vi-primary`/`--vi-forest-dark`, bảng hoạt động gọn gàng.
+  - [x] Cập nhật `TaxonomyTreePage.js` (SCR-12): Cây phân cấp sinh học với đường nối nhánh mảnh `1.5px #111111`, nút toggle hình học, thẻ taxon tối giản.
+  - [x] Cập nhật `SpeciesProfilePage.js` (SCR-13): Banner ảnh loài lớn, tên khoa học luôn in nghiêng (*Italic*), tabs thông tin phân cách gạch chân đen mảnh.
+  - [x] Cập nhật `TaxonEditorPage.js` (SCR-14): Form nhập liệu taxon và bảng danh pháp đồng bộ viền mảng đen, nút thao tác dứt khoát.
+  - [x] Tạo tài liệu hướng dẫn và lưu trữ quy chuẩn [docs/design.md](file:///d:/D%E1%BB%B1%20%C3%A1n%20BigData%20C%C3%B4n%20tr%C3%B9ng/vietinsect/docs/design.md) trong codebase.
+- **Acceptance Criteria:**
+  - [x] Banner Hero chính có nét bo viền crop-mark và 2 ô vuông góc; các thẻ ảnh khác dùng viền mảng đen/xanh đậm không có crop-mark tràn góc.
+  - [x] Toàn bộ các màn hình cũ khi mở lên đều đồng nhất màu sắc, font chữ (`Manrope`/`Inter`), typography tên khoa học in nghiêng và bố cục sạch sẽ.
+  - [x] Không còn CSS inline style tùy tiện, tuân thủ bảng Design Tokens trong `docs/design.md`.
+  - [x] Production build `npm run build` biên dịch thành công 100% không lỗi.
+- **Phụ thuộc:** TASK-00.4
+- **Effort:** M (4 giờ)
+
+
 ---
 
 ## [ ] GIAI ĐOẠN 1: Hoàn thiện CV2.1 Taxonomy (Backend ~100% → FE còn thiếu 2 màn hình thật)
 
 > Backend Taxonomy hoàn chỉnh. Cần hoàn thiện 2 điểm FE còn dở.
+
 
 ### TASK-01.1: Kết nối thật metric SCR-03 AdminDashboardPage với API
 - **Pattern bắt buộc:** Function component + hooks; gọi API qua `services/{module}.service.js`; state cục bộ `useState`

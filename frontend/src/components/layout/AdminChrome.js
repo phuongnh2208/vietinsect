@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import i18n from "../../i18n";
 import { adminScreens, screenById } from "../../config/screenRegistry";
 import useAuthStore from "../../stores/auth.store";
+import useAuth from "../../modules/auth/useAuth";
+import BrandLogo from "../ui/BrandLogo";
 import Icon from "../ui/Icon";
 
 const navScreenIds = ["SCR-03", "SCR-05", "SCR-12", "SCR-18", "SCR-20", "SCR-25", "SCR-26"];
@@ -27,14 +28,15 @@ export function AdminSidebar({ open, onClose }) {
   const { t } = useTranslation();
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
+  // BUG #2 / D5: gọi useAuth().logout() để vừa revoke server-side cookie,
+  // vừa clear Zustand store, vừa navigate — không gọi thẳng store.logout()
+  const { logout } = useAuth();
 
   return (
     <aside className={`sidebar ${open ? "is-open" : ""}`} aria-label="Điều hướng quản trị">
-      <div className="brand">
-        <div className="brand-mark"><Icon name="bug" size={21} /></div>
-        <div><strong>VietInsect</strong><small>{t("appSubtitle")}</small></div>
-      </div>
+      <NavLink to="/admin/dashboard" className="brand-logo-link" style={{ padding: "0 10px 24px" }} onClick={onClose}>
+        <BrandLogo showSubtitle={true} />
+      </NavLink>
       <div className="sidebar-section-label">Workspace</div>
       <nav className="sidebar-nav">
         {navItems.map((item) => (
@@ -54,7 +56,8 @@ export function AdminSidebar({ open, onClose }) {
 }
 
 export function Topbar({ onMenuClick }) {
-  const { t } = useTranslation();
+  // BUG #5: lấy i18n từ useTranslation() hook (reactive) thay vì import trực tiếp
+  const { t, i18n } = useTranslation();
   const [theme, setTheme] = useState(() => window.localStorage.getItem("vietinsect_theme") || "light");
   const user = useAuthStore((state) => state.user);
 

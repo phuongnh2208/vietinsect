@@ -3,6 +3,7 @@ import { Navigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import useAuth from "../useAuth";
 import useAuthStore from "../../../stores/auth.store";
+import BrandLogo from "../../../components/ui/BrandLogo";
 import Icon from "../../../components/ui/Icon";
 import { useToast } from "../../../components/ui/ToastProvider";
 
@@ -24,8 +25,67 @@ export default function LoginPage() {
 
   return (
     <main className="auth-page">
-      <section className="auth-visual"><Link to="/" className="brand"><span className="brand-mark"><Icon name="bug" size={21} /></span><span><strong>VietInsect</strong><small>{t("appSubtitle")}</small></span></Link><div className="auth-visual-copy"><span className="hero-kicker">SCR-01 · Admin Login</span><h1>{t("auth.welcome")}</h1><p>Dữ liệu tự nhiên được tổ chức rõ ràng để mỗi quyết định nghiên cứu đều bắt đầu từ bằng chứng đáng tin cậy.</p></div><span className="hero-kicker" style={{ color: "rgba(255,255,255,.44)" }}>60–30–10 · Dark green design system</span></section>
-      <section className="auth-form-pane"><div className="auth-card vi-page-enter"><div className="eyebrow"><Icon name="shield" size={14} />{t("common.admin")}</div><h1 className="auth-title">{t("auth.loginTitle")}</h1><p className="auth-description">{t("auth.loginDescription")}</p><form onSubmit={handleSubmit}><div className="form-field"><label htmlFor="username">{t("auth.username")}</label><input id="username" type="text" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required /></div><div className="form-field"><label htmlFor="password">{t("auth.password")}</label><input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></div>{error && <p className="form-error" role="alert">{error}</p>}<button type="submit" className="button button-primary auth-submit" disabled={loading}><Icon name="arrow-up-right" size={16} />{loading ? t("auth.signingIn") : t("auth.signIn")}</button></form><p className="form-hint"><Icon name="shield" size={14} />{t("auth.lockNotice")}</p></div></section>
+      <section className="auth-visual">
+        <Link to="/" className="brand-logo-link" style={{ marginBottom: "auto" }}>
+          <BrandLogo showSubtitle={true} />
+        </Link>
+        <div className="auth-visual-copy">
+          <span className="hero-kicker">SCR-01 · Hệ Thống Quản Trị Dữ Liệu</span>
+          <h1>Dữ Liệu Đa Dạng Sinh Học Côn Trùng Việt Nam</h1>
+          <p>
+            Nền tảng số hóa, lưu trữ và phân tích mẫu vật, hồ sơ danh pháp, bản đồ sinh thái và dữ liệu DNA phục vụ bảo tồn bền vững.
+          </p>
+        </div>
+        <div className="hero-editorial-footer" style={{ marginTop: "auto", borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: "14px" }}>
+          <span className="hero-kicker" style={{ color: "#DCE8D2" }}>VietInsect Data Center · WCAG 2.1 AA</span>
+        </div>
+      </section>
+
+      <section className="auth-form-pane">
+        <div className="auth-card vi-page-enter">
+          <div className="eyebrow"><Icon name="shield" size={14} />{t("common.admin")} Workspace</div>
+          <h1 className="auth-title">{t("auth.loginTitle")}</h1>
+          <p className="auth-description">{t("auth.loginDescription")}</p>
+
+          <form onSubmit={handleSubmit}>
+            <div className="form-field">
+              <label htmlFor="username">{t("auth.username")}</label>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                autoComplete="username"
+                placeholder="Nhập tài khoản quản trị..."
+                required
+              />
+            </div>
+            <div className="form-field">
+              <label htmlFor="password">{t("auth.password")}</label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete="current-password"
+                placeholder="Nhập mật khẩu..."
+                required
+              />
+            </div>
+            {error && <p className="form-error" role="alert">{error}</p>}
+            <button type="submit" className="button button-primary auth-submit" disabled={loading}>
+              <Icon name="arrow-up-right" size={16} />
+              {loading ? t("auth.signingIn") : t("auth.signIn")}
+            </button>
+          </form>
+
+          <p className="form-hint">
+            <Icon name="shield" size={14} />
+            {t("auth.lockNotice")}
+          </p>
+        </div>
+      </section>
     </main>
   );
 }
+

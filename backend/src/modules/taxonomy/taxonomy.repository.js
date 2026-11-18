@@ -1,224 +1,218 @@
-const pool = require("../../config/db");
+/**
+ * taxonomy.repository.js — dùng Knex query builder (SRS §6.5).
+ * Toàn bộ công việc DB của module taxonomy đi qua đây, không có pg raw pool.
+ * Export `knex` để service dùng knex.transaction() khi bulk import Specimen.
+ */
+const knex = require("../../config/knex");
 
-const TAXON_COLUMNS = `
-  taxon_id, parent_id, accepted_taxon_id, taxon_rank, scientific_name,
-  specific_epithet, infraspecific_epithet, scientific_name_authorship, year_described,
-  vernacular_name_vn, vernacular_name_en, taxonomic_status, nomenclatural_code,
-  col_id, itis_tsn, gbif_taxon_key, iucn_status, is_verified, taxon_notes,
-  created_by, created_at, updated_at
-`;
+// Danh sách column rõ ràng để tránh SELECT *. Thứ tự khớp với toTaxonDto() trong service.
+const TAXON_COLUMNS = [
+  "taxon_id", "parent_id", "accepted_taxon_id", "taxon_rank", "scientific_name",
+  "slug", "specific_epithet", "infraspecific_epithet", "scientific_name_authorship",
+  "year_described", "vernacular_name_vn", "vernacular_name_en", "taxonomic_status",
+  "nomenclatural_code", "col_id", "itis_tsn", "gbif_taxon_key", "iucn_status",
+  "is_verified", "taxon_notes", "created_by", "created_at", "updated_at",
+];
 
 async function findAll() {
-  const { rows } = await pool.query(`SELECT ${TAXON_COLUMNS} FROM taxa ORDER BY scientific_name ASC`);
-  return rows;
+  return knex("taxa").select(TAXON_COLUMNS).orderBy("scientific_name", "asc");
 }
 
 async function findById(taxonId) {
-  const { rows } = await pool.query(`SELECT ${TAXON_COLUMNS} FROM taxa WHERE taxon_id = $1`, [taxonId]);
-  return rows[0] || null;
+  const row = await knex("taxa").select(TAXON_COLUMNS).where("taxon_id", taxonId).first();
+  return row || null;
+}
+
+// BUG #1: truy vấn thẳng bằng cột slug có UNIQUE INDEX — không còn full scan.
+async function findBySlug(slug) {
+  const row = await knex("taxa").select(TAXON_COLUMNS).where("slug", slug).first();
+  return row || null;
 }
 
 async function findByScientificName(scientificName) {
-  const { rows } = await pool.query(
-    `SELECT ${TAXON_COLUMNS} FROM taxa WHERE lower(scientific_name) = lower($1)`,
-    [scientificName],
-  );
-  return rows[0] || null;
+  const row = await knex("taxa")
+    .select(TAXON_COLUMNS)
+    .whereRaw("lower(scientific_name) = lower(?)", [scientificName])
+    .first();
+  return row || null;
 }
 
 async function search(query, limit = 10) {
-  const { rows } = await pool.query(
-    `SELECT ${TAXON_COLUMNS} FROM taxa
-     WHERE scientific_name ILIKE $1 OR vernacular_name_vn ILIKE $1 OR vernacular_name_en ILIKE $1
-     ORDER BY scientific_name ASC
-     LIMIT $2`,
-    [`%${query}%`, limit],
-  );
-  return rows;
+  return knex("taxa")
+    .select(TAXON_COLUMNS)
+    .where("scientific_name", "ilike", `%${query}%`)
+    .orWhere("vernacular_name_vn", "ilike", `%${query}%`)
+    .orWhere("vernacular_name_en", "ilike", `%${query}%`)
+    .orderBy("scientific_name", "asc")
+    .limit(limit);
 }
 
 async function countChildren(taxonId) {
-  const { rows } = await pool.query("SELECT COUNT(*)::int AS count FROM taxa WHERE parent_id = $1", [taxonId]);
-  return rows[0].count;
+  const [{ count }] = await knex("taxa").where("parent_id", taxonId).count("* as count");
+  return parseInt(count, 10);
 }
 
 async function countSpecimensByTaxon() {
-  const { rows } = await pool.query(
-    "SELECT taxon_id, COUNT(*)::int AS count FROM specimens WHERE deleted_at IS NULL GROUP BY taxon_id",
-  );
-  return rows;
+  const rows = await knex("specimens")
+    .whereNull("deleted_at")
+    .groupBy("taxon_id")
+    .select("taxon_id")
+    .count("* as count");
+  // Knex trả count dạng string — ép về int để service dùng trực tiếp
+  return rows.map((r) => ({ taxon_id: r.taxon_id, count: parseInt(r.count, 10) }));
 }
 
 async function countSpecimens(taxonId) {
-  const { rows } = await pool.query(
-    "SELECT COUNT(*)::int AS count FROM specimens WHERE taxon_id = $1 AND deleted_at IS NULL",
-    [taxonId],
-  );
-  return rows[0].count;
+  const [{ count }] = await knex("specimens")
+    .where("taxon_id", taxonId)
+    .whereNull("deleted_at")
+    .count("* as count");
+  return parseInt(count, 10);
 }
 
 async function create(data, adminId) {
-  const { rows } = await pool.query(
-    `INSERT INTO taxa (
-       parent_id, taxon_rank, scientific_name, specific_epithet, infraspecific_epithet,
-       scientific_name_authorship, year_described, vernacular_name_vn, vernacular_name_en,
-       col_id, itis_tsn, gbif_taxon_key, iucn_status, taxon_notes, created_by
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-     RETURNING ${TAXON_COLUMNS}`,
-    [
-      data.parentId || null,
-      data.taxonRank,
-      data.scientificName,
-      data.specificEpithet || null,
-      data.infraspecificEpithet || null,
-      data.scientificNameAuthorship || null,
-      data.yearDescribed || null,
-      data.vernacularNameVn || null,
-      data.vernacularNameEn || null,
-      data.colId || null,
-      data.itisTsn || null,
-      data.gbifTaxonKey || null,
-      data.iucnStatus || null,
-      data.taxonNotes || null,
-      adminId || null,
-    ],
-  );
-  return rows[0];
+  const [row] = await knex("taxa")
+    .insert({
+      parent_id: data.parentId || null,
+      taxon_rank: data.taxonRank,
+      scientific_name: data.scientificName,
+      slug: data.slug,
+      specific_epithet: data.specificEpithet || null,
+      infraspecific_epithet: data.infraspecificEpithet || null,
+      scientific_name_authorship: data.scientificNameAuthorship || null,
+      year_described: data.yearDescribed || null,
+      vernacular_name_vn: data.vernacularNameVn || null,
+      vernacular_name_en: data.vernacularNameEn || null,
+      col_id: data.colId || null,
+      itis_tsn: data.itisTsn || null,
+      gbif_taxon_key: data.gbifTaxonKey || null,
+      iucn_status: data.iucnStatus || null,
+      taxon_notes: data.taxonNotes || null,
+      created_by: adminId || null,
+    })
+    .returning(TAXON_COLUMNS);
+  return row;
 }
 
+// BUG #3: dynamic SET — undefined = không đổi; null = set NULL. Không dùng COALESCE.
+const UPDATE_ALLOWED_FIELDS = [
+  { key: "parentId",                 col: "parent_id" },
+  { key: "taxonRank",                col: "taxon_rank" },
+  { key: "scientificName",           col: "scientific_name" },
+  { key: "slug",                     col: "slug" },
+  { key: "specificEpithet",          col: "specific_epithet" },
+  { key: "infraspecificEpithet",     col: "infraspecific_epithet" },
+  { key: "scientificNameAuthorship", col: "scientific_name_authorship" },
+  { key: "yearDescribed",            col: "year_described" },
+  { key: "vernacularNameVn",         col: "vernacular_name_vn" },
+  { key: "vernacularNameEn",         col: "vernacular_name_en" },
+  { key: "colId",                    col: "col_id" },
+  { key: "itisTsn",                  col: "itis_tsn" },
+  { key: "gbifTaxonKey",             col: "gbif_taxon_key" },
+  { key: "iucnStatus",               col: "iucn_status" },
+  { key: "taxonNotes",               col: "taxon_notes" },
+];
+
 async function update(taxonId, data) {
-  const { rows } = await pool.query(
-    `UPDATE taxa SET
-       parent_id = COALESCE($2, parent_id),
-       taxon_rank = COALESCE($3, taxon_rank),
-       scientific_name = COALESCE($4, scientific_name),
-       specific_epithet = COALESCE($5, specific_epithet),
-       infraspecific_epithet = COALESCE($6, infraspecific_epithet),
-       scientific_name_authorship = COALESCE($7, scientific_name_authorship),
-       year_described = COALESCE($8, year_described),
-       vernacular_name_vn = COALESCE($9, vernacular_name_vn),
-       vernacular_name_en = COALESCE($10, vernacular_name_en),
-       col_id = COALESCE($11, col_id),
-       itis_tsn = COALESCE($12, itis_tsn),
-       gbif_taxon_key = COALESCE($13, gbif_taxon_key),
-       iucn_status = COALESCE($14, iucn_status),
-       taxon_notes = COALESCE($15, taxon_notes),
-       updated_at = NOW()
-     WHERE taxon_id = $1
-     RETURNING ${TAXON_COLUMNS}`,
-    [
-      taxonId,
-      data.parentId,
-      data.taxonRank,
-      data.scientificName,
-      data.specificEpithet,
-      data.infraspecificEpithet,
-      data.scientificNameAuthorship,
-      data.yearDescribed,
-      data.vernacularNameVn,
-      data.vernacularNameEn,
-      data.colId,
-      data.itisTsn,
-      data.gbifTaxonKey,
-      data.iucnStatus,
-      data.taxonNotes,
-    ],
-  );
-  return rows[0] || null;
+  const updateData = {};
+  for (const { key, col } of UPDATE_ALLOWED_FIELDS) {
+    if (key in data) {
+      updateData[col] = data[key]; // null = set NULL; bỏ qua khi undefined
+    }
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    // Không có field nào thay đổi → trả về record hiện tại
+    return findById(taxonId);
+  }
+
+  updateData.updated_at = knex.fn.now();
+
+  const [row] = await knex("taxa")
+    .where("taxon_id", taxonId)
+    .update(updateData)
+    .returning(TAXON_COLUMNS);
+  return row || null;
 }
 
 async function setSynonym(taxonId, acceptedTaxonId) {
-  const { rows } = await pool.query(
-    `UPDATE taxa SET taxonomic_status = 'synonym', accepted_taxon_id = $2, updated_at = NOW()
-     WHERE taxon_id = $1
-     RETURNING ${TAXON_COLUMNS}`,
-    [taxonId, acceptedTaxonId],
-  );
-  return rows[0] || null;
+  const [row] = await knex("taxa")
+    .where("taxon_id", taxonId)
+    .update({ taxonomic_status: "synonym", accepted_taxon_id: acceptedTaxonId, updated_at: knex.fn.now() })
+    .returning(TAXON_COLUMNS);
+  return row || null;
 }
 
 async function clearSynonym(taxonId) {
-  const { rows } = await pool.query(
-    `UPDATE taxa SET taxonomic_status = 'accepted', accepted_taxon_id = NULL, updated_at = NOW()
-     WHERE taxon_id = $1
-     RETURNING ${TAXON_COLUMNS}`,
-    [taxonId],
-  );
-  return rows[0] || null;
+  const [row] = await knex("taxa")
+    .where("taxon_id", taxonId)
+    .update({ taxonomic_status: "accepted", accepted_taxon_id: null, updated_at: knex.fn.now() })
+    .returning(TAXON_COLUMNS);
+  return row || null;
 }
 
 async function markVerified(taxonId, isVerified) {
-  await pool.query("UPDATE taxa SET is_verified = $2 WHERE taxon_id = $1", [taxonId, isVerified]);
+  await knex("taxa").where("taxon_id", taxonId).update({ is_verified: isVerified });
 }
 
 async function remove(taxonId) {
-  await pool.query("DELETE FROM taxa WHERE taxon_id = $1", [taxonId]);
+  await knex("taxa").where("taxon_id", taxonId).delete();
 }
 
 async function findProfile(taxonId) {
-  const { rows } = await pool.query("SELECT * FROM species_profiles WHERE taxon_id = $1", [taxonId]);
-  return rows[0] || null;
+  const row = await knex("species_profiles").where("taxon_id", taxonId).first();
+  return row || null;
 }
 
 async function upsertProfile(taxonId, data) {
-  const { rows } = await pool.query(
-    `INSERT INTO species_profiles (taxon_id, morphology_description, ecology_description, distribution_summary, economic_value_description, updated_at)
-     VALUES ($1, $2, $3, $4, $5, NOW())
-     ON CONFLICT (taxon_id) DO UPDATE SET
-       morphology_description = EXCLUDED.morphology_description,
-       ecology_description = EXCLUDED.ecology_description,
-       distribution_summary = EXCLUDED.distribution_summary,
-       economic_value_description = EXCLUDED.economic_value_description,
-       updated_at = NOW()
-     RETURNING *`,
-    [
-      taxonId,
-      data.morphologyDescription || null,
-      data.ecologyDescription || null,
-      data.distributionSummary || null,
-      data.economicValueDescription || null,
-    ],
-  );
-  return rows[0];
+  const payload = {
+    taxon_id: taxonId,
+    morphology_description: data.morphologyDescription || null,
+    ecology_description: data.ecologyDescription || null,
+    distribution_summary: data.distributionSummary || null,
+    economic_value_description: data.economicValueDescription || null,
+    updated_at: knex.fn.now(),
+  };
+  const [row] = await knex("species_profiles")
+    .insert(payload)
+    .onConflict("taxon_id")
+    .merge(["morphology_description", "ecology_description", "distribution_summary", "economic_value_description", "updated_at"])
+    .returning("*");
+  return row;
 }
 
 async function listBioactivity(taxonId) {
-  const { rows } = await pool.query(
-    "SELECT * FROM bioactivity_records WHERE taxon_id = $1 ORDER BY created_at DESC",
-    [taxonId],
-  );
-  return rows;
+  return knex("bioactivity_records")
+    .where("taxon_id", taxonId)
+    .orderBy("created_at", "desc");
 }
 
 async function createBioactivity(taxonId, data, adminId) {
-  const { rows } = await pool.query(
-    `INSERT INTO bioactivity_records (
-       taxon_id, activity_type, activity_level, test_condition, description,
-       reference_doi, reference_title, image_object_key, created_by
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-     RETURNING *`,
-    [
-      taxonId,
-      data.activityType,
-      data.activityLevel || null,
-      data.testCondition || null,
-      data.description || null,
-      data.referenceDoi || null,
-      data.referenceTitle || null,
-      data.imageObjectKey || null,
-      adminId || null,
-    ],
-  );
-  return rows[0];
+  const [row] = await knex("bioactivity_records")
+    .insert({
+      taxon_id: taxonId,
+      activity_type: data.activityType,
+      activity_level: data.activityLevel || null,
+      test_condition: data.testCondition || null,
+      description: data.description || null,
+      reference_doi: data.referenceDoi || null,
+      reference_title: data.referenceTitle || null,
+      image_object_key: data.imageObjectKey || null,
+      created_by: adminId || null,
+    })
+    .returning("*");
+  return row;
 }
 
 async function removeBioactivity(bioactivityId) {
-  await pool.query("DELETE FROM bioactivity_records WHERE bioactivity_id = $1", [bioactivityId]);
+  await knex("bioactivity_records").where("bioactivity_id", bioactivityId).delete();
 }
 
 module.exports = {
+  knex, // Export để service dùng knex.transaction() cho bulk import Specimen
   findAll,
   findById,
+  findBySlug,
   findByScientificName,
   search,
   countChildren,

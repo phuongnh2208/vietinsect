@@ -54,5 +54,8 @@
     "success": "Thao tác thành công",
     "error": "Có lỗi xảy ra",
     "warning": "Cần lưu ý"
+  },
+  "taxonomy": {
+    "errorNotFound": "Không tìm thấy hồ sơ loài này."
   }
 }
