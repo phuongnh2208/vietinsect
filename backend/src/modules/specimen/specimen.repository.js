@@ -410,7 +410,47 @@ async function findById(specimenId, { includePrivate = false } = {}) {
       : Promise.resolve([]),
   ]);
 
-  return { ...row, images, dnaSequences, changeHistory };
+  // Fallback ảnh cấp loài nếu mẫu vật chưa có ảnh vi thể nội bộ riêng
+  let speciesImages = [];
+  if (images.length === 0 && row.taxon_id) {
+    speciesImages = await knex({ img: "specimen_images" })
+      .join({ s2: "specimens" }, "img.specimen_id", "s2.specimen_id")
+      .where("s2.taxon_id", row.taxon_id)
+      .whereNot("s2.specimen_id", specimenId)
+      .whereNull("s2.deleted_at")
+      .modify((q) => {
+        if (!includePrivate) q.where("img.is_public", true).where("s2.is_public", true);
+      })
+      .select("img.*")
+      .limit(6);
+  }
+
+  // Fallback chuỗi mã vạch DNA của loài nếu mẫu vật chưa có kết quả giải trình tự riêng
+  let speciesDnaSequences = [];
+  if (dnaSequences.length === 0) {
+    const binomial = (row.gbif_scientific_name || row.taxon_name || "")
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .join(" ");
+    if (binomial) {
+      speciesDnaSequences = await knex("dna_sequences")
+        .where((q) => {
+          if (row.taxon_id) q.where("taxon_id", row.taxon_id);
+          q.orWhere("scientific_name_verbatim", "ilike", `${binomial}%`);
+        })
+        .where(function () {
+          this.whereNull("specimen_id").orWhereNot("specimen_id", specimenId);
+        })
+        .modify((q) => {
+          if (!includePrivate) q.where("is_public", true);
+        })
+        .orderBy("created_at", "desc")
+        .limit(5);
+    }
+  }
+
+  return { ...row, images, dnaSequences, changeHistory, speciesImages, speciesDnaSequences };
 }
 
 async function findRegistryByCode(specimenCode) {

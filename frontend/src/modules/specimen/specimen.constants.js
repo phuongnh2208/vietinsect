@@ -43,6 +43,12 @@ export const SEX_LABELS = {
 export const SPATIAL_PRESETS = [
   { label: "VQG Cúc Phương", lat: 20.3167, lon: 105.6083, radiusKm: 25 },
   { label: "VQG Ba Vì / Hà Nội", lat: 21.0811, lon: 105.3667, radiusKm: 35 },
-  { label: "Đà Lạt / Bidoup", lat: 12.18, lon: 108.68, radiusKm: 40 },
-  { label: "VQG Cát Tiên", lat: 11.423, lon: 107.428, radiusKm: 30 },
+  { label: "VQG Tam Đảo", lat: 21.4608, lon: 105.6472, radiusKm: 30 },
+  { label: "VQG Ba Bể", lat: 22.4167, lon: 105.6167, radiusKm: 30 },
+  { label: "VQG Pù Mát", lat: 18.9667, lon: 104.8333, radiusKm: 40 },
+  { label: "VQG Phong Nha - Kẻ Bàng", lat: 17.5333, lon: 106.15, radiusKm: 45 },
+  { label: "VQG Bạch Mã", lat: 16.2, lon: 107.85, radiusKm: 30 },
+  { label: "Đà Lạt / Bidoup Núi Bà", lat: 12.18, lon: 108.68, radiusKm: 40 },
+  { label: "VQG Cát Tiên", lat: 11.423, lon: 107.428, radiusKm: 35 },
+  { label: "VQG Côn Đảo", lat: 8.6833, lon: 106.6, radiusKm: 20 },
 ];

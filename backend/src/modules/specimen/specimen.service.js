@@ -94,6 +94,30 @@ function toSpecimenDetailDto(row, { isAdmin = false } = {}) {
         widthPx: img.width_px,
         heightPx: img.height_px,
         uploadedAt: img.uploaded_at,
+        isSpeciesReference: false,
+      };
+    }),
+    speciesImages: (row.speciesImages || []).map((img) => {
+      const imgPublic = img.is_public !== false;
+      const proxyUrl = buildMediaProxyUrl(img.image_id, {
+        isAdmin,
+        isEffectivelyPublic: imgPublic && specimenIsPublic,
+      });
+      return {
+        id: Number(img.image_id),
+        objectKey: img.object_key,
+        thumbnailKey: img.thumbnail_key,
+        url: proxyUrl,
+        thumbnailUrl: proxyUrl,
+        shotType: img.shot_type,
+        licenseCode: img.license_code || null,
+        attribution: img.attribution || null,
+        sourceUrl: img.source_url || null,
+        isPublic: imgPublic,
+        widthPx: img.width_px,
+        heightPx: img.height_px,
+        uploadedAt: img.uploaded_at,
+        isSpeciesReference: true,
       };
     }),
     dnaSequences: (row.dnaSequences || []).map((dna) => ({
@@ -104,6 +128,18 @@ function toSpecimenDetailDto(row, { isAdmin = false } = {}) {
       boldProcessId: dna.bold_process_id,
       submissionDate: formatDateOnly(dna.submission_date),
       authorName: dna.author_name,
+      isSpeciesReference: false,
+    })),
+    speciesDnaSequences: (row.speciesDnaSequences || []).map((dna) => ({
+      id: Number(dna.dna_id),
+      genbankAccession: dna.genbank_accession,
+      geneMarker: dna.gene_marker,
+      sequenceLengthBp: dna.sequence_length_bp,
+      boldProcessId: dna.bold_process_id,
+      submissionDate: formatDateOnly(dna.submission_date),
+      authorName: dna.author_name,
+      scientificName: dna.scientific_name_verbatim || null,
+      isSpeciesReference: true,
     })),
     changeHistory: (row.changeHistory || []).map((ch) => ({
       id: Number(ch.change_id),

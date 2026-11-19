@@ -17,16 +17,31 @@ import {
 const VIETNAM_CENTER = [16.2, 106.2];
 const VIETNAM_ZOOM = 6;
 
+// Hệ thống Basemaps chuẩn quốc tế qua CDN Esri ArcGIS (ổn định 100%, không API key, không watermark, hỗ trợ Akamai CDN tại VN)
 const BASEMAPS = {
-  light: {
-    label: "Bản đồ Khoa học",
-    url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; CARTO',
+  street: {
+    label: "Khoa học (Hành chính)",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+    attribution: "Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS",
+    maxZoom: 18,
+  },
+  topo: {
+    label: "Địa hình (Độ cao)",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+    attribution: "Tiles &copy; Esri &mdash; USGS, NOAA, DeLorme, TomTom",
+    maxZoom: 18,
   },
   satellite: {
     label: "Ảnh Vệ tinh",
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     attribution: "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics",
+    maxZoom: 18,
+  },
+  gray: {
+    label: "Xám tối giản",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+    attribution: "Tiles &copy; Esri &mdash; Esri, HERE, Garmin",
+    maxZoom: 16,
   },
 };
 
@@ -56,7 +71,10 @@ export default function OccurrenceMapPage() {
   const initialLon = searchParams.get("lon");
 
   const [viewMode, setViewMode] = useState(initialLat && initialLon ? "radius" : "points"); // points | heatmap | radius
-  const [basemap, setBasemap] = useState("light");
+  const [basemap, setBasemap] = useState("street");
+  const [basemapOpacity, setBasemapOpacity] = useState(1);
+  const [showParks, setShowParks] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [qInput, setQInput] = useState("");
   const [filters, setFilters] = useState({
     q: "",
@@ -88,6 +106,7 @@ export default function OccurrenceMapPage() {
   const mapRef = useRef(null);
   const tileLayerRef = useRef(null);
   const dataLayerGroupRef = useRef(null);
+  const parksLayerGroupRef = useRef(null);
   const canvasRendererRef = useRef(null);
   const debounceRef = useRef(null);
   const viewModeRef = useRef(viewMode);
@@ -125,12 +144,15 @@ export default function OccurrenceMapPage() {
 
     L.control.zoom({ position: "bottomright" }).addTo(map);
 
-    const tile = L.tileLayer(BASEMAPS.light.url, {
-      attribution: BASEMAPS.light.attribution,
-      maxZoom: 19,
+    const initialBasemap = BASEMAPS[basemap] || BASEMAPS.street;
+    const tile = L.tileLayer(initialBasemap.url, {
+      attribution: initialBasemap.attribution,
+      maxZoom: initialBasemap.maxZoom || 18,
+      opacity: basemapOpacity,
     }).addTo(map);
 
     const layerGroup = L.layerGroup().addTo(map);
+    const parksGroup = L.layerGroup().addTo(map);
 
     // Cho phép click trực tiếp lên bản đồ khi đang ở chế độ Truy vấn bán kính PostGIS
     map.on("click", (e) => {
@@ -152,11 +174,21 @@ export default function OccurrenceMapPage() {
           navigate(isAdmin ? `/admin/specimens/${spId}` : `/specimens/${spId}`);
         }
       }
+      const parkBtn = evt.target.closest("[data-park-preset]");
+      if (parkBtn) {
+        const lat = Number(parkBtn.getAttribute("data-park-lat"));
+        const lon = Number(parkBtn.getAttribute("data-park-lon"));
+        const rKm = Number(parkBtn.getAttribute("data-park-r") || 30);
+        setViewMode("radius");
+        setRadiusPin({ lat, lon, radiusKm: rKm });
+        map.flyTo([lat, lon], 9);
+      }
     });
 
     mapRef.current = map;
     tileLayerRef.current = tile;
     dataLayerGroupRef.current = layerGroup;
+    parksLayerGroupRef.current = parksGroup;
 
     return () => {
       map.remove();
@@ -164,14 +196,31 @@ export default function OccurrenceMapPage() {
     };
   }, [initialLat, initialLon, isAdmin, navigate]);
 
-  // Chuyển lớp nền Bản đồ Khoa học / Vệ tinh
+  // Chuyển lớp nền Basemap
   useEffect(() => {
     if (!mapRef.current || !tileLayerRef.current) return;
-    const cfg = BASEMAPS[basemap] || BASEMAPS.light;
+    const cfg = BASEMAPS[basemap] || BASEMAPS.street;
     tileLayerRef.current.setUrl(cfg.url);
+    tileLayerRef.current.options.maxZoom = cfg.maxZoom || 18;
   }, [basemap]);
 
-  // Gọi API lấy tọa độ & mật độ
+  // Điều chỉnh Opacity lớp nền
+  useEffect(() => {
+    if (!tileLayerRef.current) return;
+    tileLayerRef.current.setOpacity(basemapOpacity);
+  }, [basemapOpacity]);
+
+  // Cập nhật kích thước bản đồ khi toggle Fullscreen
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [isFullscreen]);
+
+  // Gọi API lấy tọa độ & mật độ PostGIS
   const fetchOccurrences = useCallback(async () => {
     setLoading(true);
     try {
@@ -193,6 +242,44 @@ export default function OccurrenceMapPage() {
   useEffect(() => {
     fetchOccurrences();
   }, [fetchOccurrences]);
+
+  // Vẽ lớp Vườn Quốc Gia & Khu Bảo Tồn Thiên Nhiên (F-GI-04)
+  useEffect(() => {
+    const parksGroup = parksLayerGroupRef.current;
+    if (!parksGroup) return;
+
+    parksGroup.clearLayers();
+    if (!showParks) return;
+
+    SPATIAL_PRESETS.forEach((park) => {
+      const icon = L.divIcon({
+        className: "vi-park-marker-icon",
+        html: `<div style="width:24px;height:24px;border-radius:50%;background:#15803D;border:2px solid #FFFFFF;color:#fff;display:grid;place-items:center;font-size:12px;box-shadow:0 3px 8px rgba(0,0,0,0.35);" title="${escapeHtml(park.label)}">🌲</div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+      });
+
+      L.marker([park.lat, park.lon], { icon })
+        .bindPopup(
+          `<div style="font-family:Inter,sans-serif;min-width:180px;">
+            <div style="font-size:10px;font-weight:800;color:#15803D;text-transform:uppercase;letter-spacing:0.06em;">Khu bảo tồn / VQG</div>
+            <strong style="font-size:13px;display:block;margin:2px 0 4px;">${escapeHtml(park.label)}</strong>
+            <div style="font-size:11px;color:#555;margin-bottom:8px;">Tọa độ: ${park.lat.toFixed(4)}, ${park.lon.toFixed(4)}</div>
+            <button
+              type="button"
+              data-park-preset="true"
+              data-park-lat="${park.lat}"
+              data-park-lon="${park.lon}"
+              data-park-r="${park.radiusKm}"
+              style="width:100%;padding:5px 8px;background:#0F3820;color:#FFFFFF;border:none;font-size:11px;font-weight:700;cursor:pointer;"
+            >
+              🎯 Truy vấn bán kính ${park.radiusKm} km
+            </button>
+          </div>`,
+        )
+        .addTo(parksGroup);
+    });
+  }, [showParks]);
 
   // Vẽ các lớp điểm / lưới nhiệt / vòng tròn bán kính PostGIS lên Leaflet
   useEffect(() => {
@@ -346,6 +433,10 @@ export default function OccurrenceMapPage() {
     toast(`Đã xuất ${mapData.points.length} điểm ra chuẩn GeoJSON`, "success");
   };
 
+  const handlePrintMap = () => {
+    window.print();
+  };
+
   const legendOrders = useMemo(
     () => ["Lepidoptera", "Coleoptera", "Hymenoptera", "Diptera", "Odonata"],
     [],
@@ -391,9 +482,14 @@ export default function OccurrenceMapPage() {
             </button>
           </div>
 
-          <button type="button" className="button button-ghost" onClick={handleExportGeoJson}>
+          <button type="button" className="button button-ghost" onClick={handleExportGeoJson} title="Tải tệp chuẩn GeoJSON cho QGIS/ArcGIS">
             <Icon name="file" size={16} />
             Xuất GeoJSON
+          </button>
+
+          <button type="button" className="button button-ghost" onClick={handlePrintMap} title="In hoặc lưu PDF bản đồ (F-GI-05)">
+            <Icon name="archive" size={16} />
+            In Bản đồ
           </button>
         </div>
       </div>
@@ -493,10 +589,22 @@ export default function OccurrenceMapPage() {
             </div>
           ) : null}
 
+          {/* Lớp chuyên đề GIS: Bật tắt Vườn quốc gia (F-GI-04) */}
+          <div style={{ margin: "12px 0", padding: "10px", background: "#F8FAF9", border: "1px solid #E2E8F0" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, fontWeight: 700, margin: 0 }}>
+              <input
+                type="checkbox"
+                checked={showParks}
+                onChange={(e) => setShowParks(e.target.checked)}
+              />
+              🌲 Hiển thị Vườn Quốc Gia & Khu Bảo Tồn
+            </label>
+          </div>
+
           {viewMode === "radius" ? (
             <div className="vi-spatial-box" style={{ marginTop: 8, marginBottom: 12 }}>
               <strong style={{ display: "block", fontSize: 12, marginBottom: 6 }}>
-                Nhấp lên bản đồ để dời tâm bán kính:
+                Nhấp lên bản đồ hoặc chọn Vườn Quốc Gia để dời tâm:
               </strong>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
                 {SPATIAL_PRESETS.map((pr) => (
@@ -515,7 +623,7 @@ export default function OccurrenceMapPage() {
                 ))}
               </div>
               <div className="form-field" style={{ marginBottom: 0 }}>
-                <label>Bán kính: {radiusPin.radiusKm} km</label>
+                <label>Bán kính PostGIS: {radiusPin.radiusKm} km</label>
                 <input
                   type="range"
                   min="5"
@@ -573,23 +681,80 @@ export default function OccurrenceMapPage() {
         </aside>
 
         {/* Vùng bản đồ chính */}
-        <section className="card vi-gis-stage">
-          {/* Nút đổi lớp bản đồ nền */}
+        <section className={`card vi-gis-stage ${isFullscreen ? "is-fullscreen" : ""}`}>
+          {/* Nút đổi lớp bản đồ nền & thanh công cụ bản đồ */}
           <div className="vi-map-overlay-top">
-            <div className="vi-segmented-group">
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+              <div className="vi-segmented-group">
+                <button
+                  type="button"
+                  className={basemap === "street" ? "active" : ""}
+                  onClick={() => setBasemap("street")}
+                  title="Bản đồ hành chính, đường sá và địa danh chi tiết"
+                >
+                  Khoa học
+                </button>
+                <button
+                  type="button"
+                  className={basemap === "topo" ? "active" : ""}
+                  onClick={() => setBasemap("topo")}
+                  title="Bản đồ địa hình, độ cao đồi núi và thủy hệ"
+                >
+                  Địa hình
+                </button>
+                <button
+                  type="button"
+                  className={basemap === "satellite" ? "active" : ""}
+                  onClick={() => setBasemap("satellite")}
+                  title="Ảnh vệ tinh độ phân giải cao"
+                >
+                  Vệ tinh
+                </button>
+                <button
+                  type="button"
+                  className={basemap === "gray" ? "active" : ""}
+                  onClick={() => setBasemap("gray")}
+                  title="Nền xám tối giản làm nổi bật các điểm thu mẫu"
+                >
+                  Xám
+                </button>
+              </div>
+
+              {/* Tùy chỉnh độ mờ (Opacity) lớp nền theo F-GI-03 */}
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "4px 8px",
+                  background: "rgba(255,255,255,0.95)",
+                  border: "1px solid #111111",
+                  fontSize: 11,
+                  fontWeight: 700,
+                }}
+              >
+                <span>Độ rõ:</span>
+                <input
+                  type="range"
+                  min="0.3"
+                  max="1"
+                  step="0.05"
+                  value={basemapOpacity}
+                  onChange={(e) => setBasemapOpacity(Number(e.target.value))}
+                  style={{ width: 60, cursor: "pointer" }}
+                  title="Điều chỉnh độ mờ lớp nền để nhìn rõ điểm mẫu vật"
+                />
+              </div>
+
+              {/* Nút Phóng to toàn màn hình */}
               <button
                 type="button"
-                className={basemap === "light" ? "active" : ""}
-                onClick={() => setBasemap("light")}
+                className="vi-map-btn"
+                onClick={() => setIsFullscreen((prev) => !prev)}
+                title={isFullscreen ? "Thu nhỏ về giao diện thường" : "Mở rộng bản đồ toàn màn hình"}
               >
-                Nền Khoa học
-              </button>
-              <button
-                type="button"
-                className={basemap === "satellite" ? "active" : ""}
-                onClick={() => setBasemap("satellite")}
-              >
-                Vệ tinh
+                <Icon name="eye" size={14} />
+                {isFullscreen ? "Thu nhỏ" : "Toàn màn hình"}
               </button>
             </div>
 
@@ -631,6 +796,11 @@ export default function OccurrenceMapPage() {
                   </span>
                 ))}
               </>
+            )}
+            {showParks && (
+              <span style={{ marginLeft: 8, borderLeft: "1px solid #CBD5E1", paddingLeft: 8 }}>
+                🌲 Vườn Quốc Gia
+              </span>
             )}
           </div>
         </section>
