@@ -105,4 +105,119 @@ describe("Group 2 – Data Integrity Tests", () => {
     expect(dnaAfterHard).toBeTruthy();
     expect(dnaAfterHard.specimen_id).toBeNull();
   });
+
+  test("DEF-027 & DEF-034: bulk-import leaves optional registry fields NULL and rejects unmatched scientificName", async () => {
+    const validTaxon = await knex("taxa")
+      .select("taxon_id", "scientific_name")
+      .where("taxon_id", taxonId)
+      .first();
+    const code = `TEST-IMP-${suffix}`;
+
+    const res = await request(app)
+      .post("/api/specimens/bulk-import")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        rows: [
+          {
+            specimenCode: code,
+            scientificName: validTaxon.scientific_name,
+            collectionDate: "2024-05-10",
+            basisOfRecord: "PRESERVED_SPECIMEN",
+          },
+          {
+            specimenCode: `TEST-UNMATCHED-${suffix}`,
+            scientificName: "Nonexistentus fakus 9999",
+            collectionDate: "2024-05-10",
+          },
+        ],
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.insertedCount).toBe(1);
+    expect(res.body.data.errors).toHaveLength(1);
+    expect(res.body.data.errors[0].row).toBe(2);
+
+    const reg = await knex("specimen_registry").where("specimen_code", code).first();
+    expect(reg).toBeTruthy();
+    createdSpecIds.push(Number(reg.specimen_id));
+    expect(reg.recorded_by).toBeNull();
+    expect(reg.institution_code).toBeNull();
+    expect(reg.catalog_number).toBeNull();
+    expect(reg.basis_of_record).toBe("PRESERVED_SPECIMEN");
+  });
+
+  test("DEF-035 & DEF-038: batch-update and bulk-import validate basisOfRecord (UPPER_SNAKE) and sex (400 not 500)", async () => {
+    const [badBasis, badSex] = await Promise.all([
+      request(app)
+        .patch("/api/specimens/batch-update")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ specimenIds: [1], updates: { basisOfRecord: "PreservedSpecimen" } }),
+      request(app)
+        .patch("/api/specimens/batch-update")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ specimenIds: [1], updates: { sex: "indeterminate" } }),
+    ]);
+
+    expect(badBasis.status).toBe(400);
+    expect(badSex.status).toBe(400);
+  });
+
+  test("DEF-022: POST /api/specimens rejects future collectionDate with HTTP 400", async () => {
+    const res = await request(app)
+      .post("/api/specimens")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        taxonId,
+        collectionDate: "2049-12-31",
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/tương lai/i);
+  });
+
+  test("DEF-033: POST /api/specimens/bulk-import rejects > 5000 rows with HTTP 400", async () => {
+    const rows = Array.from({ length: 5001 }, (_, i) => ({
+      scientificName: "Papilio demoleus",
+      collectionDate: "2024-01-01",
+      specimenCode: `OVF-${i}`,
+    }));
+    const res = await request(app)
+      .post("/api/specimens/bulk-import")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ rows });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/5\.000|5000/);
+  });
+
+  test("DEF-107: mv_taxon_dwc_flat is populated with Species rows", async () => {
+    const row = await knex("mv_taxon_dwc_flat").count("* as cnt").first();
+    expect(parseInt(row.cnt, 10)).toBeGreaterThanOrEqual(3800);
+  });
+
+  test("DEF-108: GET /api/specimens/analytics reports specimen_count = 0 for a province with no specimens", async () => {
+    const sampleProv = await knex("provinces").select("province_type", "region").first();
+    const [prov] = await knex("provinces")
+      .insert({
+        province_code: `T${suffix.slice(-5)}`,
+        province_name_vn: `Tỉnh Test Rỗng ${suffix}`,
+        province_name_en: `Empty Test Province ${suffix}`,
+        province_type: sampleProv.province_type,
+        region: sampleProv.region,
+      })
+      .returning("province_id");
+    const provId = Number(prov.province_id ?? prov);
+
+    try {
+      const res = await request(app).get("/api/specimens/analytics");
+      expect(res.status).toBe(200);
+      const found = res.body.data.speciesRichnessByProvince.find(
+        (p) => Number(p.province_id) === provId,
+      );
+      expect(found).toBeTruthy();
+      expect(found.specimen_count).toBe(0);
+    } finally {
+      await knex("provinces").where("province_id", provId).delete();
+    }
+  });
 });

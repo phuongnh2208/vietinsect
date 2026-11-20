@@ -28,7 +28,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization", "X-View-As"],
   }),
 );
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // Parse HttpOnly cookie cho refresh token (SRS §3.4)
 
