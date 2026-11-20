@@ -456,7 +456,7 @@ Bảng tích hợp với các hệ thống bên ngoài:
  
 ● Email SMTP (SSL/TLS port 465/587) cho thông báo tài khoản, reset mật khẩu, cảnh báo lỗi hệ thống.
  
-● JWT (HS256, TTL 24 giờ) cho xác thực API; refresh token lưu HttpOnly cookie.
+● Mô hình 2 token (ADR-002): Access Token JWT (HS256, TTL 15 phút, lưu in-memory) cho xác thực API; Refresh Token (TTL 7 ngày, có rotation & idle timeout 60 phút) lưu trong HttpOnly cookie (`SameSite=Strict`, `Secure` khi production).
  
  
  
@@ -470,7 +470,7 @@ Các yêu cầu chức năng được mã hóa theo định dạng F - [Nhóm] -
  
 | Mã      | Tên chức năng   | Mô tả chi tiết                                                                                                                                                                                                                             |
 | ------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| F-AU-01 | Đăng nhập Admin | Form nhập username/password, gửi qua HTTPS. JWT phát sinh sau xác thực thành công, lưu HttpOnly cookie. Tự động khóa tài khoản sau 5 lần nhập sai liên tiếp. Session timeout 60 phút không hoạt động. Hỗ trợ đăng xuất từ tất cả thiết bị. |
+| F-AU-01 | Đăng nhập Admin | Form nhập username/password, gửi qua HTTPS. Phát sinh Access Token JWT 15 phút (in-memory) + Refresh Token 7 ngày lưu HttpOnly cookie (ADR-002, có rotation). Tự động khóa tài khoản sau 5 lần nhập sai liên tiếp (mở khóa sau 30 phút). Session timeout 60 phút không hoạt động. Hỗ trợ đăng xuất từ tất cả thiết bị. |
 | F-AU-02 | Đổi một khẩu    | Yêu cầu nhập mật khẩu cũ. Mật khẩu mới tối thiểu 12 ký tự, bắt buộc có chữ hoa, chữ thường, số và ký tự đặc biệt. Mật khẩu được băm bằng bcrypt (cost factor 12) trước khi lưu; không lưu plaintext dưới bất kỳ hình thức nào.             |
 | F-AU-03 | Đăng xuất       | Hủy JWT server-side (blacklist), xóa cookie phía client. Hỗ trợ đăng xuất đồng thời từ tất cả thiết bị (xóa toàn bộ phiên của user).                                                                                                       |
  
@@ -678,7 +678,7 @@ Các yêu cầu chức năng được mã hóa theo định dạng F - [Nhóm] -
  
 ● Xác thực mạnh: Mật khẩu Admin tối thiểu 12 ký tự, bắt buộc kết hợp chữ hoa/thường/số/ký tự đặc biệt. Tự động khóa tài khoản sau 5 lần nhập sai liên tiếp (mở khóa sau 30 phút hoặc Admin reset).
  
-● Quản lý phiên làm việc: Tự động timeout sau 60 phút không hoạt động. JWT TTL 24 giờ, lưu HttpOnly cookie. Hỗ trợ đăng xuất đồng thời từ tất cả thiết bị (invalidate tất cả token của user).
+● Quản lý phiên làm việc (ADR-002): Tự động timeout sau 60 phút không hoạt động. Access Token JWT TTL 15 phút (in-memory) + Refresh Token 7 ngày lưu HttpOnly cookie (có rotation). Hỗ trợ đăng xuất đồng thời từ tất cả thiết bị (invalidate tất cả token của user qua Redis blacklist + thu hồi refresh token).
  
 ● Truyền thông an toàn: Toàn bộ giao tiếp qua HTTPS/TLS 1.3. Không truyền token/mật khẩu trên URL. HTTP Strict Transport Security (HSTS) header bắt buộc.
  
