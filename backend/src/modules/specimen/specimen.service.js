@@ -3,6 +3,7 @@ const { buildMediaProxyUrl } = require("../media/mediaUrl.util");
 const SpecimenError = require("./specimen.errors");
 const AppError = require("../../utils/appError");
 const logger = require("../../config/logger");
+const esService = require("../search/elasticsearch.service");
 
 function formatDateOnly(val) {
   if (!val) return null;
@@ -272,6 +273,8 @@ async function updateSpecimen(specimenId, payload, adminId) {
 
   await specimenRepository.update(specimenId, current, payload, adminId);
   logger.info(`Admin ${adminId} cập nhật mẫu vật #${specimenId}`);
+  const isPriority = "isPublic" in payload;
+  esService.syncSpecimenWithRetry(specimenId, { priority: isPriority }).catch(() => {});
   return getSpecimenById(specimenId, { isAdmin: true });
 }
 
@@ -282,6 +285,9 @@ async function togglePublic(specimenId, isPublic, adminId) {
 async function batchTogglePublic(specimenIds, isPublic, adminId) {
   const updatedCount = await specimenRepository.batchUpdatePublic(specimenIds, isPublic, adminId);
   logger.info(`Admin ${adminId} cập nhật trạng thái công khai (${isPublic}) cho ${updatedCount} mẫu vật`);
+  esService.bulkIndexSpecimens(specimenIds).catch((err) => {
+    logger.error(`[ES PRIORITY BATCH PUBLIC SYNC FAILED] ${err?.message}`);
+  });
   return { updatedCount, isPublic };
 }
 
@@ -293,6 +299,7 @@ async function deleteSpecimen(specimenId, adminId) {
   logger.info(
     `Admin ${adminId} xóa mềm mẫu vật #${specimenId} (orphanedDnaCount=${orphanedDnaCount})`,
   );
+  esService.syncSpecimenWithRetry(specimenId, { priority: true }).catch(() => {});
 
   const warning =
     orphanedDnaCount > 0
@@ -317,6 +324,7 @@ async function restoreSpecimen(specimenId, adminId) {
   logger.info(
     `Admin ${adminId} khôi phục mẫu vật #${specimenId} (unorphanedDnaCount=${unorphanedDnaCount})`,
   );
+  esService.syncSpecimenWithRetry(specimenId, { priority: true }).catch(() => {});
   return {
     id: specimenId,
     restored: true,

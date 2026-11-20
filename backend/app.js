@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 const errorHandler = require("./src/middleware/errorHandler");
 const logger = require("./src/config/logger");
 const { globalRateLimiter } = require("./src/middleware/rateLimiter");
+const { checkEsHealth } = require("./src/config/elasticsearch");
 
 const app = express();
 
@@ -43,9 +44,14 @@ app.use(
   }),
 );
 
-// Health check
-app.get("/api/health", (req, res) => {
-  res.json({ success: true, message: "VietInsect API đang hoạt động" });
+// Health check (kèm trạng thái Elasticsearch — DEF-059)
+app.get("/api/health", async (req, res) => {
+  const elasticsearch = await checkEsHealth();
+  res.json({
+    success: true,
+    message: "VietInsect API đang hoạt động",
+    services: { elasticsearch },
+  });
 });
 
 // Rate limiting (SRS §5.2)
@@ -55,6 +61,7 @@ app.use("/api/", globalRateLimiter);
 app.use("/api/auth", require("./src/modules/auth/auth.routes"));
 app.use("/api/taxonomy", require("./src/modules/taxonomy/taxonomy.routes"));
 app.use("/api/specimens", require("./src/modules/specimen/specimen.routes"));
+app.use("/api/search", require("./src/modules/search/search.routes"));
 app.use("/api/dna", require("./src/modules/dna/dna.routes"));
 app.use("/api/media", require("./src/modules/media/media.routes"));
 app.use("/api/system", require("./src/modules/system/system.routes"));
