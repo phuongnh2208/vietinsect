@@ -17,8 +17,12 @@ export default function ChangePasswordPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (newPassword.length < 12) {
-      toast("Mật khẩu mới phải có tối thiểu 12 ký tự (SRS §5.2)", "warning");
+    const strongPw = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,128}$/;
+    if (!strongPw.test(newPassword)) {
+      toast(
+        "Mật khẩu mới phải ≥12 ký tự và gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt (SRS §5.2)",
+        "warning",
+      );
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -45,7 +49,7 @@ export default function ChangePasswordPage() {
         <div>
           <div className="eyebrow">
             <Icon name="key" size={14} />
-            SCR-02 · Bảo mật Tài khoản Quản trị
+            Bảo mật Tài khoản Quản trị
           </div>
           <h1>Đổi mật khẩu quản trị viên</h1>
           <p className="page-description">
