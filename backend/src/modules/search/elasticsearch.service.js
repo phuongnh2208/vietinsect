@@ -384,22 +384,38 @@ function combineOtherFilters(facetMap, excludeKey = null) {
   return clauses;
 }
 
-function buildDisjunctiveAggs(facetMap) {
-  const wrap = (excludeKey, innerAggs) => {
-    const others = combineOtherFilters(facetMap, excludeKey);
+function buildDisjunctiveAggs(facetMap, filters = {}) {
+  const wrap = (excludeKey, innerAggs, extraClauses = []) => {
+    const others = [...combineOtherFilters(facetMap, excludeKey), ...extraClauses];
     return {
       filter: others.length ? { bool: { filter: others } } : { match_all: {} },
       aggs: innerAggs,
     };
   };
 
+  const orderClause = filters.order ? [{ term: { "order_name.keyword": filters.order } }] : [];
+  const familyClause = filters.family ? [{ term: { "family_name.keyword": filters.family } }] : [];
+  const genusClause = filters.genus ? [{ term: { "genus_name.keyword": filters.genus } }] : [];
+
   return {
-    facet_taxon: wrap("taxon", {
-      orders: { terms: { field: "order_name.keyword", size: 50 } },
-      families: { terms: { field: "family_name.keyword", size: 50 } },
-      genera: { terms: { field: "genus_name.keyword", size: 50 } },
-      species: { terms: { field: "species_name.keyword", size: 50 } },
+    facet_taxon_orders: wrap("taxon", {
+      buckets: { terms: { field: "order_name.keyword", size: 50 } },
     }),
+    facet_taxon_families: wrap(
+      "taxon",
+      { buckets: { terms: { field: "family_name.keyword", size: 50 } } },
+      orderClause,
+    ),
+    facet_taxon_genera: wrap(
+      "taxon",
+      { buckets: { terms: { field: "genus_name.keyword", size: 50 } } },
+      [...orderClause, ...familyClause],
+    ),
+    facet_taxon_species: wrap(
+      "taxon",
+      { buckets: { terms: { field: "species_name.keyword", size: 50 } } },
+      [...orderClause, ...familyClause, ...genusClause],
+    ),
     facet_province: wrap("province", {
       buckets: { terms: { field: "province.keyword", size: 65 } },
     }),
@@ -450,10 +466,10 @@ function formatFacets(aggs = {}) {
   const mediaBuckets = aggs.facet_media?.types?.buckets || {};
   return {
     taxon: {
-      orders: mapBuckets(aggs.facet_taxon?.orders?.buckets),
-      families: mapBuckets(aggs.facet_taxon?.families?.buckets),
-      genera: mapBuckets(aggs.facet_taxon?.genera?.buckets),
-      species: mapBuckets(aggs.facet_taxon?.species?.buckets),
+      orders: mapBuckets(aggs.facet_taxon_orders?.buckets?.buckets),
+      families: mapBuckets(aggs.facet_taxon_families?.buckets?.buckets),
+      genera: mapBuckets(aggs.facet_taxon_genera?.buckets?.buckets),
+      species: mapBuckets(aggs.facet_taxon_species?.buckets?.buckets),
     },
     provinces: mapBuckets(aggs.facet_province?.buckets?.buckets),
     years: {
@@ -559,7 +575,7 @@ async function searchSpecimens(filters = {}, { isAdmin = false } = {}) {
         filter: baseSecurityFilter,
       },
     },
-    aggs: buildDisjunctiveAggs(facetMap),
+    aggs: buildDisjunctiveAggs(facetMap, filters),
     sort,
   };
 
