@@ -795,6 +795,7 @@ async function getStats({ includePrivate = false } = {}) {
     byOrderRes,
     byProvinceRes,
     taxaSummaryRes,
+    totalProvincesRes,
     dnaCountRes,
     imageCountRes,
     recentSpecimensRes,
@@ -810,6 +811,7 @@ async function getStats({ includePrivate = false } = {}) {
         COUNT(DISTINCT s.gbif_scientific_name) FILTER (WHERE s.gbif_scientific_name IS NOT NULL)::int AS distinct_scientific_names,
         COUNT(DISTINCT regexp_replace(s.gbif_scientific_name, '^([A-Z][a-z]+\\s+[a-z-]+).*$', '\\1'))
           FILTER (WHERE s.gbif_scientific_name ~ '^[A-Z][a-z]+\\s+[a-z-]+')::int AS distinct_binomial_species,
+        COUNT(DISTINCT s.taxon_id) FILTER (WHERE t.taxon_rank = 'Species')::int AS distinct_species_taxa,
         COUNT(*) FILTER (WHERE t.taxon_rank = 'Species')::int AS at_species_rank,
         COUNT(*) FILTER (
           WHERE s.collection_point IS NOT NULL
@@ -865,6 +867,7 @@ async function getStats({ includePrivate = false } = {}) {
         COUNT(*) FILTER (WHERE taxon_rank = 'Order')::int AS order_count
       FROM taxa
     `),
+    knex("provinces").count("* as cnt").first(),
     knex({ d: "dna_sequences" })
       .leftJoin({ s: "specimens" }, "d.specimen_id", "s.specimen_id")
       .modify((q) => {
@@ -938,10 +941,12 @@ async function getStats({ includePrivate = false } = {}) {
     publicSpecimens: sRow.public_specimens || 0,
     withCoordinates: sRow.with_coordinates || 0,
     withProvince,
-    provincesCovered: sRow.provinces_covered || 0,
-    distinctScientificNames: sRow.distinct_scientific_names || 0,
-    distinctBinomialSpecies: sRow.distinct_binomial_species || 0,
-    specimensAtSpeciesRank: sRow.at_species_rank || 0,
+    provincesCovered: sRow.provinces_covered ?? 0,
+    totalProvinces: parseInt(totalProvincesRes?.cnt ?? 0, 10),
+    distinctScientificNames: sRow.distinct_scientific_names ?? 0,
+    distinctBinomialSpecies: sRow.distinct_binomial_species ?? 0,
+    distinctSpeciesTaxa: sRow.distinct_species_taxa ?? 0,
+    specimensAtSpeciesRank: sRow.at_species_rank ?? 0,
     taxa: {
       total: tRow.total_taxa || 0,
       orders: tRow.order_count || 0,

@@ -219,4 +219,23 @@ describe("Group 1 – Privacy & Permission Isolation (DEF-089)", () => {
     expect(statsRes.status).toBe(200);
     expect(statsRes.body.data.totalSpecimens).toBe(statsRes.body.data.publicSpecimens);
   });
+
+  test("DEF-015/DEF-016: GET /api/specimens/stats returns totalProvinces from DB and public-only counts", async () => {
+    const [{ cnt }] = await knex("provinces").count("* as cnt");
+    const expectedProvinces = parseInt(cnt, 10);
+
+    const [pubStats, adminStats] = await Promise.all([
+      request(app).get("/api/specimens/stats"),
+      request(app)
+        .get("/api/specimens/stats")
+        .set("Authorization", `Bearer ${adminToken}`),
+    ]);
+
+    expect(pubStats.status).toBe(200);
+    expect(adminStats.status).toBe(200);
+    expect(pubStats.body.data.totalProvinces).toBe(expectedProvinces);
+    expect(typeof pubStats.body.data.distinctSpeciesTaxa).toBe("number");
+    expect(pubStats.body.data.totalSpecimens).toBeLessThan(adminStats.body.data.totalSpecimens);
+    expect(pubStats.body.data.dnaCount).toBeLessThan(adminStats.body.data.dnaCount);
+  });
 });
