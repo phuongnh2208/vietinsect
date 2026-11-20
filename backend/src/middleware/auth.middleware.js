@@ -36,6 +36,12 @@ function requireAdmin(req, res, next) {
  * - Nếu có gửi Bearer token → verify để cấp quyền admin; nếu hết hạn trả 401 để client tự refresh.
  */
 function optionalAdmin(req, res, next) {
+  const viewAs = String(req.headers["x-view-as"] || "").trim().toLowerCase();
+  if (viewAs === "public") {
+    req.admin = null;
+    return next();
+  }
+
   const header = req.headers.authorization || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;
 

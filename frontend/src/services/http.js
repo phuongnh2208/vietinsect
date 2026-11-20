@@ -9,11 +9,28 @@ const http = axios.create({
   withCredentials: true, // Gửi HttpOnly cookie trong mọi request (SRS §3.4)
 });
 
-// Request: gắn accessToken từ Zustand store (in-memory, không phải localStorage)
+function isAdminRouteContext() {
+  if (typeof window === "undefined" || !window.location) return false;
+  return window.location.pathname.startsWith("/admin");
+}
+
+function isAuthEndpoint(url) {
+  return typeof url === "string" && url.includes("/auth/");
+}
+
+// Request: chỉ gắn accessToken ở ngữ cảnh /admin (hoặc endpoint /auth/*); route public không gửi Bearer token và gửi X-View-As: public (DEF-051, DEF-090)
 http.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const inAdminContext = isAdminRouteContext();
+  if (inAdminContext || isAuthEndpoint(config.url)) {
+    const token = useAuthStore.getState().token;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } else {
+    if (config.headers && "Authorization" in config.headers) {
+      delete config.headers.Authorization;
+    }
+    config.headers["X-View-As"] = "public";
   }
   return config;
 });

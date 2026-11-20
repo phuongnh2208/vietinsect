@@ -197,4 +197,26 @@ describe("Group 1 – Privacy & Permission Isolation (DEF-089)", () => {
     const geoJson = JSON.parse(geoRes.text || geoRes.body.toString("utf8"));
     expect(geoJson.features).toHaveLength(0);
   });
+
+  test("DEF-051/DEF-090: X-View-As: public forces optionalAdmin to treat Admin token as Public User", async () => {
+    const [specRes, dnaRes, statsRes] = await Promise.all([
+      request(app)
+        .get(`/api/specimens/${privateSpecId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-View-As", "public"),
+      request(app)
+        .get(`/api/dna/${dnaPrivateSpecId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-View-As", "public"),
+      request(app)
+        .get("/api/specimens/stats")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-View-As", "public"),
+    ]);
+
+    expect(specRes.status).toBe(404);
+    expect(dnaRes.status).toBe(404);
+    expect(statsRes.status).toBe(200);
+    expect(statsRes.body.data.totalSpecimens).toBe(statsRes.body.data.publicSpecimens);
+  });
 });
