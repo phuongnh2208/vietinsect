@@ -623,7 +623,7 @@ export function BatchEditPage() {
               <option value="">-- Giữ nguyên --</option>
               <option value="male">Đực (Male)</option>
               <option value="female">Cái (Female)</option>
-              <option value="indeterminate">Chưa xác định</option>
+              <option value="unknown">Chưa xác định</option>
             </select>
           </div>
 
