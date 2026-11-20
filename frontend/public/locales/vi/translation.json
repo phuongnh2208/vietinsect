@@ -93,5 +93,42 @@
     "openGbif": "Xem trên GBIF",
     "openInat": "Xem trên iNaturalist",
     "adminOnly": "Chỉ dành cho Quản trị viên"
+  },
+  "search": {
+    "placeholder": "Tìm theo tên khoa học, tên thường (có/không dấu), mã mẫu, địa danh, ghi chú...",
+    "esUnavailable": "Dịch vụ tìm kiếm Elasticsearch tạm thời gián đoạn (HTTP 503). Vui lòng thử lại sau.",
+    "resultsCount": "kết quả",
+    "resetAll": "Xóa tất cả bộ lọc",
+    "removeFilter": "Xóa bộ lọc",
+    "facets": {
+      "title": "Bộ lọc (8 chiều)",
+      "taxon": "Phân loại học (Bộ → Họ → Giống → Loài)",
+      "order": "Bộ (Order)",
+      "family": "Họ (Family)",
+      "genus": "Giống (Genus)",
+      "species": "Loài (Species)",
+      "province": "Tỉnh / Thành phố",
+      "year": "Năm thu mẫu",
+      "yearFrom": "Từ năm",
+      "yearTo": "Đến năm",
+      "media": "Loại tư liệu (Media)",
+      "mediaImage": "Có ảnh",
+      "mediaDna": "Có DNA",
+      "mediaBioactivity": "Có hoạt tính sinh học",
+      "iucn": "Tình trạng IUCN",
+      "elevation": "Độ cao thu mẫu (m)",
+      "elevationMin": "Từ (m)",
+      "elevationMax": "Đến (m)",
+      "recordedBy": "Người thu mẫu",
+      "hasGps": "Tọa độ GPS",
+      "hasGpsOnly": "Chỉ mẫu có GPS"
+    },
+    "views": {
+      "list": "Danh sách",
+      "label": "Nhãn mẫu (Specify 7)",
+      "gallery": "Thư viện ảnh",
+      "map": "Bản đồ GIS",
+      "treemap": "Biểu đồ Treemap"
+    }
   }
 }

@@ -93,5 +93,42 @@
     "openGbif": "View on GBIF",
     "openInat": "View on iNaturalist",
     "adminOnly": "Administrator Only"
+  },
+  "search": {
+    "placeholder": "Search scientific name, vernacular name, specimen code, locality, notes...",
+    "esUnavailable": "Elasticsearch search service is temporarily unavailable (HTTP 503). Please try again later.",
+    "resultsCount": "results",
+    "resetAll": "Reset all filters",
+    "removeFilter": "Remove filter",
+    "facets": {
+      "title": "Filters (8 facets)",
+      "taxon": "Taxonomy (Order → Family → Genus → Species)",
+      "order": "Order",
+      "family": "Family",
+      "genus": "Genus",
+      "species": "Species",
+      "province": "Province / City",
+      "year": "Collection Year",
+      "yearFrom": "From year",
+      "yearTo": "To year",
+      "media": "Media Type",
+      "mediaImage": "Has Image",
+      "mediaDna": "Has DNA",
+      "mediaBioactivity": "Has Bioactivity",
+      "iucn": "IUCN Status",
+      "elevation": "Elevation (m)",
+      "elevationMin": "Min (m)",
+      "elevationMax": "Max (m)",
+      "recordedBy": "Recorded By",
+      "hasGps": "GPS Coordinates",
+      "hasGpsOnly": "With GPS only"
+    },
+    "views": {
+      "list": "List",
+      "label": "Label (Specify 7)",
+      "gallery": "Gallery",
+      "map": "GIS Map",
+      "treemap": "Treemap"
+    }
   }
 }
