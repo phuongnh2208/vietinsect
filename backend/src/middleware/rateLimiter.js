@@ -147,4 +147,8 @@ async function closeRateLimiterRedis() {
   }
 }
 
-module.exports = { globalRateLimiter, authRateLimiter, closeRateLimiterRedis };
+function getRedisState() {
+  return { client: redisClient, ready: redisReady };
+}
+
+module.exports = { globalRateLimiter, authRateLimiter, closeRateLimiterRedis, getRedisState };

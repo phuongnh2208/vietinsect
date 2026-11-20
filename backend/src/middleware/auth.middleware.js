@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("../config/jwt");
 const AppError = require("../utils/appError");
+const { isTokenBlacklisted, isUserTokenRevoked } = require("../modules/auth/tokenBlacklist");
 
 const TOKEN_MISSING = {
   code: "AUTH.TOKEN_MISSING",
@@ -14,7 +15,18 @@ const TOKEN_INVALID = {
   statusCode: 401,
 };
 
-function requireAdmin(req, res, next) {
+async function verifyAndCheckBlacklist(token) {
+  const decoded = jwt.verify(token, JWT_SECRET);
+  if (decoded.jti && (await isTokenBlacklisted(decoded.jti))) {
+    throw new AppError(TOKEN_INVALID);
+  }
+  if (decoded.adminId && decoded.iat && (await isUserTokenRevoked(decoded.adminId, decoded.iat))) {
+    throw new AppError(TOKEN_INVALID);
+  }
+  return decoded;
+}
+
+async function requireAdmin(req, res, next) {
   const header = req.headers.authorization || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;
 
@@ -23,7 +35,7 @@ function requireAdmin(req, res, next) {
   }
 
   try {
-    req.admin = jwt.verify(token, JWT_SECRET);
+    req.admin = await verifyAndCheckBlacklist(token);
     next();
   } catch (err) {
     next(new AppError(TOKEN_INVALID));
@@ -35,7 +47,7 @@ function requireAdmin(req, res, next) {
  * - Nếu không gửi Authorization header → req.admin = null, cho phép đọc dữ liệu public.
  * - Nếu có gửi Bearer token → verify để cấp quyền admin; nếu hết hạn trả 401 để client tự refresh.
  */
-function optionalAdmin(req, res, next) {
+async function optionalAdmin(req, res, next) {
   const viewAs = String(req.headers["x-view-as"] || "").trim().toLowerCase();
   if (viewAs === "public") {
     req.admin = null;
@@ -51,7 +63,7 @@ function optionalAdmin(req, res, next) {
   }
 
   try {
-    req.admin = jwt.verify(token, JWT_SECRET);
+    req.admin = await verifyAndCheckBlacklist(token);
     next();
   } catch (err) {
     next(new AppError(TOKEN_INVALID));

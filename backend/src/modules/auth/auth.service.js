@@ -6,6 +6,7 @@ const AuthError = require("./auth.errors");
 const AppError = require("../../utils/appError");
 const logger = require("../../config/logger");
 const { JWT_SECRET, JWT_REFRESH_SECRET, JWT_ACCESS_EXPIRES_IN } = require("../../config/jwt");
+const { blacklistToken, revokeUserTokensBefore } = require("./tokenBlacklist");
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_DURATION_MINUTES = 30;
@@ -45,9 +46,9 @@ async function login(username, password) {
 
   await authRepository.resetFailedAttempts(user.admin_id);
 
-  // accessToken: 15 phút, trả về JSON body → lưu in-memory Zustand.
+  // accessToken: 15 phút, trả về JSON body → lưu in-memory Zustand. Gắn jti để hỗ trợ Redis blacklist (DEF-009).
   const accessToken = jwt.sign(
-    { adminId: user.admin_id, username: user.username, role: "admin" },
+    { adminId: user.admin_id, username: user.username, role: "admin", jti: crypto.randomUUID() },
     JWT_SECRET,
     { expiresIn: JWT_ACCESS_EXPIRES_IN },
   );
@@ -82,7 +83,7 @@ async function refresh(refreshTokenRaw) {
   if (!user) throw new AppError(AuthError.INVALID_CREDENTIALS);
 
   const accessToken = jwt.sign(
-    { adminId: user.admin_id, username: user.username, role: "admin" },
+    { adminId: user.admin_id, username: user.username, role: "admin", jti: crypto.randomUUID() },
     JWT_SECRET,
     { expiresIn: JWT_ACCESS_EXPIRES_IN },
   );
@@ -97,14 +98,32 @@ async function refresh(refreshTokenRaw) {
   };
 }
 
-async function logout(refreshTokenRaw) {
-  if (!refreshTokenRaw) return;
-  const tokenHash = crypto.createHash("sha256").update(refreshTokenRaw).digest("hex");
-  await authRepository.revokeRefreshToken(tokenHash);
+async function logout(refreshTokenRaw, accessTokenRaw = null) {
+  let adminId = null;
+  if (refreshTokenRaw) {
+    const tokenHash = crypto.createHash("sha256").update(refreshTokenRaw).digest("hex");
+    const rec = await authRepository.findRefreshToken(tokenHash).catch(() => null);
+    if (rec) adminId = rec.admin_id;
+    await authRepository.revokeRefreshToken(tokenHash);
+  }
+  if (accessTokenRaw) {
+    try {
+      const decoded = jwt.verify(accessTokenRaw, JWT_SECRET);
+      if (decoded.adminId) adminId = decoded.adminId;
+      if (decoded.jti) {
+        const remaining = decoded.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 900;
+        await blacklistToken(decoded.jti, remaining);
+      }
+    } catch {
+      // Token already expired or invalid
+    }
+  }
+  return { adminId };
 }
 
 async function logoutAll(adminId) {
   await authRepository.revokeAllRefreshTokens(adminId);
+  await revokeUserTokensBefore(adminId, Math.floor(Date.now() / 1000));
 }
 
 async function changePassword(adminId, currentPassword, newPassword) {
@@ -118,6 +137,7 @@ async function changePassword(adminId, currentPassword, newPassword) {
   const newHash = await bcrypt.hash(newPassword, 12);
   await authRepository.updatePasswordHash(adminId, newHash);
   await authRepository.revokeAllRefreshTokens(adminId);
+  await revokeUserTokensBefore(adminId, Math.floor(Date.now() / 1000));
   logger.info(`Admin #${adminId} (${user.username}) đã cập nhật mật khẩu.`);
 }
 
