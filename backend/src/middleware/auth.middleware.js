@@ -20,7 +20,8 @@ async function verifyAndCheckBlacklist(token) {
   if (decoded.jti && (await isTokenBlacklisted(decoded.jti))) {
     throw new AppError(TOKEN_INVALID);
   }
-  if (decoded.adminId && decoded.iat && (await isUserTokenRevoked(decoded.adminId, decoded.iat))) {
+  const issuedMs = decoded.iatMs || (decoded.iat ? decoded.iat * 1000 : null);
+  if (decoded.adminId && issuedMs && (await isUserTokenRevoked(decoded.adminId, issuedMs))) {
     throw new AppError(TOKEN_INVALID);
   }
   return decoded;

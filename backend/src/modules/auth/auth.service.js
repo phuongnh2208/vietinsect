@@ -49,7 +49,7 @@ async function login(username, password) {
 
   // accessToken: 15 phút, trả về JSON body → lưu in-memory Zustand. Gắn jti để hỗ trợ Redis blacklist (DEF-009).
   const accessToken = jwt.sign(
-    { adminId: user.admin_id, username: user.username, role: "admin", jti: crypto.randomUUID() },
+    { adminId: user.admin_id, username: user.username, role: "admin", jti: crypto.randomUUID(), iatMs: Date.now() },
     JWT_SECRET,
     { expiresIn: JWT_ACCESS_EXPIRES_IN },
   );
@@ -98,7 +98,7 @@ async function refresh(refreshTokenRaw) {
   await authRepository.saveRefreshToken(user.admin_id, newTokenHash, newExpiresAt);
 
   const accessToken = jwt.sign(
-    { adminId: user.admin_id, username: user.username, role: "admin", jti: crypto.randomUUID() },
+    { adminId: user.admin_id, username: user.username, role: "admin", jti: crypto.randomUUID(), iatMs: Date.now() },
     JWT_SECRET,
     { expiresIn: JWT_ACCESS_EXPIRES_IN },
   );
@@ -139,7 +139,7 @@ async function logout(refreshTokenRaw, accessTokenRaw = null) {
 
 async function logoutAll(adminId) {
   await authRepository.revokeAllRefreshTokens(adminId);
-  await revokeUserTokensBefore(adminId, Math.floor(Date.now() / 1000));
+  await revokeUserTokensBefore(adminId, Date.now());
 }
 
 async function changePassword(adminId, currentPassword, newPassword) {
@@ -153,7 +153,7 @@ async function changePassword(adminId, currentPassword, newPassword) {
   const newHash = await bcrypt.hash(newPassword, 12);
   await authRepository.updatePasswordHash(adminId, newHash);
   await authRepository.revokeAllRefreshTokens(adminId);
-  await revokeUserTokensBefore(adminId, Math.floor(Date.now() / 1000));
+  await revokeUserTokensBefore(adminId, Date.now());
   logger.info(`Admin #${adminId} (${user.username}) đã cập nhật mật khẩu.`);
 }
 

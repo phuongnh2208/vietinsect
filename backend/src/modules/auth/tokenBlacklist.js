@@ -37,23 +37,23 @@ async function isTokenBlacklisted(jti) {
   return false;
 }
 
-async function revokeUserTokensBefore(adminId, epochSeconds = Math.floor(Date.now() / 1000)) {
+async function revokeUserTokensBefore(adminId, epochMs = Date.now()) {
   if (!adminId) return;
   const key = String(adminId);
-  localUserRevokedBefore.set(key, epochSeconds);
+  localUserRevokedBefore.set(key, epochMs);
 
   const { client, ready } = getRedisState();
   if (ready && client) {
-    await client.set(`bl:user:${key}`, String(epochSeconds), "EX", 86400).catch(() => {});
+    await client.set(`bl:user:${key}`, String(epochMs), "EX", 86400).catch(() => {});
   }
 }
 
-async function isUserTokenRevoked(adminId, iatSeconds) {
-  if (!adminId || !iatSeconds) return false;
+async function isUserTokenRevoked(adminId, iatMs) {
+  if (!adminId || !iatMs) return false;
   const key = String(adminId);
 
   const localTs = localUserRevokedBefore.get(key);
-  if (localTs != null && iatSeconds <= localTs) {
+  if (localTs != null && iatMs <= localTs) {
     return true;
   }
 
@@ -61,7 +61,7 @@ async function isUserTokenRevoked(adminId, iatSeconds) {
   if (ready && client) {
     try {
       const val = await client.get(`bl:user:${key}`);
-      if (val != null && iatSeconds <= Number(val)) {
+      if (val != null && iatMs <= Number(val)) {
         return true;
       }
     } catch {

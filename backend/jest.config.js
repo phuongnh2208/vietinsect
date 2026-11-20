@@ -4,8 +4,9 @@ module.exports = {
   globalTeardown: "<rootDir>/tests/setup/globalTeardown.js",
   testMatch: ["**/tests/**/*.test.js"],
   testPathIgnorePatterns: ["/node_modules/", "tests/integration/api\\.smoke\\.test\\.js"],
+  collectCoverageFrom: ["src/modules/**/*.service.js"],
   coverageThreshold: {
-    "./src/modules/**/*.service.js": {
+    global: {
       statements: 70,
       lines: 70,
     },
