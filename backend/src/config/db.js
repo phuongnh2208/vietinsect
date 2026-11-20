@@ -5,10 +5,15 @@ if (!process.env.DB_PASSWORD) {
   throw new Error("CRITICAL: DB_PASSWORD chưa được cấu hình trong môi trường.");
 }
 
+const dbName =
+  process.env.NODE_ENV === "test"
+    ? process.env.DB_TEST_NAME || "vietinsect_test"
+    : process.env.DB_NAME || "vietinsect_db";
+
 const pool = new Pool({
   host: process.env.DB_HOST || "localhost",
   port: Number(process.env.DB_PORT) || 5432,
-  database: process.env.DB_NAME || "vietinsect_db",
+  database: dbName,
   user: process.env.DB_USER || "vietinsect_user",
   password: process.env.DB_PASSWORD,
   max: 20,

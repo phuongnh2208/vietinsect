@@ -200,8 +200,14 @@ describe("Group 2 – Data Integrity Tests", () => {
   });
 
   test("DEF-107: mv_taxon_dwc_flat is populated with Species rows", async () => {
-    const row = await knex("mv_taxon_dwc_flat").count("* as cnt").first();
-    expect(parseInt(row.cnt, 10)).toBeGreaterThanOrEqual(3800);
+    const [mvRow, spRow] = await Promise.all([
+      knex("mv_taxon_dwc_flat").count("* as cnt").first(),
+      knex("taxa").where("taxon_rank", "Species").count("* as cnt").first(),
+    ]);
+    const mvCount = parseInt(mvRow.cnt, 10);
+    const spCount = parseInt(spRow.cnt, 10);
+    expect(spCount).toBeGreaterThanOrEqual(1);
+    expect(mvCount).toBe(spCount);
   });
 
   test("DEF-108: GET /api/specimens/analytics reports specimen_count = 0 for a province with no specimens", async () => {
