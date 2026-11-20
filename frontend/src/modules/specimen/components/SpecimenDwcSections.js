@@ -1,8 +1,9 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { formatBasisOfRecord, SEX_LABELS } from "../specimen.constants";
 
-function MetadataRow({ label, dwcTerm, value, isItalic = false, highlight = false }) {
-  const displayVal = value != null && String(value).trim() !== "" ? value : "—";
+function MetadataRow({ label, dwcTerm, value, isItalic = false, highlight = false, emptyText = "Chưa ghi nhận" }) {
+  const displayVal = value != null && String(value).trim() !== "" ? value : emptyText;
   return (
     <div className={`dwc-table-row ${highlight ? "is-highlight" : ""}`}>
       <div className="dwc-label-col">
@@ -19,7 +20,9 @@ function MetadataRow({ label, dwcTerm, value, isItalic = false, highlight = fals
 }
 
 export default function SpecimenDwcSections({ specimen }) {
+  const { t } = useTranslation();
   if (!specimen) return null;
+  const notRecorded = t("common.notRecorded", "Chưa ghi nhận");
 
   return (
     <div className="vi-dwc-sections-container">
@@ -66,7 +69,8 @@ export default function SpecimenDwcSections({ specimen }) {
           <MetadataRow
             label="Cấp phân loại"
             dwcTerm="taxonRank"
-            value={specimen.taxonRank || "Species"}
+            value={specimen.taxonRank}
+            emptyText={notRecorded}
           />
           <MetadataRow
             label="Bộ côn trùng"
@@ -107,27 +111,32 @@ export default function SpecimenDwcSections({ specimen }) {
           <MetadataRow
             label="Số lượng cá thể"
             dwcTerm="individualCount"
-            value={specimen.individualCount ? `${specimen.individualCount} cá thể` : "1 cá thể"}
+            value={specimen.individualCount != null ? `${specimen.individualCount} cá thể` : null}
+            emptyText={notRecorded}
           />
           <MetadataRow
             label="Giới tính"
             dwcTerm="sex"
-            value={specimen.sex ? SEX_LABELS[specimen.sex] || specimen.sex : "Chưa xác định"}
+            value={specimen.sex ? SEX_LABELS[specimen.sex] || specimen.sex : null}
+            emptyText={notRecorded}
           />
           <MetadataRow
             label="Giai đoạn phát triển"
             dwcTerm="lifeStage"
-            value={specimen.lifeStageLabelVn || "Côn trùng trưởng thành (Adult)"}
+            value={specimen.lifeStageLabelVn}
+            emptyText={notRecorded}
           />
           <MetadataRow
             label="Tình trạng bảo quản"
             dwcTerm="preparations"
-            value={specimen.statusLabelVn || "Mẫu khô cắm kim (Pinned)"}
+            value={specimen.statusLabelVn}
+            emptyText={notRecorded}
           />
           <MetadataRow
             label="Đơn vị lưu trữ"
             dwcTerm="institutionCode"
-            value={specimen.institutionCode || "VAST / Bảo tàng Côn trùng học"}
+            value={specimen.institutionCode}
+            emptyText={notRecorded}
           />
           <MetadataRow
             label="Mã bộ sưu tập"
@@ -188,7 +197,8 @@ export default function SpecimenDwcSections({ specimen }) {
           <MetadataRow
             label="Độ chính xác GPS"
             dwcTerm="coordinateUncertaintyInMeters"
-            value={specimen.gpsAccuracyM != null ? `± ${specimen.gpsAccuracyM} mét` : "Không ghi nhận"}
+            value={specimen.gpsAccuracyM != null ? `± ${specimen.gpsAccuracyM} mét` : null}
+            emptyText={notRecorded}
           />
           <MetadataRow
             label="Hệ quy chiếu trắc địa"
@@ -208,12 +218,14 @@ export default function SpecimenDwcSections({ specimen }) {
           <MetadataRow
             label="Kiểu sinh cảnh thu thập"
             dwcTerm="habitat"
-            value={specimen.habitatLabelVn || "Rừng tự nhiên / Thảm thực vật nhiệt đới"}
+            value={specimen.habitatLabelVn}
+            emptyText={notRecorded}
           />
           <MetadataRow
             label="Phương thức thu thập"
             dwcTerm="samplingProtocol"
-            value="Vợt bắt / Bẫy đèn côn trùng / Bẫy hố"
+            value={specimen.samplingProtocol || null}
+            emptyText={notRecorded}
           />
         </div>
       </section>

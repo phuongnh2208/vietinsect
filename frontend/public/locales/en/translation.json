@@ -25,7 +25,8 @@
     "close": "Close",
     "public": "Public",
     "private": "Private",
-    "admin": "Administrator"
+    "admin": "Administrator",
+    "notRecorded": "Not recorded"
   },
   "dashboard": {
     "eyebrow": "Admin workspace",

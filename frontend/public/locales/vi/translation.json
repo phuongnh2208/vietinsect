@@ -25,7 +25,8 @@
     "close": "Đóng",
     "public": "Công khai",
     "private": "Riêng tư",
-    "admin": "Quản trị viên"
+    "admin": "Quản trị viên",
+    "notRecorded": "Chưa ghi nhận"
   },
   "dashboard": {
     "eyebrow": "Không gian quản trị",

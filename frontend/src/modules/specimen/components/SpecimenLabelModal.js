@@ -1,8 +1,11 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import Icon from "../../../components/ui/Icon";
 
 export default function SpecimenLabelModal({ specimen, isOpen, onClose }) {
+  const { t } = useTranslation();
   if (!isOpen || !specimen) return null;
+  const notRecorded = t("common.notRecorded", "Chưa ghi nhận");
 
   const handlePrint = () => {
     window.print();
@@ -34,10 +37,10 @@ export default function SpecimenLabelModal({ specimen, isOpen, onClose }) {
                 <em>{specimen.scientificName}</em>
               </div>
               <div className="label-hierarchy">
-                {specimen.orderName || "Insecta"} : {specimen.familyName || "—"}
+                {specimen.orderName || notRecorded} : {specimen.familyName || notRecorded}
               </div>
               <div className="label-locality">
-                📍 {specimen.provinceNameVn || "Việt Nam"}
+                📍 {specimen.provinceNameVn || notRecorded}
                 {specimen.localityDetail ? `, ${specimen.localityDetail}` : ""}
               </div>
               {specimen.latitude != null && specimen.longitude != null && (
@@ -46,12 +49,12 @@ export default function SpecimenLabelModal({ specimen, isOpen, onClose }) {
                 </div>
               )}
               <div className="label-date-collector">
-                <span>📅 {specimen.collectionDate || "—"}</span>
-                <span>👤 {specimen.recordedBy || "Coll. VAST"}</span>
+                <span>📅 {specimen.collectionDate || notRecorded}</span>
+                <span>👤 {specimen.recordedBy || notRecorded}</span>
               </div>
               <div className="label-code-footer">
                 <strong>{specimen.specimenCode}</strong>
-                <span>{specimen.basisOfRecord || "PRESERVED_SPECIMEN"}</span>
+                <span>{specimen.basisOfRecord || notRecorded}</span>
               </div>
             </div>
           </div>
