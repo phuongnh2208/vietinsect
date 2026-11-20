@@ -191,7 +191,7 @@ Phạm vi không bao gồm: quản lý tài chính, quản lý nhân sự, thư�
  
 VietInsect BigData System là một hệ thống web độc lập (standalone web application), chạy hoàn toàn trên nền tảng web — không yêu cầu cài đặt phần mềm phía người dùng. Hệ thống được triển khai theo kiến trúc client-server nhiều tầng (multi-tier), bao gồm ba thành phần chính:
  
-● Frontend: Single Page Application (SPA) xây dựng bằng React 18 + Create React App, giao tiếp với backend qua REST API.
+● Frontend: Single Page Application (SPA) xây dựng bằng React 19 + CRA 5 (craco), react-leaflet 5, giao tiếp với backend qua REST API.
  
 ● Backend: Node.js + Express, cung cấp REST API chuẩn OpenAPI 3.0, kết nối cơ sở dữ liệu PostgreSQL/PostGIS, MongoDB, Elasticsearch, MinIO và Redis.
  
@@ -773,7 +773,7 @@ Các yêu cầu chức năng được mã hóa theo định dạng F - [Nhóm] -
  
 #  6.5 Ràng buộc thiết kế
  
-● Frontend: Create React App 5 + React 18. State management: Zustand. Routing: React Router v6. HTTP client: Axios. Map: Leaflet + react-leaflet. Charts: Recharts.
+● Frontend: React 19 + CRA 5 (craco), react-leaflet 5. State management: Zustand. Routing: React Router v6. HTTP client: Axios. Map: Leaflet + react-leaflet 5. Charts: Recharts.
  
 ● Backend: Node.js 20 LTS + Express 5. ORM/QueryBuilder: Knex.js. Validation: Joi. PDF: Puppeteer. File storage: MinIO SDK.
  
