@@ -1058,7 +1058,7 @@ async function getAnalytics(filters = {}, { includePrivate = false } = {}) {
       p.province_name_vn,
       p.province_name_en,
       p.region,
-      COUNT(*)::int AS specimen_count,
+      COUNT(s.specimen_id)::int AS specimen_count,
       COUNT(DISTINCT s.taxon_id) FILTER (WHERE t.taxon_rank = 'Species')::int AS species_count,
       ROUND(AVG(ST_Y(s.collection_point::geometry))::numeric, 4)::float AS lat,
       ROUND(AVG(ST_X(s.collection_point::geometry))::numeric, 4)::float AS lon
