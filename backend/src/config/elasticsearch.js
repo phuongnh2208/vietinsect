@@ -19,6 +19,9 @@ if (process.env.ELASTIC_PASSWORD) {
 const esClient = new Client(clientOptions);
 
 function getIndexName(base) {
+  if (base === "specimens" && process.env.ES_SPECIMENS_INDEX_OVERRIDE) {
+    return process.env.ES_SPECIMENS_INDEX_OVERRIDE;
+  }
   return process.env.NODE_ENV === "test" ? `${base}_test` : base;
 }
 

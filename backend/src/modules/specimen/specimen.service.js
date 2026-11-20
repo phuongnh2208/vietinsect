@@ -274,7 +274,11 @@ async function updateSpecimen(specimenId, payload, adminId) {
   await specimenRepository.update(specimenId, current, payload, adminId);
   logger.info(`Admin ${adminId} cập nhật mẫu vật #${specimenId}`);
   const isPriority = "isPublic" in payload;
-  esService.syncSpecimenWithRetry(specimenId, { priority: isPriority }).catch(() => {});
+  if (isPriority) {
+    await esService.syncSpecimenWithRetry(specimenId, { priority: true });
+  } else {
+    esService.syncSpecimenWithRetry(specimenId, { priority: false }).catch(() => {});
+  }
   return getSpecimenById(specimenId, { isAdmin: true });
 }
 
@@ -299,7 +303,7 @@ async function deleteSpecimen(specimenId, adminId) {
   logger.info(
     `Admin ${adminId} xóa mềm mẫu vật #${specimenId} (orphanedDnaCount=${orphanedDnaCount})`,
   );
-  esService.syncSpecimenWithRetry(specimenId, { priority: true }).catch(() => {});
+  await esService.syncSpecimenWithRetry(specimenId, { priority: true });
 
   const warning =
     orphanedDnaCount > 0
@@ -324,7 +328,7 @@ async function restoreSpecimen(specimenId, adminId) {
   logger.info(
     `Admin ${adminId} khôi phục mẫu vật #${specimenId} (unorphanedDnaCount=${unorphanedDnaCount})`,
   );
-  esService.syncSpecimenWithRetry(specimenId, { priority: true }).catch(() => {});
+  await esService.syncSpecimenWithRetry(specimenId, { priority: true });
   return {
     id: specimenId,
     restored: true,

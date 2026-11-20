@@ -6,6 +6,8 @@ const router = express.Router();
 const { optionalAdmin } = require("../../middleware/auth.middleware");
 const esService = require("./elasticsearch.service");
 
+const MAX_RESULT_WINDOW = 10000;
+
 const searchQuerySchema = Joi.object({
   q: Joi.string().trim().max(200).allow(""),
   page: Joi.number().integer().min(1).default(1),
@@ -16,6 +18,13 @@ const searchQuerySchema = Joi.object({
   sortOrder: Joi.string().valid("asc", "desc").default("desc"),
   isPublic: Joi.boolean(),
   includeDeleted: Joi.boolean().default(false),
+}).custom((val, helpers) => {
+  if (val.page * val.limit > MAX_RESULT_WINDOW) {
+    return helpers.message(
+      `Vượt quá giới hạn phân trang (page * limit <= ${MAX_RESULT_WINDOW})`,
+    );
+  }
+  return val;
 });
 
 router.get("/specimens", optionalAdmin, async (req, res, next) => {

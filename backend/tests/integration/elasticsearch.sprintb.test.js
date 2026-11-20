@@ -11,10 +11,9 @@ const { esClient, getIndexName, checkEsHealth } = require("../../src/config/elas
 const esService = require("../../src/modules/search/elasticsearch.service");
 const { closeRateLimiterRedis } = require("../../src/middleware/rateLimiter");
 
-describe("Sprint B Group 2A – Elasticsearch Search & Sync Tests (DEF-059)", () => {
+describe("Sprint B Group 2A – Elasticsearch Search, Security & Sync Tests (DEF-059)", () => {
   const suffix = Date.now().toString(36).toUpperCase();
   let adminToken = null;
-  let esUp = false;
   let taxonId = null;
   let synTaxonId = null;
   let pubSpecId = null;
@@ -29,10 +28,12 @@ describe("Sprint B Group 2A – Elasticsearch Search & Sync Tests (DEF-059)", ()
       { expiresIn: "1h" },
     );
 
-    const taxon = await knex("taxa").select("taxon_id", "parent_id").where("taxon_rank", "Species").first();
+    const taxon = await knex("taxa")
+      .select("taxon_id", "parent_id")
+      .where("taxon_rank", "Species")
+      .first();
     taxonId = Number(taxon.taxon_id);
 
-    // Insert a synonym taxon pointing to taxonId (Papilio demoleus)
     const [syn] = await knex("taxa")
       .insert({
         parent_id: taxon.parent_id,
@@ -45,7 +46,7 @@ describe("Sprint B Group 2A – Elasticsearch Search & Sync Tests (DEF-059)", ()
       .returning("taxon_id");
     synTaxonId = Number(syn.taxon_id ?? syn);
 
-    // 1. Public specimen with Vietnamese accents, locality & notes
+    // 1. Public specimen
     const [rPub] = await knex("specimen_registry")
       .insert({ specimen_code: `ES-PUB-${suffix}`, basis_of_record: "PRESERVED_SPECIMEN" })
       .returning("specimen_id");
@@ -93,19 +94,20 @@ describe("Sprint B Group 2A – Elasticsearch Search & Sync Tests (DEF-059)", ()
     });
 
     const health = await checkEsHealth();
-    esUp = health.status === "up";
-    if (esUp) {
-      await esService.reindexAll({ refresh: true });
+    if (health.status !== "up") {
+      throw new Error("Elasticsearch must be running for Sprint B Group 2A integration tests");
     }
+    await esClient.indices.delete({ index: getIndexName("specimens") }).catch(() => {});
+    await esClient.indices.delete({ index: getIndexName("taxa") }).catch(() => {});
+    await esService.reindexAll({ refresh: true });
   });
 
   afterAll(async () => {
-    if (esUp) {
-      await esClient.indices.delete({ index: getIndexName("specimens") }).catch(() => {});
-      await esClient.indices.delete({ index: getIndexName("taxa") }).catch(() => {});
-    }
+    await esClient.indices.delete({ index: getIndexName("specimens") }).catch(() => {});
+    await esClient.indices.delete({ index: getIndexName("taxa") }).catch(() => {});
     const specIds = [pubSpecId, privSpecId, delSpecId].filter(Boolean);
     if (specIds.length) {
+      await knex("specimen_change_history").whereIn("specimen_id", specIds).delete();
       await knex("specimens").whereIn("specimen_id", specIds).delete();
       await knex("specimen_registry").whereIn("specimen_id", specIds).delete();
     }
@@ -117,14 +119,107 @@ describe("Sprint B Group 2A – Elasticsearch Search & Sync Tests (DEF-059)", ()
     await pool.end();
   });
 
-  test("GET /api/health reports Elasticsearch service status", async () => {
+  it("GET /api/health reports Elasticsearch status up", async () => {
     const res = await request(app).get("/api/health");
     expect(res.status).toBe(200);
-    expect(res.body.services).toBeDefined();
-    expect(["up", "down"]).toContain(res.body.services.elasticsearch.status);
+    expect(res.body.services.elasticsearch.status).toBe("up");
   });
 
-  test("DEF-059: ES down returns HTTP 503 (never silently falls back to SQL)", async () => {
+  it("(a) Vietnamese accent-insensitive: 'bo canh cung' matches 'Bọ cánh cứng ánh kim'", async () => {
+    const res = await request(app).get("/api/search/specimens?q=bo%20canh%20cung");
+    expect(res.status).toBe(200);
+    const ids = res.body.data.map((d) => Number(d.id));
+    expect(ids).toContain(pubSpecId);
+  });
+
+  it("(b) matches specimen_code, locality, and notes (DEF-059)", async () => {
+    const [codeRes, locRes, notesRes] = await Promise.all([
+      request(app).get(`/api/search/specimens?q=ES-PUB-${suffix}`),
+      request(app).get("/api/search/specimens?q=Cuc%20Phuong"),
+      request(app).get(
+        `/api/search/specimens?q=${encodeURIComponent(`Ghi chu dac biet mau ${suffix}`)}`,
+      ),
+    ]);
+    expect(codeRes.status).toBe(200);
+    expect(codeRes.body.data.map((d) => Number(d.id))).toContain(pubSpecId);
+    expect(locRes.body.data.map((d) => Number(d.id))).toContain(pubSpecId);
+    expect(notesRes.body.data.map((d) => Number(d.id))).toContain(pubSpecId);
+  });
+
+  it("(c) synonym search resolves accepted name with synonymNotice (F-TX-03)", async () => {
+    const res = await request(app).get(
+      `/api/search/specimens?q=${encodeURIComponent(`Papilio synonimus ${suffix}`)}`,
+    );
+    expect(res.status).toBe(200);
+    expect(res.body.synonymNotice).toBeTruthy();
+    expect(res.body.synonymNotice.acceptedName).toBe("Papilio demoleus");
+    expect(res.body.data.map((d) => Number(d.id))).toContain(pubSpecId);
+  });
+
+  it("(d) Private & soft-deleted specimens are hidden for User, while Admin sees Private", async () => {
+    const [pubRes, adminRes] = await Promise.all([
+      request(app).get("/api/search/specimens?q=bo%20canh%20cung"),
+      request(app)
+        .get(`/api/search/specimens?q=ES-PRIV-${suffix}`)
+        .set("Authorization", `Bearer ${adminToken}`),
+    ]);
+
+    const pubIds = pubRes.body.data.map((d) => Number(d.id));
+    expect(pubIds).not.toContain(privSpecId);
+    expect(pubIds).not.toContain(delSpecId);
+
+    expect(adminRes.status).toBe(200);
+    expect(adminRes.body.data.map((d) => Number(d.id))).toContain(privSpecId);
+  });
+
+  it("(e) toggle is_public, soft-delete, and restore update ES immediately", async () => {
+    // 1. Toggle pubSpecId -> Private
+    const toPriv = await request(app)
+      .patch(`/api/specimens/${pubSpecId}/public`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ isPublic: false });
+    expect(toPriv.status).toBe(200);
+    await esClient.indices.refresh({ index: getIndexName("specimens") });
+
+    const hiddenRes = await request(app).get(`/api/search/specimens?q=ES-PUB-${suffix}`);
+    expect(hiddenRes.body.data.map((d) => Number(d.id))).not.toContain(pubSpecId);
+
+    // 2. Toggle back -> Public
+    await request(app)
+      .patch(`/api/specimens/${pubSpecId}/public`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ isPublic: true });
+    await esClient.indices.refresh({ index: getIndexName("specimens") });
+
+    // 3. Soft-delete -> hidden from User
+    const delRes = await request(app)
+      .delete(`/api/specimens/${pubSpecId}`)
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(delRes.status).toBe(200);
+    await esClient.indices.refresh({ index: getIndexName("specimens") });
+
+    const afterDel = await request(app).get(`/api/search/specimens?q=ES-PUB-${suffix}`);
+    expect(afterDel.body.data.map((d) => Number(d.id))).not.toContain(pubSpecId);
+
+    // 4. Restore -> visible again to User
+    const restRes = await request(app)
+      .post(`/api/specimens/${pubSpecId}/restore`)
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(restRes.status).toBe(200);
+    await esClient.indices.refresh({ index: getIndexName("specimens") });
+
+    const afterRestore = await request(app).get(`/api/search/specimens?q=ES-PUB-${suffix}`);
+    expect(afterRestore.body.data.map((d) => Number(d.id))).toContain(pubSpecId);
+  });
+
+  it("(f) reindexAll run twice is idempotent and does not duplicate documents", async () => {
+    const before = await esClient.count({ index: getIndexName("specimens") });
+    await esService.reindexAll({ refresh: true });
+    const after = await esClient.count({ index: getIndexName("specimens") });
+    expect(after.count).toBe(before.count);
+  });
+
+  it("(g) ES down returns HTTP 503 (never silently falls back to SQL)", async () => {
     const spy = jest.spyOn(esClient, "search").mockRejectedValueOnce(new Error("Connection refused"));
     try {
       const res = await request(app).get("/api/search/specimens?q=Papilio");
@@ -135,50 +230,40 @@ describe("Sprint B Group 2A – Elasticsearch Search & Sync Tests (DEF-059)", ()
     }
   });
 
-  test("DEF-059 (Live ES): Vietnamese accent-insensitive search, notes/code/locality, synonym, privacy & idempotent reindex", async () => {
-    if (!esUp) {
-      console.warn("Elasticsearch not reachable — skipping live ES assertions");
-      return;
-    }
-
-    // 1. "bo canh cung" matches "Bọ cánh cứng ánh kim" (accent-insensitive)
-    const viRes = await request(app).get("/api/search/specimens?q=bo%20canh%20cung");
-    expect(viRes.status).toBe(200);
-    const viIds = viRes.body.data.map((d) => Number(d.id));
-    expect(viIds).toContain(pubSpecId);
-    // Private & soft-deleted must NOT appear for public User
-    expect(viIds).not.toContain(privSpecId);
-    expect(viIds).not.toContain(delSpecId);
-
-    // 2. Search by specimen_code, locality, and notes
-    const [codeRes, locRes, notesRes] = await Promise.all([
-      request(app).get(`/api/search/specimens?q=ES-PUB-${suffix}`),
-      request(app).get("/api/search/specimens?q=Cuc%20Phuong"),
-      request(app).get(`/api/search/specimens?q=${encodeURIComponent(`Ghi chu dac biet mau ${suffix}`)}`),
+  it("validates query params: rejects limit>100, page*limit>10000, invalid sortBy, and strips unknown DSL params", async () => {
+    const [badLimit, badWindow, badSort, dslStrip] = await Promise.all([
+      request(app).get("/api/search/specimens?limit=101"),
+      request(app).get("/api/search/specimens?page=101&limit=100"),
+      request(app).get("/api/search/specimens?sortBy=script_injection"),
+      request(app).get("/api/search/specimens?q=Papilio&script=evil&query=%7B%22match_all%22%3A%7B%7D%7D"),
     ]);
-    expect(codeRes.body.data.map((d) => Number(d.id))).toContain(pubSpecId);
-    expect(locRes.body.data.map((d) => Number(d.id))).toContain(pubSpecId);
-    expect(notesRes.body.data.map((d) => Number(d.id))).toContain(pubSpecId);
+    expect(badLimit.status).toBe(400);
+    expect(badWindow.status).toBe(400);
+    expect(badSort.status).toBe(400);
+    expect(dslStrip.status).toBe(200);
+  });
 
-    // 3. Admin sees Private specimen
-    const adminRes = await request(app)
-      .get(`/api/search/specimens?q=ES-PRIV-${suffix}`)
-      .set("Authorization", `Bearer ${adminToken}`);
-    expect(adminRes.status).toBe(200);
-    expect(adminRes.body.data.map((d) => Number(d.id))).toContain(privSpecId);
+  it("ES write failure on togglePublic does NOT fail DB write and enqueues priority retry", async () => {
+    const spy = jest.spyOn(esClient, "index").mockRejectedValue(new Error("ES write timeout"));
+    try {
+      const res = await request(app)
+        .patch(`/api/specimens/${pubSpecId}/public`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ isPublic: false });
+      expect(res.status).toBe(200);
 
-    // 4. Synonym search resolves accepted name + notice (F-TX-03)
-    const synRes = await request(app).get(
-      `/api/search/specimens?q=${encodeURIComponent(`Papilio synonimus ${suffix}`)}`,
-    );
-    expect(synRes.status).toBe(200);
-    expect(synRes.body.synonymNotice).toBeTruthy();
-    expect(synRes.body.synonymNotice.acceptedName).toBe("Papilio demoleus");
-
-    // 5. Reindex twice does NOT duplicate documents
-    const beforeCount = await esClient.count({ index: getIndexName("specimens") });
-    await esService.reindexAll({ refresh: true });
-    const afterCount = await esClient.count({ index: getIndexName("specimens") });
-    expect(afterCount.count).toBe(beforeCount.count);
+      // Wait briefly for retry backoff (150ms + 400ms)
+      await new Promise((r) => setTimeout(r, 750));
+      const state = esService.getSyncState();
+      expect(state.needsReindex).toBe(true);
+      expect(state.priorityQueueSize).toBeGreaterThanOrEqual(1);
+    } finally {
+      spy.mockRestore();
+      // Restore pubSpecId back to public
+      await request(app)
+        .patch(`/api/specimens/${pubSpecId}/public`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ isPublic: true });
+    }
   });
 });
