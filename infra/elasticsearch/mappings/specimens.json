@@ -64,6 +64,16 @@
         "analyzer": "vi_text",
         "fields": { "keyword": { "type": "keyword", "ignore_above": 128 } }
       },
+      "species_name": {
+        "type": "text",
+        "analyzer": "vi_text",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 256 } }
+      },
+      "iucn_status": { "type": "keyword" },
+      "elevation_m": { "type": "float" },
+      "has_image": { "type": "boolean" },
+      "has_dna": { "type": "boolean" },
+      "has_bioactivity": { "type": "boolean" },
       "province_id": { "type": "integer" },
       "province": {
         "type": "text",

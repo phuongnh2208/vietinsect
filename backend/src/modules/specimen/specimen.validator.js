@@ -70,6 +70,7 @@ const createSpecimenSchema = Joi.object({
   latitude: Joi.number().min(-90).max(90).allow(null),
   longitude: Joi.number().min(-180).max(180).allow(null),
   gpsAccuracyM: Joi.number().min(0).max(9999.99).allow(null),
+  elevationM: Joi.number().min(-500).max(9000).allow(null),
   collectionDate: Joi.string()
     .pattern(dateIsoPattern)
     .required()

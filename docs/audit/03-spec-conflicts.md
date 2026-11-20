@@ -19,3 +19,4 @@
 - **SRS F-SR-02:** Yêu cầu panel lọc 8 chiều bao gồm **"Độ cao thu mẫu (slider khoảng)"**.
 - **SRS F-SP-02 & DB schema (`specimens`):** Danh sách 22 trường chuẩn mẫu vật và bảng `specimens` hiện tại **không có cột độ cao**.
 - **Đề xuất trình chủ đầu tư:** Thêm cột `elevation_m` (`NUMERIC(7,2)`, nullable, ánh xạ Darwin Core `minimumElevationInMeters`) ở migration mới khi triển khai Đợt 2B (8 facet), hoặc xác nhận bỏ chiều lọc độ cao khỏi F-SR-02.
+- **Quyết định (Đã chốt Sprint C):** Thêm cột `specimens.elevation_m` (`NUMERIC(7,2)`, nullable, theo DwC `minimumElevationInMeters`), **không** nằm trong 22 trường bắt buộc.

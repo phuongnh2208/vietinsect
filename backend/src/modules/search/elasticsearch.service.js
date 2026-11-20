@@ -73,6 +73,12 @@ function toSpecimenDoc(row) {
     order_name: row.order_name || null,
     family_name: row.family_name || null,
     genus_name: row.genus_name || null,
+    species_name: row.species_name || null,
+    iucn_status: row.iucn_status || null,
+    elevation_m: row.elevation_m != null ? Number(row.elevation_m) : null,
+    has_image: Boolean(row.has_image),
+    has_dna: Boolean(row.has_dna),
+    has_bioactivity: Boolean(row.has_bioactivity),
     province_id: row.province_id != null ? Number(row.province_id) : null,
     province: row.province_name_vn || row.province_name_en || null,
     locality: [row.locality_detail, row.commune, row.district].filter(Boolean).join(", ") || null,
@@ -126,6 +132,12 @@ function fetchSpecimenRowsForIndex(specimenIds = null) {
         CASE WHEN t1.taxon_rank = 'Genus' THEN t1.scientific_name END,
         CASE WHEN t2.taxon_rank = 'Genus' THEN t2.scientific_name END
       ) AS genus_name`),
+      knex.raw(`CASE WHEN t1.taxon_rank = 'Species' THEN t1.scientific_name END AS species_name`),
+      "t1.iucn_status",
+      "s.elevation_m",
+      knex.raw(`EXISTS (SELECT 1 FROM specimen_images img WHERE img.specimen_id = s.specimen_id AND img.is_public = true) AS has_image`),
+      knex.raw(`EXISTS (SELECT 1 FROM dna_sequences d WHERE d.specimen_id = s.specimen_id AND d.is_public = true) AS has_dna`),
+      knex.raw(`EXISTS (SELECT 1 FROM bioactivity_records b WHERE b.taxon_id = s.taxon_id) AS has_bioactivity`),
       "s.province_id",
       "p.province_name_vn",
       "p.province_name_en",
@@ -305,6 +317,174 @@ async function resolveSynonym(q) {
   };
 }
 
+function buildFacetFilterMap(filters = {}) {
+  const map = {};
+
+  const taxonClauses = [];
+  if (filters.order) taxonClauses.push({ term: { "order_name.keyword": filters.order } });
+  if (filters.family) taxonClauses.push({ term: { "family_name.keyword": filters.family } });
+  if (filters.genus) taxonClauses.push({ term: { "genus_name.keyword": filters.genus } });
+  if (filters.species) taxonClauses.push({ term: { "species_name.keyword": filters.species } });
+  if (taxonClauses.length) map.taxon = taxonClauses;
+
+  const provClauses = [];
+  if (filters.province) provClauses.push({ term: { "province.keyword": filters.province } });
+  if (filters.provinceId != null) provClauses.push({ term: { province_id: Number(filters.provinceId) } });
+  if (provClauses.length) map.province = provClauses;
+
+  if (filters.yearFrom != null || filters.yearTo != null) {
+    const range = {};
+    if (filters.yearFrom != null) range.gte = Number(filters.yearFrom);
+    if (filters.yearTo != null) range.lte = Number(filters.yearTo);
+    map.year = [{ range: { year_collected: range } }];
+  }
+
+  const mediaTypes = Array.isArray(filters.mediaType)
+    ? filters.mediaType
+    : filters.mediaType
+      ? String(filters.mediaType)
+          .split(",")
+          .map((s) => s.trim().toLowerCase())
+          .filter(Boolean)
+      : [];
+  const mediaClauses = [];
+  if (mediaTypes.includes("image")) mediaClauses.push({ term: { has_image: true } });
+  if (mediaTypes.includes("dna")) mediaClauses.push({ term: { has_dna: true } });
+  if (mediaTypes.includes("bioactivity")) mediaClauses.push({ term: { has_bioactivity: true } });
+  if (mediaClauses.length) map.media = mediaClauses;
+
+  if (filters.iucnStatus) {
+    map.iucn = [{ term: { iucn_status: String(filters.iucnStatus).toUpperCase() } }];
+  }
+
+  if (filters.elevationMin != null || filters.elevationMax != null) {
+    const range = {};
+    if (filters.elevationMin != null) range.gte = Number(filters.elevationMin);
+    if (filters.elevationMax != null) range.lte = Number(filters.elevationMax);
+    map.elevation = [{ range: { elevation_m: range } }];
+  }
+
+  if (filters.recordedBy) {
+    map.recordedBy = [{ term: { "recorded_by.keyword": filters.recordedBy } }];
+  }
+
+  if (typeof filters.hasGps === "boolean") {
+    map.hasGps = [{ term: { has_gps: filters.hasGps } }];
+  }
+
+  return map;
+}
+
+function combineOtherFilters(facetMap, excludeKey = null) {
+  const clauses = [];
+  for (const [key, list] of Object.entries(facetMap)) {
+    if (key === excludeKey) continue;
+    clauses.push(...list);
+  }
+  return clauses;
+}
+
+function buildDisjunctiveAggs(facetMap) {
+  const wrap = (excludeKey, innerAggs) => {
+    const others = combineOtherFilters(facetMap, excludeKey);
+    return {
+      filter: others.length ? { bool: { filter: others } } : { match_all: {} },
+      aggs: innerAggs,
+    };
+  };
+
+  return {
+    facet_taxon: wrap("taxon", {
+      orders: { terms: { field: "order_name.keyword", size: 50 } },
+      families: { terms: { field: "family_name.keyword", size: 50 } },
+      genera: { terms: { field: "genus_name.keyword", size: 50 } },
+      species: { terms: { field: "species_name.keyword", size: 50 } },
+    }),
+    facet_province: wrap("province", {
+      buckets: { terms: { field: "province.keyword", size: 65 } },
+    }),
+    facet_year: wrap("year", {
+      histogram: { histogram: { field: "year_collected", interval: 1, min_doc_count: 1 } },
+      stats: { stats: { field: "year_collected" } },
+    }),
+    facet_media: wrap("media", {
+      types: {
+        filters: {
+          filters: {
+            image: { term: { has_image: true } },
+            dna: { term: { has_dna: true } },
+            bioactivity: { term: { has_bioactivity: true } },
+          },
+        },
+      },
+    }),
+    facet_iucn: wrap("iucn", {
+      buckets: { terms: { field: "iucn_status", size: 15 } },
+    }),
+    facet_elevation: wrap("elevation", {
+      ranges: {
+        range: {
+          field: "elevation_m",
+          ranges: [
+            { key: "<200", to: 200 },
+            { key: "200-500", from: 200, to: 500 },
+            { key: "500-1000", from: 500, to: 1000 },
+            { key: "1000-2000", from: 1000, to: 2000 },
+            { key: ">=2000", from: 2000 },
+          ],
+        },
+      },
+      stats: { stats: { field: "elevation_m" } },
+    }),
+    facet_recorded_by: wrap("recordedBy", {
+      buckets: { terms: { field: "recorded_by.keyword", size: 30 } },
+    }),
+    facet_has_gps: wrap("hasGps", {
+      buckets: { terms: { field: "has_gps", size: 2 } },
+    }),
+  };
+}
+
+function formatFacets(aggs = {}) {
+  const mapBuckets = (b = []) => b.map((x) => ({ key: x.key_as_string ?? x.key, count: x.doc_count }));
+  const mediaBuckets = aggs.facet_media?.types?.buckets || {};
+  return {
+    taxon: {
+      orders: mapBuckets(aggs.facet_taxon?.orders?.buckets),
+      families: mapBuckets(aggs.facet_taxon?.families?.buckets),
+      genera: mapBuckets(aggs.facet_taxon?.genera?.buckets),
+      species: mapBuckets(aggs.facet_taxon?.species?.buckets),
+    },
+    provinces: mapBuckets(aggs.facet_province?.buckets?.buckets),
+    years: {
+      buckets: (aggs.facet_year?.histogram?.buckets || []).map((b) => ({
+        year: Number(b.key),
+        count: b.doc_count,
+      })),
+      min: aggs.facet_year?.stats?.min ?? null,
+      max: aggs.facet_year?.stats?.max ?? null,
+    },
+    media: {
+      image: mediaBuckets.image?.doc_count || 0,
+      dna: mediaBuckets.dna?.doc_count || 0,
+      bioactivity: mediaBuckets.bioactivity?.doc_count || 0,
+    },
+    iucn: mapBuckets(aggs.facet_iucn?.buckets?.buckets),
+    elevation: {
+      ranges: (aggs.facet_elevation?.ranges?.buckets || []).map((b) => ({
+        key: b.key,
+        from: b.from ?? null,
+        to: b.to ?? null,
+        count: b.doc_count,
+      })),
+      min: aggs.facet_elevation?.stats?.min ?? null,
+      max: aggs.facet_elevation?.stats?.max ?? null,
+    },
+    recordedBy: mapBuckets(aggs.facet_recorded_by?.buckets?.buckets),
+    hasGps: mapBuckets(aggs.facet_has_gps?.buckets?.buckets),
+  };
+}
+
 async function searchSpecimens(filters = {}, { isAdmin = false } = {}) {
   const page = Math.max(1, Number(filters.page) || 1);
   const limit = Math.min(100, Math.max(1, Number(filters.limit) || 25));
@@ -344,37 +524,51 @@ async function searchSpecimens(filters = {}, { isAdmin = false } = {}) {
     must.push({ match_all: {} });
   }
 
-  // Bảo mật dữ liệu: User LUÔN bị ép lọc is_public=true AND deleted_at IS NULL ở tầng ES query
-  const filter = [];
+  // Bảo mật dữ liệu: User LUÔN bị ép lọc is_public=true AND deleted_at IS NULL ở tầng query.bool.filter
+  // (áp dụng cho cả hits lẫn toàn bộ 8 facet aggregations)
+  const baseSecurityFilter = [];
   if (!isAdmin) {
-    filter.push({ term: { is_public: true } });
-    filter.push({ bool: { must_not: { exists: { field: "deleted_at" } } } });
+    baseSecurityFilter.push({ term: { is_public: true } });
+    baseSecurityFilter.push({ bool: { must_not: { exists: { field: "deleted_at" } } } });
   } else {
     if (typeof filters.isPublic === "boolean") {
-      filter.push({ term: { is_public: filters.isPublic } });
+      baseSecurityFilter.push({ term: { is_public: filters.isPublic } });
     }
     if (!filters.includeDeleted) {
-      filter.push({ bool: { must_not: { exists: { field: "deleted_at" } } } });
+      baseSecurityFilter.push({ bool: { must_not: { exists: { field: "deleted_at" } } } });
     }
   }
 
+  const facetMap = buildFacetFilterMap(filters);
+  const allFacetClauses = combineOtherFilters(facetMap, null);
+
   const sortField = SORT_FIELDS[filters.sortBy] || (effectiveQuery ? "_score" : "collection_date");
   const sortOrder = filters.sortOrder === "asc" ? "asc" : "desc";
-  const sort = sortField === "_score" ? ["_score", { specimen_id: "desc" }] : [{ [sortField]: { order: sortOrder, missing: "_last" } }];
+  const sort =
+    sortField === "_score"
+      ? ["_score", { specimen_id: "desc" }]
+      : [{ [sortField]: { order: sortOrder, missing: "_last" } }];
+
+  const searchBody = {
+    index: getIndexName("specimens"),
+    from,
+    size: limit,
+    query: {
+      bool: {
+        must,
+        filter: baseSecurityFilter,
+      },
+    },
+    aggs: buildDisjunctiveAggs(facetMap),
+    sort,
+  };
+
+  if (allFacetClauses.length > 0) {
+    searchBody.post_filter = { bool: { filter: allFacetClauses } };
+  }
 
   try {
-    const result = await esClient.search({
-      index: getIndexName("specimens"),
-      from,
-      size: limit,
-      query: {
-        bool: {
-          must,
-          filter,
-        },
-      },
-      sort,
-    });
+    const result = await esClient.search(searchBody);
 
     const total =
       typeof result.hits.total === "number" ? result.hits.total : result.hits.total?.value || 0;
@@ -392,6 +586,7 @@ async function searchSpecimens(filters = {}, { isAdmin = false } = {}) {
         limit,
         totalPages: Math.ceil(total / limit),
       },
+      facets: formatFacets(result.aggregations),
       synonymNotice,
       tookMs: result.took,
     };

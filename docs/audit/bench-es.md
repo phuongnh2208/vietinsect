@@ -18,3 +18,5 @@
 | **Admin** | API End-to-End | 200 | 16.56 | 22.79 | **36** | 59.74 | 71.09 |
 
 > Index tạm `specimens_bench` đã được xóa sạch sau khi kết thúc benchmark.
+
+> **Lưu ý:** Chênh lệch kích thước index giữa lần benchmark `specimens_bench` (5,05 MB ngay sau `refresh`) và index dev `specimens` (19,58 MB sau `reindex-es.js`) chưa được kiểm chứng nguyên nhân chắc chắn.

@@ -18,6 +18,24 @@ const searchQuerySchema = Joi.object({
   sortOrder: Joi.string().valid("asc", "desc").default("desc"),
   isPublic: Joi.boolean(),
   includeDeleted: Joi.boolean().default(false),
+  // 8 chiều facet (DEF-060)
+  order: Joi.string().trim().max(128).allow(""),
+  family: Joi.string().trim().max(128).allow(""),
+  genus: Joi.string().trim().max(128).allow(""),
+  species: Joi.string().trim().max(256).allow(""),
+  province: Joi.string().trim().max(128).allow(""),
+  provinceId: Joi.number().integer().positive(),
+  yearFrom: Joi.number().integer().min(1800).max(2050),
+  yearTo: Joi.number().integer().min(1800).max(2050),
+  mediaType: Joi.alternatives().try(
+    Joi.string().trim().max(100).allow(""),
+    Joi.array().items(Joi.string().valid("image", "dna", "bioactivity")),
+  ),
+  iucnStatus: Joi.string().trim().valid("LC", "NT", "VU", "EN", "CR", "EW", "EX", "DD", "NE").allow(""),
+  elevationMin: Joi.number().min(-500).max(9000),
+  elevationMax: Joi.number().min(-500).max(9000),
+  recordedBy: Joi.string().trim().max(256).allow(""),
+  hasGps: Joi.boolean(),
 }).custom((val, helpers) => {
   if (val.page * val.limit > MAX_RESULT_WINDOW) {
     return helpers.message(
@@ -46,6 +64,7 @@ router.get("/specimens", optionalAdmin, async (req, res, next) => {
       success: true,
       data: result.items,
       pagination: result.pagination,
+      facets: result.facets,
       synonymNotice: result.synonymNotice,
       tookMs: result.tookMs,
     });
