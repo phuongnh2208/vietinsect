@@ -1228,10 +1228,8 @@ async function bulkImportRows(rows, adminId) {
     ]);
 
     const taxonMap = new Map();
-    let fallbackTaxonId = 1;
     for (const t of taxaRows) {
       taxonMap.set(String(t.scientific_name).toLowerCase(), t.taxon_id);
-      if (t.taxon_rank === "Order" && !fallbackTaxonId) fallbackTaxonId = t.taxon_id;
     }
 
     const provMap = new Map();
@@ -1261,13 +1259,21 @@ async function bulkImportRows(rows, adminId) {
         continue;
       }
 
-      // Match taxonId by exact scientific name, or genus prefix, or fallback
+      // Match taxonId by explicit taxonId, exact scientific name, genus prefix, or orderName — NO silent fallback (DEF-034)
       const exactTaxonId =
         (r.taxonId && Number(r.taxonId)) ||
         taxonMap.get(sciName.toLowerCase()) ||
         taxonMap.get(sciName.split(/\s+/)[0].toLowerCase()) ||
         (r.orderName && taxonMap.get(String(r.orderName).toLowerCase())) ||
-        fallbackTaxonId;
+        null;
+
+      if (!exactTaxonId) {
+        errors.push({
+          row: i + 1,
+          message: `Không tìm thấy Taxon khớp với tên khoa học "${sciName}" trong hệ thống phân loại`,
+        });
+        continue;
+      }
 
       const matchedProvId =
         (r.provinceId && Number(r.provinceId)) ||
