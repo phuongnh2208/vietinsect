@@ -1281,10 +1281,10 @@ async function bulkImportRows(rows, adminId) {
       const [reg] = await trx("specimen_registry")
         .insert({
           specimen_code: code,
-          basis_of_record: r.basisOfRecord || "PreservedSpecimen",
-          catalog_number: r.catalogNumber || code,
-          institution_code: r.institutionCode || "VAST",
-          recorded_by: r.recordedBy || "VAST Field Team",
+          basis_of_record: r.basisOfRecord || "PRESERVED_SPECIMEN",
+          catalog_number: r.catalogNumber ? String(r.catalogNumber).trim() : null,
+          institution_code: r.institutionCode ? String(r.institutionCode).trim() : null,
+          recorded_by: r.recordedBy ? String(r.recordedBy).trim() : null,
           occurrence_remarks: r.occurrenceRemarks || null,
         })
         .returning(["specimen_id"]);
