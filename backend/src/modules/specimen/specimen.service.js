@@ -350,8 +350,14 @@ async function bulkImportSpecimens(rows, adminId) {
   if (!Array.isArray(rows) || rows.length === 0) {
     return { insertedCount: 0, errors: [] };
   }
-  const cappedRows = rows.slice(0, 5000);
-  const result = await specimenRepository.bulkImportRows(cappedRows, adminId);
+  if (rows.length > 5000) {
+    throw new AppError({
+      code: "SPECIMEN.IMPORT_LIMIT_EXCEEDED",
+      message: "Tệp nhập liệu vượt quá giới hạn tối đa 5.000 dòng",
+      statusCode: 400,
+    });
+  }
+  const result = await specimenRepository.bulkImportRows(rows, adminId);
   logger.info(`Admin ${adminId} nhập hàng loạt ${result.insertedCount} mẫu vật (${result.errors.length} lỗi)`);
   return result;
 }

@@ -199,6 +199,18 @@ export function BulkImportWorkbenchPage() {
   );
 
   const handleConfirmImport = async () => {
+    if (parsedRows.length > 5000 || validRows.length > 5000) {
+      setImportResult({
+        insertedCount: 0,
+        errors: [
+          {
+            row: 0,
+            message: `Tệp nhập liệu có ${parsedRows.length.toLocaleString("vi-VN")} dòng, vượt quá giới hạn tối đa 5.000 dòng/lần nhập.`,
+          },
+        ],
+      });
+      return;
+    }
     if (validRows.length === 0) return;
     setImporting(true);
     setImportResult(null);
