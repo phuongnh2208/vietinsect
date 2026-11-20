@@ -16,6 +16,12 @@ const DUMMY_HASH = "$2b$12$invalidhashfortimingnnnnnnnnnnnnnnnnnnnnnnn";
 
 async function login(username, password) {
   const user = await authRepository.findByUsername(username);
+  const now = Date.now();
+
+  // DEF-011: Kiểm tra trạng thái khóa trước khi so mật khẩu; nếu đang khóa luôn báo ACCOUNT_LOCKED
+  if (user && user.locked_until && new Date(user.locked_until).getTime() > now) {
+    throw new AppError(AuthError.ACCOUNT_LOCKED);
+  }
 
   // S3: Luôn chạy bcrypt.compare dù user có tồn tại hay không, tránh timing attack.
   const hash = user ? user.password_hash : DUMMY_HASH;
@@ -23,20 +29,18 @@ async function login(username, password) {
 
   if (!user || !isMatch) {
     if (user) {
-      // Chỉ increment failed attempts khi user tồn tại thật
-      const attempts = (user.failed_login_attempts || 0) + 1;
+      // Nếu khóa cũ đã hết hạn (locked_until <= now), reset bộ đếm về 0 trước khi cộng
+      const lockExpired = Boolean(user.locked_until && new Date(user.locked_until).getTime() <= now);
+      const baseAttempts = lockExpired ? 0 : user.failed_login_attempts || 0;
+      const attempts = baseAttempts + 1;
       const shouldLock = attempts >= MAX_LOGIN_ATTEMPTS;
       await authRepository.incrementFailedAttempts(
         user.admin_id,
         attempts,
-        shouldLock ? new Date(Date.now() + LOCK_DURATION_MINUTES * 60000) : null,
+        shouldLock ? new Date(now + LOCK_DURATION_MINUTES * 60000) : null,
       );
     }
     throw new AppError(AuthError.INVALID_CREDENTIALS);
-  }
-
-  if (user.locked_until && new Date(user.locked_until) > new Date()) {
-    throw new AppError(AuthError.ACCOUNT_LOCKED);
   }
 
   await authRepository.resetFailedAttempts(user.admin_id);
