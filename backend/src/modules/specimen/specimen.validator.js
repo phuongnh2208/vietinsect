@@ -1,6 +1,7 @@
 const Joi = require("joi");
 const {
   SEX_VALUES,
+  BASIS_OF_RECORD_VALUES,
   SORTABLE_FIELDS,
   DEFAULT_PAGE_LIMIT,
   MAX_PAGE_LIMIT,
@@ -85,7 +86,7 @@ const createSpecimenSchema = Joi.object({
   notes: Joi.string().trim().max(5000).allow(null, ""),
   isPublic: Joi.boolean().default(true),
   // Registry metadata
-  basisOfRecord: Joi.string().trim().max(50).allow(null, ""),
+  basisOfRecord: Joi.string().valid(...BASIS_OF_RECORD_VALUES).allow(null, ""),
   catalogNumber: Joi.string().trim().max(100).allow(null, ""),
   institutionCode: Joi.string().trim().max(50).allow(null, ""),
   recordedBy: Joi.string().trim().max(500).allow(null, ""),
@@ -103,6 +104,57 @@ const togglePublicSchema = Joi.object({
 const batchPublicSchema = Joi.object({
   specimenIds: Joi.array().items(Joi.number().integer().positive()).min(1).max(500).required(),
   isPublic: Joi.boolean().required(),
+});
+
+const batchUpdateSchema = Joi.object({
+  specimenIds: Joi.array().items(Joi.number().integer().positive()).min(1).max(500).required(),
+  updates: Joi.object({
+    provinceId: Joi.number().integer().positive().allow(null, ""),
+    habitatId: Joi.number().integer().positive().allow(null, ""),
+    lifeStageId: Joi.number().integer().positive().allow(null, ""),
+    statusId: Joi.number().integer().positive().allow(null, ""),
+    sex: Joi.string().valid(...SEX_VALUES).allow(null, ""),
+    isPublic: Joi.boolean(),
+    district: Joi.string().trim().max(100).allow(null, ""),
+    localityDetail: Joi.string().trim().max(500).allow(null, ""),
+    recordedBy: Joi.string().trim().max(500).allow(null, ""),
+    institutionCode: Joi.string().trim().max(50).allow(null, ""),
+    basisOfRecord: Joi.string().valid(...BASIS_OF_RECORD_VALUES).allow(null, ""),
+  })
+    .min(1)
+    .required(),
+});
+
+const bulkImportRowSchema = Joi.object({
+  specimenCode: Joi.string().trim().max(50).allow(null, ""),
+  taxonId: Joi.number().integer().positive().allow(null, ""),
+  scientificName: Joi.string().trim().max(300).allow(null, ""),
+  gbifScientificName: Joi.string().trim().max(300).allow(null, ""),
+  orderName: Joi.string().trim().max(100).allow(null, ""),
+  commonNameVn: Joi.string().trim().max(255).allow(null, ""),
+  provinceId: Joi.number().integer().positive().allow(null, ""),
+  provinceName: Joi.string().trim().max(120).allow(null, ""),
+  district: Joi.string().trim().max(100).allow(null, ""),
+  commune: Joi.string().trim().max(100).allow(null, ""),
+  localityDetail: Joi.string().trim().max(500).allow(null, ""),
+  latitude: Joi.alternatives().try(Joi.number().min(-90).max(90), Joi.string().allow("")).allow(null),
+  longitude: Joi.alternatives().try(Joi.number().min(-180).max(180), Joi.string().allow("")).allow(null),
+  collectionDate: Joi.string().trim().max(20).allow(null, ""),
+  sex: Joi.string().valid(...SEX_VALUES).allow(null, ""),
+  individualCount: Joi.alternatives().try(Joi.number().integer().min(1).max(100000), Joi.string().allow("")).allow(null),
+  basisOfRecord: Joi.string().valid(...BASIS_OF_RECORD_VALUES).allow(null, ""),
+  catalogNumber: Joi.string().trim().max(100).allow(null, ""),
+  institutionCode: Joi.string().trim().max(50).allow(null, ""),
+  recordedBy: Joi.string().trim().max(500).allow(null, ""),
+  occurrenceRemarks: Joi.string().trim().max(1000).allow(null, ""),
+  notes: Joi.string().trim().max(5000).allow(null, ""),
+  isPublic: Joi.boolean(),
+}).unknown(true);
+
+const bulkImportSchema = Joi.object({
+  rows: Joi.array().items(bulkImportRowSchema).min(1).max(5000).required().messages({
+    "array.max": "Tệp nhập liệu vượt quá giới hạn tối đa 5.000 dòng",
+  }),
 });
 
 function makeBodyValidator(schema) {
@@ -143,4 +195,6 @@ module.exports = {
   validateUpdateSpecimen: makeBodyValidator(updateSpecimenSchema),
   validateTogglePublic: makeBodyValidator(togglePublicSchema),
   validateBatchPublic: makeBodyValidator(batchPublicSchema),
+  validateBatchUpdate: makeBodyValidator(batchUpdateSchema),
+  validateBulkImport: makeBodyValidator(bulkImportSchema),
 };
