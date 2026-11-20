@@ -1,0 +1,91 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "analysis": {
+      "filter": {
+        "vi_edge_ngram": {
+          "type": "edge_ngram",
+          "min_gram": 2,
+          "max_gram": 15
+        }
+      },
+      "analyzer": {
+        "vi_text": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "icu_folding", "asciifolding"]
+        },
+        "vi_ngram": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "icu_folding", "asciifolding", "vi_edge_ngram"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "specimen_id": { "type": "long" },
+      "specimen_code": { "type": "keyword" },
+      "taxon_id": { "type": "long" },
+      "scientific_name": {
+        "type": "text",
+        "analyzer": "vi_text",
+        "fields": {
+          "keyword": { "type": "keyword", "ignore_above": 256 },
+          "autocomplete": { "type": "text", "analyzer": "vi_ngram", "search_analyzer": "vi_text" }
+        }
+      },
+      "vernacular_vi": {
+        "type": "text",
+        "analyzer": "vi_text",
+        "fields": {
+          "autocomplete": { "type": "text", "analyzer": "vi_ngram", "search_analyzer": "vi_text" }
+        }
+      },
+      "vernacular_en": {
+        "type": "text",
+        "analyzer": "vi_text"
+      },
+      "taxon_path": { "type": "text", "analyzer": "vi_text" },
+      "order_name": {
+        "type": "text",
+        "analyzer": "vi_text",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 128 } }
+      },
+      "family_name": {
+        "type": "text",
+        "analyzer": "vi_text",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 128 } }
+      },
+      "genus_name": {
+        "type": "text",
+        "analyzer": "vi_text",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 128 } }
+      },
+      "province_id": { "type": "integer" },
+      "province": {
+        "type": "text",
+        "analyzer": "vi_text",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 128 } }
+      },
+      "locality": { "type": "text", "analyzer": "vi_text" },
+      "notes": { "type": "text", "analyzer": "vi_text" },
+      "recorded_by": {
+        "type": "text",
+        "analyzer": "vi_text",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 256 } }
+      },
+      "basis_of_record": { "type": "keyword" },
+      "is_public": { "type": "boolean" },
+      "deleted_at": { "type": "date" },
+      "has_gps": { "type": "boolean" },
+      "location": { "type": "geo_point" },
+      "year_collected": { "type": "integer" },
+      "collection_date": { "type": "date" },
+      "created_at": { "type": "date" },
+      "updated_at": { "type": "date" }
+    }
+  }
+}

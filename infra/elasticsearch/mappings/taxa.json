@@ -1,0 +1,54 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "analysis": {
+      "filter": {
+        "vi_edge_ngram": {
+          "type": "edge_ngram",
+          "min_gram": 2,
+          "max_gram": 15
+        }
+      },
+      "analyzer": {
+        "vi_text": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "icu_folding", "asciifolding"]
+        },
+        "vi_ngram": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "icu_folding", "asciifolding", "vi_edge_ngram"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "taxon_id": { "type": "long" },
+      "parent_id": { "type": "long" },
+      "accepted_taxon_id": { "type": "long" },
+      "taxon_rank": { "type": "keyword" },
+      "taxonomic_status": { "type": "keyword" },
+      "scientific_name": {
+        "type": "text",
+        "analyzer": "vi_text",
+        "fields": {
+          "keyword": { "type": "keyword", "ignore_above": 256 },
+          "autocomplete": { "type": "text", "analyzer": "vi_ngram", "search_analyzer": "vi_text" }
+        }
+      },
+      "vernacular_vi": {
+        "type": "text",
+        "analyzer": "vi_text",
+        "fields": {
+          "autocomplete": { "type": "text", "analyzer": "vi_ngram", "search_analyzer": "vi_text" }
+        }
+      },
+      "vernacular_en": { "type": "text", "analyzer": "vi_text" },
+      "iucn_status": { "type": "keyword" },
+      "slug": { "type": "keyword" }
+    }
+  }
+}
