@@ -23,7 +23,7 @@ async function login(req, res, next) {
       actionType: "LOGIN",
       targetTable: "admin_users",
       targetId: result.user.adminId,
-      ipAddress: req.headers["x-forwarded-for"] || req.socket?.remoteAddress,
+      ipAddress: req.ip || req.socket?.remoteAddress,
       details: { username: result.user.username },
     });
 
@@ -60,9 +60,41 @@ async function refresh(req, res, next) {
 async function logout(req, res, next) {
   try {
     const refreshTokenRaw = req.cookies?.vietinsect_refresh;
-    await authService.logout(refreshTokenRaw);
+    const header = req.headers.authorization || "";
+    const accessTokenRaw = header.startsWith("Bearer ") ? header.slice(7) : null;
+    const { adminId } = await authService.logout(refreshTokenRaw, accessTokenRaw);
     res.clearCookie("vietinsect_refresh", { path: "/api/auth" });
+
+    await logAudit({
+      adminId: adminId || null,
+      actionType: "LOGOUT",
+      targetTable: "admin_users",
+      targetId: adminId || null,
+      ipAddress: req.ip || req.socket?.remoteAddress,
+      details: {},
+    });
+
     res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function logoutAll(req, res, next) {
+  try {
+    await authService.logoutAll(req.admin.adminId);
+    res.clearCookie("vietinsect_refresh", { path: "/api/auth" });
+
+    await logAudit({
+      adminId: req.admin.adminId,
+      actionType: "LOGOUT_ALL",
+      targetTable: "admin_users",
+      targetId: req.admin.adminId,
+      ipAddress: req.ip || req.socket?.remoteAddress,
+      details: { revokedAllSessions: true },
+    });
+
+    res.json({ success: true, message: "Đã đăng xuất khỏi tất cả thiết bị." });
   } catch (err) {
     next(err);
   }
@@ -79,7 +111,7 @@ async function changePassword(req, res, next) {
       actionType: "CHANGE_PASSWORD",
       targetTable: "admin_users",
       targetId: req.admin.adminId,
-      ipAddress: req.headers["x-forwarded-for"] || req.socket?.remoteAddress,
+      ipAddress: req.ip || req.socket?.remoteAddress,
       details: { revokedAllSessions: true },
     });
 
@@ -89,4 +121,4 @@ async function changePassword(req, res, next) {
   }
 }
 
-module.exports = { login, refresh, logout, changePassword };
+module.exports = { login, refresh, logout, logoutAll, changePassword };

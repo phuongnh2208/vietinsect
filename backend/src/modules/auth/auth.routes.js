@@ -8,6 +8,7 @@ const { validateLogin, validateChangePassword } = require("./auth.validator");
 router.post("/login", authRateLimiter, validateLogin, authController.login);
 router.post("/refresh", authController.refresh);
 router.post("/logout", authController.logout);
+router.post("/logout-all", requireAdmin, authController.logoutAll);
 router.post("/change-password", authRateLimiter, requireAdmin, validateChangePassword, authController.changePassword);
 
 module.exports = router;
