@@ -51,7 +51,16 @@ async function refresh(req, res, next) {
       });
     }
     const result = await authService.refresh(refreshTokenRaw);
-    res.json({ success: true, data: result });
+    if (result.refreshTokenRaw) {
+      res.cookie("vietinsect_refresh", result.refreshTokenRaw, REFRESH_COOKIE_OPTIONS);
+    }
+    res.json({
+      success: true,
+      data: {
+        accessToken: result.accessToken,
+        user: result.user,
+      },
+    });
   } catch (err) {
     next(err);
   }

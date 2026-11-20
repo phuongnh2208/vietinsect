@@ -10,6 +10,7 @@ const { blacklistToken, revokeUserTokensBefore } = require("./tokenBlacklist");
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_DURATION_MINUTES = 30;
+const SESSION_IDLE_TIMEOUT_MS = 60 * 60 * 1000; // 60 phút (SRS §5.2, DEF-007)
 
 // S3: dummy hash để tránh timing attack khi username không tồn tại.
 // bcrypt.compare luôn chạy kể cả khi user = null → response time như nhau.
@@ -78,9 +79,23 @@ async function refresh(refreshTokenRaw) {
   const record = await authRepository.findRefreshToken(tokenHash);
   if (!record) throw new AppError(AuthError.INVALID_CREDENTIALS);
 
+  // DEF-007: Từ chối nếu quá 60 phút không hoạt động
+  const lastActivity = record.last_activity_at || record.created_at;
+  if (lastActivity && Date.now() - new Date(lastActivity).getTime() > SESSION_IDLE_TIMEOUT_MS) {
+    await authRepository.revokeRefreshToken(tokenHash);
+    throw new AppError(AuthError.INVALID_CREDENTIALS);
+  }
+
   // SRS §6.5: truy vấn qua Knex repository thay vì raw pg pool
   const user = await authRepository.findById(record.admin_id);
   if (!user) throw new AppError(AuthError.INVALID_CREDENTIALS);
+
+  // DEF-013: Refresh token rotation — thu hồi token cũ và phát hành token mới
+  await authRepository.revokeRefreshToken(tokenHash);
+  const newRefreshTokenRaw = crypto.randomBytes(40).toString("hex");
+  const newTokenHash = crypto.createHash("sha256").update(newRefreshTokenRaw).digest("hex");
+  const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  await authRepository.saveRefreshToken(user.admin_id, newTokenHash, newExpiresAt);
 
   const accessToken = jwt.sign(
     { adminId: user.admin_id, username: user.username, role: "admin", jti: crypto.randomUUID() },
@@ -90,6 +105,7 @@ async function refresh(refreshTokenRaw) {
 
   return {
     accessToken,
+    refreshTokenRaw: newRefreshTokenRaw,
     user: {
       adminId: user.admin_id,
       username: user.username,
