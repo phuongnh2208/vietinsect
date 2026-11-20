@@ -745,14 +745,54 @@ async function batchUpdatePublic(specimenIds, isPublic, adminId) {
 }
 
 async function softDelete(specimenId, adminId) {
-  return knex("specimens")
-    .where("specimen_id", specimenId)
-    .whereNull("deleted_at")
-    .update({
-      deleted_at: knex.fn.now(),
-      updated_by: adminId || null,
-      updated_at: knex.fn.now(),
-    });
+  return knex.transaction(async (trx) => {
+    const deletedCount = await trx("specimens")
+      .where("specimen_id", specimenId)
+      .whereNull("deleted_at")
+      .update({
+        deleted_at: trx.fn.now(),
+        updated_by: adminId || null,
+        updated_at: trx.fn.now(),
+      });
+
+    let orphanedDnaCount = 0;
+    if (deletedCount > 0) {
+      orphanedDnaCount = await trx("dna_sequences")
+        .where("specimen_id", specimenId)
+        .update({
+          is_orphaned: true,
+          updated_at: trx.fn.now(),
+        });
+    }
+
+    return { deletedCount, orphanedDnaCount };
+  });
+}
+
+async function restore(specimenId, adminId) {
+  return knex.transaction(async (trx) => {
+    const restoredCount = await trx("specimens")
+      .where("specimen_id", specimenId)
+      .whereNotNull("deleted_at")
+      .update({
+        deleted_at: null,
+        updated_by: adminId || null,
+        updated_at: trx.fn.now(),
+      });
+
+    let unorphanedDnaCount = 0;
+    if (restoredCount > 0) {
+      unorphanedDnaCount = await trx("dna_sequences")
+        .where("specimen_id", specimenId)
+        .where("is_orphaned", true)
+        .update({
+          is_orphaned: false,
+          updated_at: trx.fn.now(),
+        });
+    }
+
+    return { restoredCount, unorphanedDnaCount };
+  });
 }
 
 async function findLookups() {
@@ -1295,6 +1335,7 @@ module.exports = {
   batchUpdateFields,
   bulkImportRows,
   softDelete,
+  restore,
   findLookups,
   getStats,
   getAnalytics,

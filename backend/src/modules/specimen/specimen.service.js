@@ -117,28 +117,42 @@ function toSpecimenDetailDto(row, { isAdmin = false } = {}) {
         widthPx: img.width_px,
         heightPx: img.height_px,
         uploadedAt: img.uploaded_at,
+        referenceScientificName: img.reference_scientific_name || null,
+        referenceMatchRank: img.reference_match_rank || "Species",
+        referenceTaxonName: img.reference_taxon_name || null,
         isSpeciesReference: true,
       };
     }),
     dnaSequences: (row.dnaSequences || []).map((dna) => ({
       id: Number(dna.dna_id),
       genbankAccession: dna.genbank_accession,
-      geneMarker: dna.gene_marker,
-      sequenceLengthBp: dna.sequence_length_bp,
-      boldProcessId: dna.bold_process_id,
+      boldProcessId: dna.bold_process_id || null,
+      binUri: dna.bin_uri || null,
+      geneMarker: dna.gene_marker || "COI",
+      sequenceLengthBp: dna.sequence_length_bp != null ? Number(dna.sequence_length_bp) : null,
+      gcContentPct: dna.gc_content_pct != null ? Number(dna.gc_content_pct) : null,
+      fastaSequence: dna.fasta_sequence || null,
+      sourceDb: dna.source_db || "GENBANK",
       submissionDate: formatDateOnly(dna.submission_date),
-      authorName: dna.author_name,
+      authorName: dna.author_name || null,
+      scientificName: dna.scientific_name_verbatim || row.gbif_scientific_name || row.taxon_name || null,
       isSpeciesReference: false,
     })),
     speciesDnaSequences: (row.speciesDnaSequences || []).map((dna) => ({
       id: Number(dna.dna_id),
       genbankAccession: dna.genbank_accession,
-      geneMarker: dna.gene_marker,
-      sequenceLengthBp: dna.sequence_length_bp,
-      boldProcessId: dna.bold_process_id,
+      boldProcessId: dna.bold_process_id || null,
+      binUri: dna.bin_uri || null,
+      geneMarker: dna.gene_marker || "COI",
+      sequenceLengthBp: dna.sequence_length_bp != null ? Number(dna.sequence_length_bp) : null,
+      gcContentPct: dna.gc_content_pct != null ? Number(dna.gc_content_pct) : null,
+      fastaSequence: dna.fasta_sequence || null,
+      sourceDb: dna.source_db || "GENBANK",
       submissionDate: formatDateOnly(dna.submission_date),
-      authorName: dna.author_name,
+      authorName: dna.author_name || null,
       scientificName: dna.scientific_name_verbatim || null,
+      referenceMatchRank: dna.reference_match_rank || "Species",
+      referenceTaxonName: dna.reference_taxon_name || null,
       isSpeciesReference: true,
     })),
     changeHistory: (row.changeHistory || []).map((ch) => ({
@@ -275,8 +289,39 @@ async function deleteSpecimen(specimenId, adminId) {
   const current = await specimenRepository.findById(specimenId, { includePrivate: true });
   if (!current) throw new AppError(SpecimenError.SPECIMEN_NOT_FOUND);
 
-  await specimenRepository.softDelete(specimenId, adminId);
-  logger.info(`Admin ${adminId} xóa mềm mẫu vật #${specimenId}`);
+  const { orphanedDnaCount } = await specimenRepository.softDelete(specimenId, adminId);
+  logger.info(
+    `Admin ${adminId} xóa mềm mẫu vật #${specimenId} (orphanedDnaCount=${orphanedDnaCount})`,
+  );
+
+  const warning =
+    orphanedDnaCount > 0
+      ? `Cảnh báo: ${orphanedDnaCount} chuỗi DNA liên kết đã được chuyển sang trạng thái mồ côi (orphan) và được giữ lại trong CSDL.`
+      : null;
+
+  return {
+    id: specimenId,
+    deleted: true,
+    orphanedDnaCount,
+    warning,
+  };
+}
+
+async function restoreSpecimen(specimenId, adminId) {
+  const { restoredCount, unorphanedDnaCount } = await specimenRepository.restore(
+    specimenId,
+    adminId,
+  );
+  if (!restoredCount) throw new AppError(SpecimenError.SPECIMEN_NOT_FOUND);
+
+  logger.info(
+    `Admin ${adminId} khôi phục mẫu vật #${specimenId} (unorphanedDnaCount=${unorphanedDnaCount})`,
+  );
+  return {
+    id: specimenId,
+    restored: true,
+    unorphanedDnaCount,
+  };
 }
 
 async function getLookups() {
@@ -287,6 +332,30 @@ async function getStats({ isAdmin = false } = {}) {
   return specimenRepository.getStats({ includePrivate: isAdmin });
 }
 
+async function getAnalytics(filters = {}, { isAdmin = false } = {}) {
+  return specimenRepository.getAnalytics(filters, { includePrivate: isAdmin });
+}
+
+async function batchUpdateSpecimens(specimenIds, updates, adminId) {
+  if (!Array.isArray(specimenIds) || specimenIds.length === 0) {
+    return { updatedCount: 0 };
+  }
+  const cleanIds = specimenIds.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0);
+  const updatedCount = await specimenRepository.batchUpdateFields(cleanIds, updates || {}, adminId);
+  logger.info(`Admin ${adminId} chỉnh sửa hàng loạt ${updatedCount} mẫu vật`);
+  return { updatedCount, specimenIds: cleanIds };
+}
+
+async function bulkImportSpecimens(rows, adminId) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return { insertedCount: 0, errors: [] };
+  }
+  const cappedRows = rows.slice(0, 5000);
+  const result = await specimenRepository.bulkImportRows(cappedRows, adminId);
+  logger.info(`Admin ${adminId} nhập hàng loạt ${result.insertedCount} mẫu vật (${result.errors.length} lỗi)`);
+  return result;
+}
+
 module.exports = {
   listSpecimens,
   getMapOccurrences,
@@ -295,7 +364,11 @@ module.exports = {
   updateSpecimen,
   togglePublic,
   batchTogglePublic,
+  batchUpdateSpecimens,
+  bulkImportSpecimens,
   deleteSpecimen,
+  restoreSpecimen,
   getLookups,
   getStats,
+  getAnalytics,
 };
