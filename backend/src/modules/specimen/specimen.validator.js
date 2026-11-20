@@ -78,6 +78,10 @@ const createSpecimenSchema = Joi.object({
       if (year < MIN_PARTITION_YEAR || year > MAX_PARTITION_YEAR) {
         return helpers.error("any.invalid");
       }
+      const todayIso = new Date().toISOString().slice(0, 10);
+      if (val > todayIso) {
+        return helpers.message("Ngày thu mẫu không được nằm trong tương lai");
+      }
       return val;
     }),
   sex: Joi.string().valid(...SEX_VALUES).allow(null, ""),

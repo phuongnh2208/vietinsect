@@ -257,7 +257,7 @@ export default function SpecimenForm({ initialData = null, onSubmit, onCancel, s
             id="sp-date"
             type="date"
             min="1800-01-01"
-            max="2050-12-31"
+            max={new Date().toISOString().slice(0, 10)}
             value={form.collectionDate}
             onChange={(e) => updateField("collectionDate", e.target.value)}
             required
