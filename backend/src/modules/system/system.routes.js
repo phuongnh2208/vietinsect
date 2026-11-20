@@ -42,9 +42,47 @@ router.put("/configs/:key", requireAdmin, async (req, res, next) => {
       });
     }
     const key = String(req.params.key || "").trim().slice(0, 100);
-    const ip = req.headers["x-forwarded-for"] || req.socket?.remoteAddress;
+    const ip = req.ip || req.socket?.remoteAddress;
     const updated = await systemService.updateConfig(key, value, req.admin.adminId, ip);
     res.json({ success: true, data: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DEF-014: Admin mở khóa tài khoản bị khóa do đăng nhập sai 5 lần (SRS §5.2)
+router.post("/admins/:id/unlock", requireAdmin, async (req, res, next) => {
+  try {
+    const authRepository = require("../auth/auth.repository");
+    const targetId = Number(req.params.id);
+    if (!Number.isInteger(targetId) || targetId <= 0) {
+      return res.status(400).json({
+        success: false,
+        code: "VALIDATION_ERROR",
+        message: "Mã tài khoản quản trị không hợp lệ",
+      });
+    }
+    const target = await authRepository.findById(targetId);
+    if (!target) {
+      return res.status(404).json({
+        success: false,
+        code: "ADMIN.NOT_FOUND",
+        message: "Không tìm thấy tài khoản quản trị",
+      });
+    }
+    await authRepository.resetFailedAttempts(targetId);
+    await systemService.logAudit({
+      adminId: req.admin.adminId,
+      actionType: "UNLOCK_ADMIN",
+      targetTable: "admin_users",
+      targetId,
+      ipAddress: req.ip || req.socket?.remoteAddress,
+      details: { unlockedUsername: target.username },
+    });
+    res.json({
+      success: true,
+      data: { adminId: targetId, username: target.username, unlocked: true },
+    });
   } catch (err) {
     next(err);
   }
