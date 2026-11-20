@@ -235,4 +235,15 @@ describe("Group 2 – Data Integrity Tests", () => {
       await knex("provinces").where("province_id", provId).delete();
     }
   });
+
+  test("DEF-105: GET /api/specimens/export supports dwca (.zip) and xlsx formats", async () => {
+    const [dwcaRes, xlsxRes] = await Promise.all([
+      request(app).get("/api/specimens/export?format=dwca"),
+      request(app).get("/api/specimens/export?format=xlsx"),
+    ]);
+    expect(dwcaRes.status).toBe(200);
+    expect(dwcaRes.headers["content-type"]).toMatch(/application\/zip/);
+    expect(xlsxRes.status).toBe(200);
+    expect(xlsxRes.headers["content-type"]).toMatch(/spreadsheetml/);
+  });
 });
