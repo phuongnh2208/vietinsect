@@ -4,6 +4,9 @@
   "scripts": {
     "dev:backend": "pnpm --filter backend dev",
     "dev:frontend": "pnpm --filter frontend start",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build",
     "migrate": "pnpm --filter backend exec knex migrate:latest",
     "seed": "pnpm --filter backend exec knex seed:run"
   }

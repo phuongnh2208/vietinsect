@@ -3,6 +3,11 @@ packages:
   - "backend"
   - "packages/*"
 allowBuilds:
+  '@parcel/watcher': false
   bcrypt: true
   core-js: true
   core-js-pure: true
+peerDependencyRules:
+  allowedVersions:
+    react: "19"
+    react-dom: "19"
