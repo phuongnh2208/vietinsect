@@ -1,4 +1,4 @@
-.PHONY: migrate seed unlock-admin reindex
+.PHONY: migrate seed unlock-admin reindex refresh-views
 
 migrate:
 	pnpm --filter backend exec knex migrate:latest
@@ -11,3 +11,6 @@ unlock-admin:
 
 reindex:
 	node backend/scripts/reindex-es.js
+
+refresh-views:
+	node backend/scripts/refresh-views.js

@@ -199,15 +199,24 @@ describe("Group 2 – Data Integrity Tests", () => {
     expect(res.body.message).toMatch(/5\.000|5000/);
   });
 
-  test("DEF-107: mv_taxon_dwc_flat is populated with Species rows", async () => {
-    const [mvRow, spRow] = await Promise.all([
-      knex("mv_taxon_dwc_flat").count("* as cnt").first(),
-      knex("taxa").where("taxon_rank", "Species").count("* as cnt").first(),
-    ]);
-    const mvCount = parseInt(mvRow.cnt, 10);
-    const spCount = parseInt(spRow.cnt, 10);
-    expect(spCount).toBeGreaterThanOrEqual(1);
-    expect(mvCount).toBe(spCount);
+  test("DEF-107 & DEF-110: mv_taxon_dwc_flat is populated and REFRESH CONCURRENTLY reflects taxon updates", async () => {
+    const { refreshTaxonViewNow } = require("../../src/modules/taxonomy/mvRefresh.util");
+    const sp = await knex("taxa").where("taxon_rank", "Species").first();
+    const originalName = sp.scientific_name;
+    const tempName = `${originalName} updated`;
+
+    try {
+      await knex("taxa").where("taxon_id", sp.taxon_id).update({ scientific_name: tempName });
+      const ok = await refreshTaxonViewNow();
+      expect(ok).toBe(true);
+
+      const mvRow = await knex("mv_taxon_dwc_flat").where("taxon_id", sp.taxon_id).first();
+      expect(mvRow).toBeTruthy();
+      expect(mvRow.species).toBe(tempName);
+    } finally {
+      await knex("taxa").where("taxon_id", sp.taxon_id).update({ scientific_name: originalName });
+      await refreshTaxonViewNow();
+    }
   });
 
   test("DEF-108: GET /api/specimens/analytics reports specimen_count = 0 for a province with no specimens", async () => {

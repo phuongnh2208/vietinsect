@@ -5,6 +5,7 @@ const TaxonomyError = require("./taxonomy.errors");
 const AppError = require("../../utils/appError");
 const logger = require("../../config/logger");
 const { SPECIES_PROFILE_RANKS, TAXON_RANKS } = require("./taxonomy.constants");
+const { scheduleRefreshTaxonView } = require("./mvRefresh.util");
 
 function slugify(scientificName) {
   return scientificName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -212,6 +213,7 @@ async function updateTaxon(taxonId, payload) {
   }
 
   const updated = await taxonomyRepository.update(taxonId, payload);
+  scheduleRefreshTaxonView();
   const specimenCount = await taxonomyRepository.countSpecimens(taxonId);
   return toTaxonDto(updated, specimenCount);
 }
@@ -229,6 +231,7 @@ async function deleteTaxon(taxonId) {
   if (specimenCount > 0) throw new AppError(TaxonomyError.TAXON_HAS_SPECIMENS);
 
   await taxonomyRepository.remove(taxonId);
+  scheduleRefreshTaxonView();
 }
 
 // F-TX-03: quản lý đồng danh pháp — gắn synonym → accepted name.
@@ -245,6 +248,7 @@ async function setSynonym(taxonId, acceptedTaxonId) {
   if (accepted.taxonomic_status !== "accepted") throw new AppError(TaxonomyError.ACCEPTED_TAXON_MUST_BE_ACCEPTED);
 
   const updated = await taxonomyRepository.setSynonym(taxonId, acceptedTaxonId);
+  scheduleRefreshTaxonView();
   return toTaxonDto(updated, 0);
 }
 
@@ -252,6 +256,7 @@ async function clearSynonym(taxonId) {
   const taxon = await taxonomyRepository.findById(taxonId);
   if (!taxon) throw new AppError(TaxonomyError.TAXON_NOT_FOUND);
   const updated = await taxonomyRepository.clearSynonym(taxonId);
+  scheduleRefreshTaxonView();
   return toTaxonDto(updated, 0);
 }
 

@@ -436,6 +436,100 @@ describe("DEF-105: Business Logic Service Unit Tests (Coverage >= 70%)", () => {
       taxRepo.removeBioactivity.mockResolvedValue();
       await taxService.removeBioactivity(1);
     });
+
+    test("taxonomy.service error/validation branches and tree rollup (coverage >= 65%)", async () => {
+      // Multi-level tree rollup
+      const orderNode = { taxon_id: 1, parent_id: null, taxon_rank: "Order", scientific_name: "Lepidoptera", slug: "lepidoptera" };
+      const familyNode = { taxon_id: 2, parent_id: 1, taxon_rank: "Family", scientific_name: "Papilionidae", slug: "papilionidae" };
+      taxRepo.findByRanks.mockResolvedValue([orderNode, familyNode]);
+      taxRepo.countChildrenByParentIds.mockResolvedValue([{ parent_id: 1, count: 1 }, { parent_id: 2, count: 5 }]);
+      taxRepo.countSpecimensRollup.mockResolvedValue([{ taxon_id: 2, count: 10 }]);
+      const tree = await taxService.getTree({ isAdmin: false });
+      expect(tree).toHaveLength(1);
+      expect(tree[0].specimenCount).toBe(10);
+
+      // Not found branches
+      taxRepo.findById.mockResolvedValue(null);
+      await expect(taxService.getTaxonById(999)).rejects.toThrow();
+      await expect(taxService.getChildren(999)).rejects.toThrow();
+      await expect(taxService.updateTaxon(999, {})).rejects.toThrow();
+      await expect(taxService.deleteTaxon(999)).rejects.toThrow();
+      await expect(taxService.setSynonym(999, 1)).rejects.toThrow();
+      await expect(taxService.clearSynonym(999)).rejects.toThrow();
+      await expect(taxService.upsertSpeciesProfile(999, {})).rejects.toThrow();
+      await expect(taxService.addBioactivity(999, {}, 1)).rejects.toThrow();
+
+      // getSpeciesProfile by numeric ID & missing
+      taxRepo.findById.mockResolvedValueOnce(null);
+      await expect(taxService.getSpeciesProfile("999")).rejects.toThrow();
+
+      // upsertSpeciesProfile on non-species rank
+      taxRepo.findById.mockResolvedValueOnce(orderNode);
+      await expect(taxService.upsertSpeciesProfile(1, {})).rejects.toThrow();
+
+      // deleteTaxon blocked when hasChildren or hasSpecimens
+      taxRepo.findById.mockResolvedValue(familyNode);
+      taxRepo.countChildren.mockResolvedValueOnce(2);
+      await expect(taxService.deleteTaxon(2)).rejects.toThrow();
+      taxRepo.countChildren.mockResolvedValueOnce(0);
+      taxRepo.countSpecimens.mockResolvedValueOnce(3);
+      await expect(taxService.deleteTaxon(2)).rejects.toThrow();
+
+      // setSynonym self or missing accepted taxon
+      await expect(taxService.setSynonym(2, 2)).rejects.toThrow();
+      taxRepo.findById.mockResolvedValueOnce(familyNode).mockResolvedValueOnce(null);
+      await expect(taxService.setSynonym(2, 999)).rejects.toThrow();
+
+      // createTaxon duplicate scientificName
+      taxRepo.findById.mockResolvedValueOnce(orderNode);
+      taxRepo.findByScientificName.mockResolvedValueOnce(familyNode);
+      await expect(
+        taxService.createTaxon({ parentId: 1, taxonRank: "Family", scientificName: "Papilionidae" }, 1),
+      ).rejects.toThrow();
+
+      // External links formatting
+      const fullTaxon = {
+        ...sampleTaxon,
+        gbif_taxon_key: 123,
+        itis_tsn: "456",
+        col_id: "COL1",
+        iucn_status: "LC",
+      };
+      taxRepo.findById.mockResolvedValueOnce(fullTaxon);
+      taxRepo.findProfile.mockResolvedValueOnce({
+        morphology_description: "m",
+        ecology_description: "e",
+        distribution_summary: "d",
+        economic_value_description: "v",
+      });
+      taxRepo.listBioactivity.mockResolvedValueOnce([
+        { bioactivity_id: 1, activity_type: "antimicrobial", activity_level: "high" },
+      ]);
+      taxRepo.countSpecimens.mockResolvedValueOnce(1);
+      const prof = await taxService.getSpeciesProfile("7", { isAdmin: true });
+      expect(prof.externalLinks.gbif).toContain("123");
+      expect(prof.bioactivity).toHaveLength(1);
+
+      // updateTaxon parentId not found & duplicate scientificName
+      taxRepo.findById.mockResolvedValueOnce(familyNode).mockResolvedValueOnce(null);
+      await expect(taxService.updateTaxon(2, { parentId: 999 })).rejects.toThrow();
+
+      taxRepo.findById.mockResolvedValueOnce(familyNode);
+      taxRepo.findByScientificName.mockResolvedValueOnce({ taxon_id: 99 });
+      await expect(taxService.updateTaxon(2, { scientificName: "OtherFamily" })).rejects.toThrow();
+
+      taxRepo.findById.mockResolvedValueOnce(familyNode);
+      taxRepo.findByScientificName.mockResolvedValueOnce(null);
+      taxRepo.update.mockResolvedValueOnce({ ...familyNode, scientific_name: "NewFamily" });
+      taxRepo.countSpecimens.mockResolvedValueOnce(0);
+      const renamed = await taxService.updateTaxon(2, { scientificName: "NewFamily" });
+      expect(renamed.scientificName).toBe("NewFamily");
+
+      // importChecklist rejects empty/corrupt buffer cleanly
+      await expect(
+        taxService.importChecklist(Buffer.from("not-an-xlsx"), 1),
+      ).rejects.toThrow();
+    });
   });
 
   // ── 5. system.service.js ─────────────────────────────────────────────

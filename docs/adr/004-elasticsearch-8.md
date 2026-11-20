@@ -16,3 +16,6 @@ SRS v2.0 (F-SR-01, §6.5) yêu cầu tìm kiếm toàn văn tiếng Việt (có 
    - **Dev (`docker-compose.yml`):** đặt `xpack.security.enabled=false` vì container chỉ bind `127.0.0.1` cục bộ, giúp developer & CI/CD chạy test mà không cần quản lý chứng chỉ TLS tự ký.
    - **Prod (`docker-compose.prod.yml`):** bật `xpack.security.enabled=true` với `ELASTIC_PASSWORD` từ biến môi trường và chỉ giao tiếp nội bộ trong Docker network.
 4. **Nguồn chuẩn (Source of Truth):** PostgreSQL 15 là nguồn chuẩn. Lỗi ghi ES không làm fail giao dịch DB; sử dụng retry có exponential backoff và hàng đợi retry ưu tiên cho các thao tác nhạy cảm (`is_public`, `soft-delete`, `restore`). Khi truy vấn tìm kiếm mà ES gián đoạn, API trả `HTTP 503` rõ ràng (không im lặng chuyển sang SQL).
+
+## 3. Runbook vận hành (tạm thời trước khi đóng DEF-112)
+- Sau mỗi lần khởi động lại backend hậu sự cố gián đoạn Elasticsearch, quản trị viên **bắt buộc chạy `make reindex`** để đảm bảo đồng bộ tuyệt đối trạng thái `is_public` và `deleted_at` giữa PostgreSQL và Elasticsearch.
