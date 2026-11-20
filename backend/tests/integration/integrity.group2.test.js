@@ -175,6 +175,15 @@ describe("Group 2 – Data Integrity Tests", () => {
     expect(res.body.message).toMatch(/tương lai/i);
   });
 
+  test("DEF-109: global JSON limit rejects 1MB body on /api/auth/login with 413, while /bulk-import allows up to 10mb", async () => {
+    const bigString = "a".repeat(1024 * 1024);
+    const res = await request(app)
+      .post("/api/auth/login")
+      .send({ username: "admin", password: bigString });
+
+    expect(res.status).toBe(413);
+  });
+
   test("DEF-033: POST /api/specimens/bulk-import rejects > 5000 rows with HTTP 400", async () => {
     const rows = Array.from({ length: 5001 }, (_, i) => ({
       scientificName: "Papilio demoleus",

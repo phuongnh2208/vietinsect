@@ -36,7 +36,13 @@ router.get("/:id", optionalAdmin, specimenController.getById);
 
 // Quản trị: tạo mới, nhập hàng loạt, chỉnh sửa hàng loạt, cập nhật, đổi trạng thái công khai đơn lẻ / hàng loạt, xóa mềm
 router.post("/", requireAdmin, validateCreateSpecimen, specimenController.create);
-router.post("/bulk-import", requireAdmin, validateBulkImport, specimenController.bulkImport);
+router.post(
+  "/bulk-import",
+  requireAdmin,
+  express.json({ limit: "10mb" }),
+  validateBulkImport,
+  specimenController.bulkImport,
+);
 router.patch("/batch-update", requireAdmin, validateBatchUpdate, specimenController.batchUpdate);
 router.patch("/batch-public", requireAdmin, validateBatchPublic, specimenController.batchTogglePublic);
 router.put("/:id", requireAdmin, validateUpdateSpecimen, specimenController.update);

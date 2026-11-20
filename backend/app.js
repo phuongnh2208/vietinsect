@@ -28,7 +28,11 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization", "X-View-As"],
   }),
 );
-app.use(express.json({ limit: "10mb" }));
+const defaultJsonParser = express.json();
+app.use((req, res, next) => {
+  if (req.path === "/api/specimens/bulk-import") return next();
+  return defaultJsonParser(req, res, next);
+});
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // Parse HttpOnly cookie cho refresh token (SRS §3.4)
 
