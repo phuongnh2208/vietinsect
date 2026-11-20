@@ -76,7 +76,11 @@ function toSpecimenDoc(row) {
     species_name: row.species_name || null,
     iucn_status: row.iucn_status || null,
     elevation_m: row.elevation_m != null ? Number(row.elevation_m) : null,
-    has_image: Boolean(row.has_image),
+    has_image: Boolean(row.has_public_image),
+    has_public_image: Boolean(row.has_public_image),
+    has_any_image: Boolean(row.has_any_image),
+    public_thumbnail_url: row.public_thumbnail_url || null,
+    admin_thumbnail_url: row.admin_thumbnail_url || null,
     has_dna: Boolean(row.has_dna),
     has_bioactivity: Boolean(row.has_bioactivity),
     province_id: row.province_id != null ? Number(row.province_id) : null,
@@ -135,7 +139,10 @@ function fetchSpecimenRowsForIndex(specimenIds = null) {
       knex.raw(`CASE WHEN t1.taxon_rank = 'Species' THEN t1.scientific_name END AS species_name`),
       "t1.iucn_status",
       "s.elevation_m",
-      knex.raw(`EXISTS (SELECT 1 FROM specimen_images img WHERE img.specimen_id = s.specimen_id AND img.is_public = true) AS has_image`),
+      knex.raw(`EXISTS (SELECT 1 FROM specimen_images img WHERE img.specimen_id = s.specimen_id AND img.is_public = true) AS has_public_image`),
+      knex.raw(`EXISTS (SELECT 1 FROM specimen_images img WHERE img.specimen_id = s.specimen_id) AS has_any_image`),
+      knex.raw(`(SELECT '/api/media/' || img.image_id || '/thumbnail' FROM specimen_images img WHERE img.specimen_id = s.specimen_id AND img.is_public = true ORDER BY img.image_id ASC LIMIT 1) AS public_thumbnail_url`),
+      knex.raw(`(SELECT '/api/media/' || img.image_id || '/thumbnail' FROM specimen_images img WHERE img.specimen_id = s.specimen_id ORDER BY img.image_id ASC LIMIT 1) AS admin_thumbnail_url`),
       knex.raw(`EXISTS (SELECT 1 FROM dna_sequences d WHERE d.specimen_id = s.specimen_id AND d.is_public = true) AS has_dna`),
       knex.raw(`EXISTS (SELECT 1 FROM bioactivity_records b WHERE b.taxon_id = s.taxon_id) AS has_bioactivity`),
       "s.province_id",
@@ -588,11 +595,20 @@ async function searchSpecimens(filters = {}, { isAdmin = false } = {}) {
 
     const total =
       typeof result.hits.total === "number" ? result.hits.total : result.hits.total?.value || 0;
-    const items = result.hits.hits.map((h) => ({
-      id: Number(h._source.specimen_id),
-      score: h._score,
-      ...h._source,
-    }));
+    const items = result.hits.hits.map((h) => {
+      const { admin_thumbnail_url, public_thumbnail_url, has_any_image, ...rest } = h._source;
+      const hasPublicImage = Boolean(rest.has_public_image ?? rest.has_image);
+      return {
+        id: Number(rest.specimen_id),
+        score: h._score,
+        ...rest,
+        has_public_image: hasPublicImage,
+        has_image: isAdmin ? Boolean(has_any_image || hasPublicImage) : hasPublicImage,
+        thumbnail_url: isAdmin
+          ? admin_thumbnail_url || public_thumbnail_url || null
+          : public_thumbnail_url || null,
+      };
+    });
 
     return {
       items,

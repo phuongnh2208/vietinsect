@@ -269,4 +269,37 @@ describe("Sprint C Group 1 – 8-Facet Aggregations, Cascade, AND Logic & elevat
     expect(highRes.body.data.map((d) => Number(d.id))).toEqual([s2Id]);
     expect(lowRes.body.data.map((d) => Number(d.id))).toEqual([s1Id]);
   });
+
+  it("7. Gallery privacy: User never receives Private image thumbnail_url; Admin receives full thumbnail_url", async () => {
+    const [privImg] = await knex("specimen_images")
+      .insert({
+        specimen_id: s2Id,
+        object_key: `private/secret-${suffix}.jpg`,
+        thumbnail_key: `private/secret-${suffix}-thumb.jpg`,
+        shot_type: "dorsal",
+        is_public: false,
+      })
+      .returning(["image_id"]);
+
+    await esService.reindexAll();
+
+    const [userRes, adminRes] = await Promise.all([
+      request(app).get("/api/search/specimens?limit=50"),
+      request(app)
+        .get("/api/search/specimens?limit=50")
+        .set("Authorization", `Bearer ${adminToken}`),
+    ]);
+
+    expect(userRes.status).toBe(200);
+    const userS2 = userRes.body.data.find((d) => Number(d.id) === s2Id);
+    const userS1 = userRes.body.data.find((d) => Number(d.id) === s1Id);
+    expect(userS2.has_public_image).toBe(false);
+    expect(userS2.thumbnail_url).toBeNull();
+    expect(userS2.admin_thumbnail_url).toBeUndefined();
+    expect(userS1.has_public_image).toBe(true);
+    expect(userS1.thumbnail_url).toMatch(/^\/api\/media\/\d+\/thumbnail$/);
+
+    const adminS2 = adminRes.body.data.find((d) => Number(d.id) === s2Id);
+    expect(adminS2.thumbnail_url).toBe(`/api/media/${privImg.image_id}/thumbnail`);
+  });
 });

@@ -708,6 +708,13 @@
 - **Công:** M
 - **Trạng thái:** Chưa đóng (ghi nhận theo yêu cầu, chưa sửa ở sprint này)
 
+### DEF-113 · High · Functional
+- **Vi phạm:** F-SR-04, SCR-16 (Advanced Search – Query Builder hỗ trợ AND/OR/NOT, lưu/tải bộ lọc preset, mở cho Admin + User theo C-04, tab SQL chỉ dành cho Admin).
+- **Hiện trạng:** Sau khi chuẩn hóa SCR-15 (Facet Search Workbench) tại `/search` và `/admin/search`, màn hình SCR-16 Query Builder đầy đủ (AND/OR/NOT + presets + tab SQL chỉ Admin) chưa được triển khai.
+- **Kỳ vọng:** Triển khai màn hình SCR-16 riêng đáp ứng đầy đủ F-SR-04 và C-04.
+- **Công:** M
+- **Trạng thái:** Chưa đóng (ghi nhận ở Sprint C – Nhóm 2, chưa triển khai)
+
 ### DEF-108 · Medium · Data
 - **Vi phạm:** F-GI-06 / SCR-25 (thống kê độ giàu loài theo tỉnh chính xác).
 - **Hiện trạng:** `backend/src/modules/specimen/specimen.repository.js:993` (`getAnalytics` → `richnessPromise`) dùng `COUNT(*)::int AS specimen_count` trên `FROM provinces p LEFT JOIN specimens s ...`, khiến tỉnh không có mẫu vật vẫn bị đếm là `1` thay vì `0`.
@@ -747,6 +754,13 @@
 - **Đề xuất:** Chuyển `priorityRetryQueue` sang bảng outbox PostgreSQL hoặc Redis Stream kèm background worker retry định kỳ; tạm thời vận hành theo runbook chạy `make reindex` sau mỗi lần restart hậu sự cố ES.
 - **Công:** M
 - **Trạng thái:** Chưa đóng (ghi nhận theo yêu cầu, chưa sửa ở sprint này)
+
+### DEF-113 · High · Functional
+- **Vi phạm:** F-SR-04, SCR-16 (Advanced Search – Query Builder hỗ trợ AND/OR/NOT, lưu/tải bộ lọc preset, mở cho Admin + User theo C-04, tab SQL chỉ dành cho Admin).
+- **Hiện trạng:** Sau khi chuẩn hóa SCR-15 (Facet Search Workbench) tại `/search` và `/admin/search`, màn hình SCR-16 Query Builder đầy đủ (AND/OR/NOT + presets + tab SQL chỉ Admin) chưa được triển khai.
+- **Kỳ vọng:** Triển khai màn hình SCR-16 riêng đáp ứng đầy đủ F-SR-04 và C-04.
+- **Công:** M
+- **Trạng thái:** Chưa đóng (ghi nhận ở Sprint C – Nhóm 2, chưa triển khai)
 
 ---
 
