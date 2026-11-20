@@ -238,4 +238,31 @@ describe("Group 1 – Privacy & Permission Isolation (DEF-089)", () => {
     expect(pubStats.body.data.totalSpecimens).toBeLessThan(adminStats.body.data.totalSpecimens);
     expect(pubStats.body.data.dnaCount).toBeLessThan(adminStats.body.data.dnaCount);
   });
+
+  test("X-View-As header cannot escalate privileges or bypass JWT", async () => {
+    const [pubTry, adminRouteTry] = await Promise.all([
+      request(app)
+        .get(`/api/specimens/${privateSpecId}`)
+        .set("X-View-As", "admin"),
+      request(app)
+        .post("/api/specimens")
+        .set("X-View-As", "admin")
+        .send({}),
+    ]);
+
+    expect(pubTry.status).toBe(404);
+    expect(adminRouteTry.status).toBe(401);
+  });
+
+  test("CORS preflight (OPTIONS) explicitly allows X-View-As header", async () => {
+    const res = await request(app)
+      .options("/api/specimens/stats")
+      .set("Origin", process.env.CORS_ORIGIN || "http://localhost:3000")
+      .set("Access-Control-Request-Method", "GET")
+      .set("Access-Control-Request-Headers", "X-View-As, Authorization");
+
+    expect([200, 204]).toContain(res.status);
+    const allowHeaders = String(res.headers["access-control-allow-headers"] || "").toLowerCase();
+    expect(allowHeaders).toContain("x-view-as");
+  });
 });

@@ -25,6 +25,7 @@ app.use(
   cors({
     origin: process.env.CORS_ORIGIN || "http://localhost:3000",
     credentials: true, // Cần thiết để gửi/nhận cookie cross-origin
+    allowedHeaders: ["Content-Type", "Authorization", "X-View-As"],
   }),
 );
 app.use(express.json());
