@@ -290,6 +290,7 @@ async function findMapData(filters, { includePrivate = false } = {}) {
     .join({ t1: "taxa" }, "s.taxon_id", "t1.taxon_id")
     .leftJoin({ t2: "taxa" }, "t1.parent_id", "t2.taxon_id")
     .leftJoin({ t3: "taxa" }, "t2.parent_id", "t3.taxon_id")
+    .leftJoin({ t4: "taxa" }, "t3.parent_id", "t4.taxon_id")
     .leftJoin({ p: "provinces" }, "s.province_id", "p.province_id")
     .whereNotNull("s.collection_point")
     .select(
@@ -301,7 +302,8 @@ async function findMapData(filters, { includePrivate = false } = {}) {
       knex.raw(`COALESCE(
         CASE WHEN t1.taxon_rank = 'Order' THEN t1.scientific_name END,
         CASE WHEN t2.taxon_rank = 'Order' THEN t2.scientific_name END,
-        CASE WHEN t3.taxon_rank = 'Order' THEN t3.scientific_name END
+        CASE WHEN t3.taxon_rank = 'Order' THEN t3.scientific_name END,
+        CASE WHEN t4.taxon_rank = 'Order' THEN t4.scientific_name END
       ) AS order_name`),
       "p.province_name_vn",
       "s.collection_date",
@@ -356,6 +358,15 @@ async function findById(specimenId, { includePrivate = false } = {}) {
       "t1.scientific_name as taxon_name",
       "t1.taxon_rank as taxon_rank",
       "t1.slug as taxon_slug",
+      "t2.taxon_id as parent1_id",
+      "t2.taxon_rank as parent1_rank",
+      "t2.scientific_name as parent1_name",
+      "t3.taxon_id as parent2_id",
+      "t3.taxon_rank as parent2_rank",
+      "t3.scientific_name as parent2_name",
+      "t4.taxon_id as parent3_id",
+      "t4.taxon_rank as parent3_rank",
+      "t4.scientific_name as parent3_name",
       knex.raw(`COALESCE(
         CASE WHEN t1.taxon_rank = 'Order' THEN t1.scientific_name END,
         CASE WHEN t2.taxon_rank = 'Order' THEN t2.scientific_name END,
@@ -410,22 +421,52 @@ async function findById(specimenId, { includePrivate = false } = {}) {
       : Promise.resolve([]),
   ]);
 
-  // Fallback ảnh cấp loài nếu mẫu vật chưa có ảnh vi thể nội bộ riêng
+  // Danh sách bậc phân loại tổ tiên từ hẹp (Species/Genus) tới rộng (Family/Order)
+  const ancestorChain = [
+    { id: row.taxon_id, rank: row.taxon_rank, name: row.taxon_name },
+    { id: row.parent1_id, rank: row.parent1_rank, name: row.parent1_name },
+    { id: row.parent2_id, rank: row.parent2_rank, name: row.parent2_name },
+    { id: row.parent3_id, rank: row.parent3_rank, name: row.parent3_name },
+  ].filter((a) => a.id != null);
+
+  // Fallback ảnh tham chiếu theo hệ thống phân loại (Species → Genus → Family → Order)
   let speciesImages = [];
-  if (images.length === 0 && row.taxon_id) {
-    speciesImages = await knex({ img: "specimen_images" })
-      .join({ s2: "specimens" }, "img.specimen_id", "s2.specimen_id")
-      .where("s2.taxon_id", row.taxon_id)
-      .whereNot("s2.specimen_id", specimenId)
-      .whereNull("s2.deleted_at")
-      .modify((q) => {
-        if (!includePrivate) q.where("img.is_public", true).where("s2.is_public", true);
-      })
-      .select("img.*")
-      .limit(6);
+  if (images.length === 0 && ancestorChain.length > 0) {
+    for (const anc of ancestorChain) {
+      const foundImgs = await knex({ img: "specimen_images" })
+        .join({ s2: "specimens" }, "img.specimen_id", "s2.specimen_id")
+        .whereNot("s2.specimen_id", specimenId)
+        .whereNull("s2.deleted_at")
+        .whereRaw(
+          `s2.taxon_id IN (
+            WITH RECURSIVE sub_taxa AS (
+              SELECT taxon_id FROM taxa WHERE taxon_id = ?
+              UNION ALL
+              SELECT c.taxon_id FROM taxa c JOIN sub_taxa st ON c.parent_id = st.taxon_id
+            )
+            SELECT taxon_id FROM sub_taxa
+          )`,
+          [anc.id]
+        )
+        .modify((q) => {
+          if (!includePrivate) q.where("img.is_public", true).where("s2.is_public", true);
+        })
+        .select("img.*", "s2.gbif_scientific_name as reference_scientific_name")
+        .orderBy("img.uploaded_at", "desc")
+        .limit(6);
+
+      if (foundImgs.length > 0) {
+        speciesImages = foundImgs.map((img) => ({
+          ...img,
+          reference_match_rank: anc.rank,
+          reference_taxon_name: anc.name,
+        }));
+        break;
+      }
+    }
   }
 
-  // Fallback chuỗi mã vạch DNA của loài nếu mẫu vật chưa có kết quả giải trình tự riêng
+  // Fallback chuỗi mã vạch DNA theo hệ thống phân loại (Species → Genus → Family → Order)
   let speciesDnaSequences = [];
   if (dnaSequences.length === 0) {
     const binomial = (row.gbif_scientific_name || row.taxon_name || "")
@@ -433,20 +474,82 @@ async function findById(specimenId, { includePrivate = false } = {}) {
       .split(/\s+/)
       .slice(0, 2)
       .join(" ");
-    if (binomial) {
-      speciesDnaSequences = await knex("dna_sequences")
+
+    if (binomial && binomial.includes(" ")) {
+      const exactSpeciesDna = await knex({ d: "dna_sequences" })
+        .leftJoin({ s_dna: "specimens" }, "d.specimen_id", "s_dna.specimen_id")
+        .select("d.*")
         .where((q) => {
-          if (row.taxon_id) q.where("taxon_id", row.taxon_id);
-          q.orWhere("scientific_name_verbatim", "ilike", `${binomial}%`);
+          if (row.taxon_id) q.where("d.taxon_id", row.taxon_id);
+          q.orWhere("d.scientific_name_verbatim", "ilike", `${binomial}%`);
         })
         .where(function () {
-          this.whereNull("specimen_id").orWhereNot("specimen_id", specimenId);
+          this.whereNull("d.specimen_id").orWhereNot("d.specimen_id", specimenId);
         })
         .modify((q) => {
-          if (!includePrivate) q.where("is_public", true);
+          if (!includePrivate) {
+            q.where("d.is_public", true).andWhere(function () {
+              this.whereNull("d.specimen_id").orWhere(function () {
+                this.whereNull("s_dna.deleted_at").andWhere("s_dna.is_public", true);
+              });
+            });
+          }
         })
-        .orderBy("created_at", "desc")
+        .orderByRaw("CASE WHEN d.gene_marker = 'COI' THEN 0 ELSE 1 END")
+        .orderBy("d.created_at", "desc")
         .limit(5);
+
+      if (exactSpeciesDna.length > 0) {
+        speciesDnaSequences = exactSpeciesDna.map((d) => ({
+          ...d,
+          reference_match_rank: "Species",
+          reference_taxon_name: binomial,
+        }));
+      }
+    }
+
+    // Nếu loài này chưa có DNA barcode riêng, tìm trình tự đại diện trong cùng Genus → Family → Order
+    if (speciesDnaSequences.length === 0 && ancestorChain.length > 0) {
+      for (const anc of ancestorChain) {
+        const taxonDna = await knex({ d: "dna_sequences" })
+          .leftJoin({ s_dna: "specimens" }, "d.specimen_id", "s_dna.specimen_id")
+          .select("d.*")
+          .where(function () {
+            this.whereNull("d.specimen_id").orWhereNot("d.specimen_id", specimenId);
+          })
+          .whereRaw(
+            `d.taxon_id IN (
+              WITH RECURSIVE sub_taxa AS (
+                SELECT taxon_id FROM taxa WHERE taxon_id = ?
+                UNION ALL
+                SELECT c.taxon_id FROM taxa c JOIN sub_taxa st ON c.parent_id = st.taxon_id
+              )
+              SELECT taxon_id FROM sub_taxa
+            )`,
+            [anc.id]
+          )
+          .modify((q) => {
+            if (!includePrivate) {
+              q.where("d.is_public", true).andWhere(function () {
+                this.whereNull("d.specimen_id").orWhere(function () {
+                  this.whereNull("s_dna.deleted_at").andWhere("s_dna.is_public", true);
+                });
+              });
+            }
+          })
+          .orderByRaw("CASE WHEN d.gene_marker = 'COI' THEN 0 ELSE 1 END")
+          .orderBy("d.sequence_length_bp", "desc")
+          .limit(4);
+
+        if (taxonDna.length > 0) {
+          speciesDnaSequences = taxonDna.map((d) => ({
+            ...d,
+            reference_match_rank: anc.rank,
+            reference_taxon_name: anc.name,
+          }));
+          break;
+        }
+      }
     }
   }
 
@@ -687,86 +790,158 @@ async function findLookups() {
 async function getStats({ includePrivate = false } = {}) {
   const visibilitySql = includePrivate ? "" : "AND s.is_public = true";
 
-  const [summaryRes, byOrderRes, byProvinceRes, taxaSummaryRes, dnaCountRes, imageCountRes] =
-    await Promise.all([
-      knex.raw(`
-        SELECT
-          COUNT(*)::int AS total_specimens,
-          COUNT(*) FILTER (WHERE s.is_public = true)::int AS public_specimens,
-          COUNT(*) FILTER (WHERE s.collection_point IS NOT NULL)::int AS with_coordinates,
-          COUNT(DISTINCT s.province_id) FILTER (WHERE s.province_id IS NOT NULL)::int AS provinces_covered,
-          COUNT(DISTINCT s.gbif_scientific_name) FILTER (WHERE s.gbif_scientific_name IS NOT NULL)::int AS distinct_scientific_names,
-          COUNT(DISTINCT regexp_replace(s.gbif_scientific_name, '^([A-Z][a-z]+\\s+[a-z-]+).*$', '\\1'))
-            FILTER (WHERE s.gbif_scientific_name ~ '^[A-Z][a-z]+\\s+[a-z-]+')::int AS distinct_binomial_species
-        FROM specimens s
-        WHERE s.deleted_at IS NULL ${visibilitySql}
-      `),
-      knex.raw(`
-        SELECT
-          COALESCE(
-            CASE WHEN t1.taxon_rank = 'Order' THEN t1.scientific_name END,
-            CASE WHEN t2.taxon_rank = 'Order' THEN t2.scientific_name END,
-            CASE WHEN t3.taxon_rank = 'Order' THEN t3.scientific_name END,
-            t1.scientific_name
-          ) AS order_name,
-          COUNT(*)::int AS count
-        FROM specimens s
-        JOIN taxa t1 ON s.taxon_id = t1.taxon_id
-        LEFT JOIN taxa t2 ON t1.parent_id = t2.taxon_id
-        LEFT JOIN taxa t3 ON t2.parent_id = t3.taxon_id
-        WHERE s.deleted_at IS NULL ${visibilitySql}
-        GROUP BY 1
-        ORDER BY count DESC
-      `),
-      knex.raw(`
-        SELECT
-          p.province_id,
-          p.province_name_vn,
-          COUNT(*)::int AS count,
-          ROUND(AVG(ST_Y(s.collection_point::geometry))::numeric, 4)::float AS lat,
-          ROUND(AVG(ST_X(s.collection_point::geometry))::numeric, 4)::float AS lon
-        FROM specimens s
-        JOIN provinces p ON s.province_id = p.province_id
-        WHERE s.deleted_at IS NULL ${visibilitySql}
-        GROUP BY p.province_id, p.province_name_vn
-        ORDER BY count DESC
-        LIMIT 15
-      `),
-      knex.raw(`
-        SELECT
-          COUNT(*)::int AS total_taxa,
-          COUNT(*) FILTER (WHERE taxon_rank = 'Family')::int AS family_count,
-          COUNT(*) FILTER (WHERE taxon_rank = 'Genus')::int AS genus_count,
-          COUNT(*) FILTER (WHERE taxon_rank = 'Species')::int AS species_count,
-          COUNT(*) FILTER (WHERE taxon_rank = 'Order')::int AS order_count
-        FROM taxa
-      `),
-      knex("dna_sequences")
-        .modify((q) => {
-          if (!includePrivate) q.where("is_public", true);
-        })
-        .count("* as cnt")
-        .first(),
-      knex({ img: "specimen_images" })
-        .join({ s: "specimens" }, "img.specimen_id", "s.specimen_id")
-        .whereNull("s.deleted_at")
-        .modify((q) => {
-          if (!includePrivate) q.where("img.is_public", true).where("s.is_public", true);
-        })
-        .count("* as cnt")
-        .first(),
-    ]);
+  const [
+    summaryRes,
+    byOrderRes,
+    byProvinceRes,
+    taxaSummaryRes,
+    dnaCountRes,
+    imageCountRes,
+    recentSpecimensRes,
+    recentAuditRes,
+  ] = await Promise.all([
+    knex.raw(`
+      SELECT
+        COUNT(*)::int AS total_specimens,
+        COUNT(*) FILTER (WHERE s.is_public = true)::int AS public_specimens,
+        COUNT(*) FILTER (WHERE s.collection_point IS NOT NULL)::int AS with_coordinates,
+        COUNT(*) FILTER (WHERE s.province_id IS NOT NULL)::int AS with_province,
+        COUNT(DISTINCT s.province_id) FILTER (WHERE s.province_id IS NOT NULL)::int AS provinces_covered,
+        COUNT(DISTINCT s.gbif_scientific_name) FILTER (WHERE s.gbif_scientific_name IS NOT NULL)::int AS distinct_scientific_names,
+        COUNT(DISTINCT regexp_replace(s.gbif_scientific_name, '^([A-Z][a-z]+\\s+[a-z-]+).*$', '\\1'))
+          FILTER (WHERE s.gbif_scientific_name ~ '^[A-Z][a-z]+\\s+[a-z-]+')::int AS distinct_binomial_species,
+        COUNT(*) FILTER (WHERE t.taxon_rank = 'Species')::int AS at_species_rank,
+        COUNT(*) FILTER (
+          WHERE s.collection_point IS NOT NULL
+            AND (
+              ST_Y(s.collection_point::geometry) NOT BETWEEN 8.18 AND 23.39
+              OR ST_X(s.collection_point::geometry) NOT BETWEEN 102.14 AND 109.46
+            )
+        )::int AS out_of_vn_bounds,
+        COUNT(*) FILTER (WHERE s.collection_date > CURRENT_DATE)::int AS future_dates
+      FROM specimens s
+      JOIN taxa t ON s.taxon_id = t.taxon_id
+      WHERE s.deleted_at IS NULL ${visibilitySql}
+    `),
+    knex.raw(`
+      SELECT
+        COALESCE(
+          CASE WHEN t1.taxon_rank = 'Order' THEN t1.scientific_name END,
+          CASE WHEN t2.taxon_rank = 'Order' THEN t2.scientific_name END,
+          CASE WHEN t3.taxon_rank = 'Order' THEN t3.scientific_name END,
+          CASE WHEN t4.taxon_rank = 'Order' THEN t4.scientific_name END,
+          t1.scientific_name
+        ) AS order_name,
+        COUNT(*)::int AS count
+      FROM specimens s
+      JOIN taxa t1 ON s.taxon_id = t1.taxon_id
+      LEFT JOIN taxa t2 ON t1.parent_id = t2.taxon_id
+      LEFT JOIN taxa t3 ON t2.parent_id = t3.taxon_id
+      LEFT JOIN taxa t4 ON t3.parent_id = t4.taxon_id
+      WHERE s.deleted_at IS NULL ${visibilitySql}
+      GROUP BY 1
+      ORDER BY count DESC
+    `),
+    knex.raw(`
+      SELECT
+        p.province_id,
+        p.province_name_vn,
+        COUNT(*)::int AS count,
+        ROUND(AVG(ST_Y(s.collection_point::geometry))::numeric, 4)::float AS lat,
+        ROUND(AVG(ST_X(s.collection_point::geometry))::numeric, 4)::float AS lon
+      FROM specimens s
+      JOIN provinces p ON s.province_id = p.province_id
+      WHERE s.deleted_at IS NULL ${visibilitySql}
+      GROUP BY p.province_id, p.province_name_vn
+      ORDER BY count DESC
+      LIMIT 34
+    `),
+    knex.raw(`
+      SELECT
+        COUNT(*)::int AS total_taxa,
+        COUNT(*) FILTER (WHERE taxon_rank = 'Family')::int AS family_count,
+        COUNT(*) FILTER (WHERE taxon_rank = 'Genus')::int AS genus_count,
+        COUNT(*) FILTER (WHERE taxon_rank = 'Species')::int AS species_count,
+        COUNT(*) FILTER (WHERE taxon_rank = 'Order')::int AS order_count
+      FROM taxa
+    `),
+    knex({ d: "dna_sequences" })
+      .leftJoin({ s: "specimens" }, "d.specimen_id", "s.specimen_id")
+      .modify((q) => {
+        if (!includePrivate) {
+          q.where("d.is_public", true).andWhere(function () {
+            this.whereNull("d.specimen_id").orWhere(function () {
+              this.whereNull("s.deleted_at").andWhere("s.is_public", true);
+            });
+          });
+        }
+      })
+      .select(
+        knex.raw("COUNT(*)::int AS cnt"),
+        knex.raw("COUNT(*) FILTER (WHERE d.specimen_id IS NULL)::int AS orphaned_cnt")
+      )
+      .first(),
+    knex({ img: "specimen_images" })
+      .join({ s: "specimens" }, "img.specimen_id", "s.specimen_id")
+      .whereNull("s.deleted_at")
+      .modify((q) => {
+        if (!includePrivate) q.where("img.is_public", true).where("s.is_public", true);
+      })
+      .count("* as cnt")
+      .first(),
+    knex({ s: "specimens" })
+      .join({ sr: "specimen_registry" }, "s.specimen_id", "sr.specimen_id")
+      .join({ t1: "taxa" }, "s.taxon_id", "t1.taxon_id")
+      .leftJoin({ p: "provinces" }, "s.province_id", "p.province_id")
+      .whereNull("s.deleted_at")
+      .modify((q) => {
+        if (!includePrivate) q.where("s.is_public", true);
+      })
+      .select(
+        "s.specimen_id",
+        "sr.specimen_code",
+        "s.gbif_scientific_name",
+        "t1.scientific_name as taxon_name",
+        "t1.taxon_rank",
+        "p.province_name_vn",
+        "s.collection_date",
+        "s.is_public",
+        "s.updated_at"
+      )
+      .orderBy("s.collection_date", "desc")
+      .orderBy("s.specimen_id", "desc")
+      .limit(6),
+    includePrivate
+      ? knex({ al: "audit_logs" })
+          .leftJoin({ a: "admin_users" }, "al.admin_id", "a.admin_id")
+          .select(
+            "al.log_id",
+            "al.action_type",
+            "al.target_table",
+            "al.target_id",
+            knex.raw("HOST(al.ip_address) as ip_address"),
+            "al.log_timestamp",
+            "a.username as admin_username"
+          )
+          .orderBy("al.log_timestamp", "desc")
+          .limit(6)
+      : Promise.resolve([]),
+  ]);
 
   const sRow = summaryRes.rows[0] || {};
   const tRow = taxaSummaryRes.rows[0] || {};
+  const totalSpecimens = sRow.total_specimens || 0;
+  const withProvince = sRow.with_province || 0;
 
   return {
-    totalSpecimens: sRow.total_specimens || 0,
+    totalSpecimens,
     publicSpecimens: sRow.public_specimens || 0,
     withCoordinates: sRow.with_coordinates || 0,
+    withProvince,
     provincesCovered: sRow.provinces_covered || 0,
     distinctScientificNames: sRow.distinct_scientific_names || 0,
     distinctBinomialSpecies: sRow.distinct_binomial_species || 0,
+    specimensAtSpeciesRank: sRow.at_species_rank || 0,
     taxa: {
       total: tRow.total_taxa || 0,
       orders: tRow.order_count || 0,
@@ -776,9 +951,328 @@ async function getStats({ includePrivate = false } = {}) {
     },
     dnaCount: parseInt(dnaCountRes?.cnt || 0, 10),
     imageCount: parseInt(imageCountRes?.cnt || 0, 10),
+    dataQuality: {
+      outOfVnBounds: sRow.out_of_vn_bounds || 0,
+      missingProvince: Math.max(0, totalSpecimens - withProvince),
+      futureDates: sRow.future_dates || 0,
+      orphanedDna: parseInt(dnaCountRes?.orphaned_cnt || 0, 10),
+      higherRankOnly: Math.max(0, totalSpecimens - (sRow.at_species_rank || 0)),
+    },
     byOrder: byOrderRes.rows,
     topProvinces: byProvinceRes.rows,
+    recentSpecimens: (recentSpecimensRes || []).map((r) => ({
+      id: Number(r.specimen_id),
+      specimenCode: r.specimen_code,
+      scientificName: r.gbif_scientific_name || r.taxon_name || "Insecta sp.",
+      taxonRank: r.taxon_rank,
+      provinceNameVn: r.province_name_vn || null,
+      collectionDate:
+        r.collection_date instanceof Date
+          ? r.collection_date.toISOString().slice(0, 10)
+          : r.collection_date
+          ? String(r.collection_date).slice(0, 10)
+          : null,
+      isPublic: Boolean(r.is_public),
+      updatedAt: r.updated_at,
+    })),
+    recentAuditLogs: (recentAuditRes || []).map((l) => ({
+      id: Number(l.log_id),
+      actionType: l.action_type,
+      targetTable: l.target_table,
+      targetId: l.target_id,
+      ipAddress: l.ip_address || "127.0.0.1",
+      timestamp: l.log_timestamp,
+      adminUsername: l.admin_username || "admin",
+    })),
   };
+}
+
+async function getAnalytics(filters = {}, { includePrivate = false } = {}) {
+  const visibilitySql = includePrivate ? "" : "AND s.is_public = true";
+
+  // 1. Xu hướng thu mẫu & số loài theo năm
+  const byYearPromise = knex.raw(`
+    SELECT
+      EXTRACT(YEAR FROM s.collection_date)::int AS year,
+      COUNT(*)::int AS specimen_count,
+      COUNT(DISTINCT s.taxon_id) FILTER (WHERE t.taxon_rank = 'Species')::int AS species_count
+    FROM specimens s
+    JOIN taxa t ON s.taxon_id = t.taxon_id
+    WHERE s.deleted_at IS NULL
+      AND s.collection_date IS NOT NULL
+      ${visibilitySql}
+    GROUP BY 1
+    ORDER BY 1 ASC
+  `);
+
+  // 2. Độ giàu loài (Species Richness) theo 34 Tỉnh/Thành (F-GI-06)
+  const richnessPromise = knex.raw(`
+    SELECT
+      p.province_id,
+      p.province_code,
+      p.province_name_vn,
+      p.province_name_en,
+      p.region,
+      COUNT(*)::int AS specimen_count,
+      COUNT(DISTINCT s.taxon_id) FILTER (WHERE t.taxon_rank = 'Species')::int AS species_count,
+      ROUND(AVG(ST_Y(s.collection_point::geometry))::numeric, 4)::float AS lat,
+      ROUND(AVG(ST_X(s.collection_point::geometry))::numeric, 4)::float AS lon
+    FROM provinces p
+    LEFT JOIN specimens s ON s.province_id = p.province_id AND s.deleted_at IS NULL ${visibilitySql}
+    LEFT JOIN taxa t ON s.taxon_id = t.taxon_id
+    GROUP BY p.province_id, p.province_code, p.province_name_vn, p.province_name_en, p.region
+    ORDER BY species_count DESC, specimen_count DESC
+  `);
+
+  // 3. Danh mục Loài chuẩn hóa (Species Checklist - SCR-26 / F-RP-02)
+  const limit = Math.min(Number(filters.limit) || 100, 500);
+  const checklistBindings = [];
+  let filterSql = "";
+
+  if (filters.order) {
+    checklistBindings.push(filters.order);
+    filterSql += ` AND COALESCE(t4.scientific_name, t3.scientific_name, t2.scientific_name) = ?`;
+  }
+  if (filters.provinceId) {
+    checklistBindings.push(Number(filters.provinceId));
+    filterSql += ` AND s.province_id = ?`;
+  }
+  if (filters.q && String(filters.q).trim()) {
+    const kw = `%${String(filters.q).trim()}%`;
+    checklistBindings.push(kw, kw, kw);
+    filterSql += ` AND (t1.scientific_name ILIKE ? OR COALESCE(t1.vernacular_name_vn, '') ILIKE ? OR COALESCE(t2.scientific_name, '') ILIKE ?)`;
+  }
+  checklistBindings.push(limit);
+
+  const checklistPromise = knex.raw(
+    `
+    SELECT
+      t1.taxon_id,
+      t1.scientific_name,
+      t1.slug,
+      t1.scientific_name_authorship AS author_year,
+      t1.vernacular_name_vn,
+      t1.vernacular_name_en,
+      t1.iucn_status,
+      t2.scientific_name AS genus_name,
+      t3.scientific_name AS family_name,
+      COALESCE(t4.scientific_name, t3.scientific_name, t2.scientific_name) AS order_name,
+      COUNT(s.specimen_id)::int AS specimen_count,
+      COUNT(DISTINCT s.province_id)::int AS province_count
+    FROM taxa t1
+    LEFT JOIN taxa t2 ON t1.parent_id = t2.taxon_id
+    LEFT JOIN taxa t3 ON t2.parent_id = t3.taxon_id
+    LEFT JOIN taxa t4 ON t3.parent_id = t4.taxon_id
+    LEFT JOIN specimens s ON s.taxon_id = t1.taxon_id AND s.deleted_at IS NULL ${visibilitySql}
+    WHERE t1.taxon_rank = 'Species'
+      ${filterSql}
+    GROUP BY t1.taxon_id, t1.scientific_name, t1.slug, t1.scientific_name_authorship,
+             t1.vernacular_name_vn, t1.vernacular_name_en, t1.iucn_status,
+             t2.scientific_name, t3.scientific_name, t4.scientific_name
+    HAVING COUNT(s.specimen_id) > 0 OR ? = 1
+    ORDER BY specimen_count DESC, t1.scientific_name ASC
+    LIMIT ?
+    `,
+    [...checklistBindings.slice(0, -1), filters.provinceId ? 0 : 1, limit]
+  );
+
+  // 4. Phân bố theo Cơ sở Bản ghi (Basis of Record) & Tháng thu mẫu
+  const byMonthPromise = knex.raw(`
+    SELECT
+      EXTRACT(MONTH FROM s.collection_date)::int AS month,
+      COUNT(*)::int AS specimen_count
+    FROM specimens s
+    WHERE s.deleted_at IS NULL
+      AND s.collection_date IS NOT NULL
+      ${visibilitySql}
+    GROUP BY 1
+    ORDER BY 1 ASC
+  `);
+
+  const [byYearRes, richnessRes, checklistRes, byMonthRes] = await Promise.all([
+    byYearPromise,
+    richnessPromise,
+    checklistPromise,
+    byMonthPromise,
+  ]);
+
+  return {
+    byYear: byYearRes.rows,
+    byMonth: byMonthRes.rows,
+    speciesRichnessByProvince: richnessRes.rows,
+    speciesChecklist: checklistRes.rows,
+  };
+}
+
+async function batchUpdateFields(specimenIds, updates, adminId) {
+  return knex.transaction(async (trx) => {
+    const specUpdate = {};
+    const regUpdate = {};
+
+    const allowedSpecMap = {
+      provinceId: "province_id",
+      habitatId: "habitat_id",
+      lifeStageId: "life_stage_id",
+      statusId: "status_id",
+      sex: "sex",
+      isPublic: "is_public",
+      district: "district",
+      localityDetail: "locality_detail",
+    };
+
+    const allowedRegMap = {
+      recordedBy: "recorded_by",
+      institutionCode: "institution_code",
+      basisOfRecord: "basis_of_record",
+    };
+
+    for (const [k, col] of Object.entries(allowedSpecMap)) {
+      if (updates[k] !== undefined && updates[k] !== "") {
+        specUpdate[col] = updates[k];
+      }
+    }
+    for (const [k, col] of Object.entries(allowedRegMap)) {
+      if (updates[k] !== undefined && updates[k] !== "") {
+        regUpdate[col] = updates[k];
+      }
+    }
+
+    let updatedCount = 0;
+
+    if (Object.keys(specUpdate).length > 0) {
+      specUpdate.updated_by = adminId || null;
+      specUpdate.updated_at = trx.fn.now();
+      updatedCount = await trx("specimens")
+        .whereIn("specimen_id", specimenIds)
+        .whereNull("deleted_at")
+        .update(specUpdate);
+    }
+
+    if (Object.keys(regUpdate).length > 0) {
+      const regCount = await trx("specimen_registry")
+        .whereIn("specimen_id", specimenIds)
+        .update(regUpdate);
+      if (!updatedCount) updatedCount = regCount;
+    }
+
+    const changedFields = [...Object.keys(specUpdate), ...Object.keys(regUpdate)].filter(
+      (f) => f !== "updated_by" && f !== "updated_at"
+    );
+
+    if (changedFields.length > 0 && specimenIds.length > 0) {
+      const historyRows = specimenIds.slice(0, 200).map((id) => ({
+        specimen_id: id,
+        changed_by: adminId || null,
+        field_name: `BATCH(${changedFields.join(",")})`,
+        old_value: "Batch Edit",
+        new_value: JSON.stringify(updates).slice(0, 240),
+      }));
+      await trx("specimen_change_history").insert(historyRows);
+    }
+
+    return updatedCount;
+  });
+}
+
+async function bulkImportRows(rows, adminId) {
+  return knex.transaction(async (trx) => {
+    // Load lookup maps for scientific_name -> taxon_id and province_name -> province_id
+    const [taxaRows, provRows] = await Promise.all([
+      trx("taxa").select("taxon_id", "scientific_name", "taxon_rank"),
+      trx("provinces").select("province_id", "province_name_vn", "province_name_en", "province_code"),
+    ]);
+
+    const taxonMap = new Map();
+    let fallbackTaxonId = 1;
+    for (const t of taxaRows) {
+      taxonMap.set(String(t.scientific_name).toLowerCase(), t.taxon_id);
+      if (t.taxon_rank === "Order" && !fallbackTaxonId) fallbackTaxonId = t.taxon_id;
+    }
+
+    const provMap = new Map();
+    for (const p of provRows) {
+      provMap.set(String(p.province_name_vn).toLowerCase(), p.province_id);
+      if (p.province_name_en) provMap.set(String(p.province_name_en).toLowerCase(), p.province_id);
+      if (p.province_code) provMap.set(String(p.province_code).toLowerCase(), p.province_id);
+    }
+
+    let insertedCount = 0;
+    const errors = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const sciName = String(r.scientificName || r.gbifScientificName || "").trim();
+      const colDate = String(r.collectionDate || "").trim();
+
+      if (!sciName || !colDate) {
+        errors.push({ row: i + 1, message: "Thiếu Tên khoa học (scientificName) hoặc Ngày thu mẫu (collectionDate)" });
+        continue;
+      }
+
+      const lat = r.latitude != null && r.latitude !== "" ? Number(r.latitude) : null;
+      const lon = r.longitude != null && r.longitude !== "" ? Number(r.longitude) : null;
+      if ((lat != null && Number.isNaN(lat)) || (lon != null && Number.isNaN(lon))) {
+        errors.push({ row: i + 1, message: "Tọa độ GPS (latitude/longitude) không hợp lệ" });
+        continue;
+      }
+
+      // Match taxonId by exact scientific name, or genus prefix, or fallback
+      const exactTaxonId =
+        (r.taxonId && Number(r.taxonId)) ||
+        taxonMap.get(sciName.toLowerCase()) ||
+        taxonMap.get(sciName.split(/\s+/)[0].toLowerCase()) ||
+        (r.orderName && taxonMap.get(String(r.orderName).toLowerCase())) ||
+        fallbackTaxonId;
+
+      const matchedProvId =
+        (r.provinceId && Number(r.provinceId)) ||
+        (r.provinceName && provMap.get(String(r.provinceName).trim().toLowerCase())) ||
+        null;
+
+      const code =
+        (r.specimenCode && String(r.specimenCode).trim()) ||
+        `VAST-IMP-${Date.now().toString(36).toUpperCase()}-${String(i + 1).padStart(4, "0")}`;
+
+      const [reg] = await trx("specimen_registry")
+        .insert({
+          specimen_code: code,
+          basis_of_record: r.basisOfRecord || "PreservedSpecimen",
+          catalog_number: r.catalogNumber || code,
+          institution_code: r.institutionCode || "VAST",
+          recorded_by: r.recordedBy || "VAST Field Team",
+          occurrence_remarks: r.occurrenceRemarks || null,
+        })
+        .returning(["specimen_id"]);
+
+      const pointExpr =
+        lat != null && lon != null
+          ? trx.raw("ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography", [lon, lat])
+          : null;
+
+      await trx("specimens").insert({
+        specimen_id: reg.specimen_id,
+        taxon_id: exactTaxonId,
+        province_id: matchedProvId,
+        created_by: adminId || null,
+        updated_by: adminId || null,
+        gbif_scientific_name: sciName,
+        common_name_vn: r.commonNameVn || null,
+        district: r.district || null,
+        commune: r.commune || null,
+        locality_detail: r.localityDetail || null,
+        collection_point: pointExpr,
+        collection_date: colDate,
+        sex: r.sex || null,
+        individual_count: Number(r.individualCount) || 1,
+        notes: r.notes || null,
+        is_public: r.isPublic !== false,
+      });
+
+      insertedCount++;
+    }
+
+    return { insertedCount, errors };
+  });
 }
 
 module.exports = {
@@ -793,7 +1287,10 @@ module.exports = {
   create,
   update,
   batchUpdatePublic,
+  batchUpdateFields,
+  bulkImportRows,
   softDelete,
   findLookups,
   getStats,
+  getAnalytics,
 };

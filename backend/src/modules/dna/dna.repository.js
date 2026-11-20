@@ -11,7 +11,11 @@ function escapeLike(raw) {
 
 function applyFilters(qb, filters, { includePrivate = false } = {}) {
   if (!includePrivate) {
-    qb.where("d.is_public", true);
+    qb.where("d.is_public", true).andWhere(function () {
+      this.whereNull("d.specimen_id").orWhere(function () {
+        this.whereNull("s.deleted_at").andWhere("s.is_public", true);
+      });
+    });
   } else if (typeof filters.isPublic === "boolean") {
     qb.where("d.is_public", filters.isPublic);
   }
@@ -98,7 +102,8 @@ async function findMany(filters, { includePrivate = false } = {}) {
 
   const baseQb = knex({ d: "dna_sequences" })
     .join({ t1: "taxa" }, "d.taxon_id", "t1.taxon_id")
-    .leftJoin({ sr: "specimen_registry" }, "d.specimen_id", "sr.specimen_id");
+    .leftJoin({ sr: "specimen_registry" }, "d.specimen_id", "sr.specimen_id")
+    .leftJoin({ s: "specimens" }, "d.specimen_id", "s.specimen_id");
 
   applyFilters(baseQb, filters, { includePrivate });
 
@@ -171,6 +176,7 @@ async function findById(dnaId, { includePrivate = false } = {}) {
     .leftJoin({ t3: "taxa" }, "t2.parent_id", "t3.taxon_id")
     .leftJoin({ t4: "taxa" }, "t3.parent_id", "t4.taxon_id")
     .leftJoin({ sr: "specimen_registry" }, "d.specimen_id", "sr.specimen_id")
+    .leftJoin({ s: "specimens" }, "d.specimen_id", "s.specimen_id")
     .where("d.dna_id", dnaId)
     .select(
       "d.*",
@@ -198,7 +204,11 @@ async function findById(dnaId, { includePrivate = false } = {}) {
     );
 
   if (!includePrivate) {
-    qb.where("d.is_public", true);
+    qb.where("d.is_public", true).andWhere(function () {
+      this.whereNull("d.specimen_id").orWhere(function () {
+        this.whereNull("s.deleted_at").andWhere("s.is_public", true);
+      });
+    });
   }
 
   const row = await qb.first();
@@ -334,7 +344,9 @@ async function remove(dnaId) {
 }
 
 async function getStats({ includePrivate = false } = {}) {
-  const visSql = includePrivate ? "" : "WHERE d.is_public = true";
+  const visSql = includePrivate
+    ? ""
+    : "WHERE d.is_public = true AND (d.specimen_id IS NULL OR (s.deleted_at IS NULL AND s.is_public = true))";
   const [summaryRes, markerRes, sourceRes] = await Promise.all([
     knex.raw(`
       SELECT
@@ -345,11 +357,13 @@ async function getStats({ includePrivate = false } = {}) {
         ROUND(AVG(d.sequence_length_bp))::int AS avg_length_bp,
         ROUND(AVG(d.gc_content_pct)::numeric, 1)::float AS avg_gc_pct
       FROM dna_sequences d
+      LEFT JOIN specimens s ON d.specimen_id = s.specimen_id
       ${visSql}
     `),
     knex.raw(`
       SELECT d.gene_marker AS marker, COUNT(*)::int AS count
       FROM dna_sequences d
+      LEFT JOIN specimens s ON d.specimen_id = s.specimen_id
       ${visSql}
       GROUP BY d.gene_marker
       ORDER BY count DESC
@@ -358,6 +372,7 @@ async function getStats({ includePrivate = false } = {}) {
     knex.raw(`
       SELECT d.source_db AS source, COUNT(*)::int AS count
       FROM dna_sequences d
+      LEFT JOIN specimens s ON d.specimen_id = s.specimen_id
       ${visSql}
       GROUP BY d.source_db
       ORDER BY count DESC
