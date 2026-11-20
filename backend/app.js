@@ -10,7 +10,7 @@ const { globalRateLimiter } = require("./src/middleware/rateLimiter");
 const app = express();
 
 // Cấu hình số hop reverse proxy tin cậy (Nginx = 1 hop) để express-rate-limit lấy đúng req.ip không bị spoof X-Forwarded-For
-const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS ?? 1);
+const trustProxyHops = Number(process.env.TRUST_PROXY ?? process.env.TRUST_PROXY_HOPS ?? 1);
 if (trustProxyHops > 0) {
   app.set("trust proxy", trustProxyHops);
 }

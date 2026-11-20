@@ -39,6 +39,7 @@ async function requireAdmin(req, res, next) {
     req.admin = await verifyAndCheckBlacklist(token);
     next();
   } catch (err) {
+    if (err?.statusCode === 503) return next(err);
     next(new AppError(TOKEN_INVALID));
   }
 }
@@ -67,6 +68,7 @@ async function optionalAdmin(req, res, next) {
     req.admin = await verifyAndCheckBlacklist(token);
     next();
   } catch (err) {
+    if (err?.statusCode === 503) return next(err);
     next(new AppError(TOKEN_INVALID));
   }
 }

@@ -1,14 +1,16 @@
 const authService = require("./auth.service");
 const { logAudit } = require("../system/system.service");
 
-// SRS §3.4: refreshToken lưu HttpOnly; Secure; SameSite=Strict; Path=/api/auth.
-const REFRESH_COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "strict",
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày (ms)
-  path: "/api/auth",
-};
+// SRS §3.4: refreshToken lưu HttpOnly; Secure (khi production); SameSite=Strict; Path=/api/auth.
+function getRefreshCookieOptions(nodeEnv = process.env.NODE_ENV) {
+  return {
+    httpOnly: true,
+    secure: nodeEnv === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày (ms)
+    path: "/api/auth",
+  };
+}
 
 async function login(req, res, next) {
   try {
@@ -16,7 +18,7 @@ async function login(req, res, next) {
     const result = await authService.login(username, password);
 
     // Set refreshToken vào HttpOnly cookie — JS không đọc được
-    res.cookie("vietinsect_refresh", result.refreshTokenRaw, REFRESH_COOKIE_OPTIONS);
+    res.cookie("vietinsect_refresh", result.refreshTokenRaw, getRefreshCookieOptions());
 
     await logAudit({
       adminId: result.user.adminId,
@@ -52,7 +54,7 @@ async function refresh(req, res, next) {
     }
     const result = await authService.refresh(refreshTokenRaw);
     if (result.refreshTokenRaw) {
-      res.cookie("vietinsect_refresh", result.refreshTokenRaw, REFRESH_COOKIE_OPTIONS);
+      res.cookie("vietinsect_refresh", result.refreshTokenRaw, getRefreshCookieOptions());
     }
     res.json({
       success: true,
@@ -130,4 +132,4 @@ async function changePassword(req, res, next) {
   }
 }
 
-module.exports = { login, refresh, logout, logoutAll, changePassword };
+module.exports = { login, refresh, logout, logoutAll, changePassword, getRefreshCookieOptions };

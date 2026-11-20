@@ -1,6 +1,17 @@
 "use strict";
 
 const { getRedisState } = require("../../middleware/rateLimiter");
+const AppError = require("../../utils/appError");
+
+const REDIS_UNAVAILABLE = {
+  code: "AUTH.REDIS_UNAVAILABLE",
+  message: "Dịch vụ xác thực phiên (Redis) tạm thời gián đoạn, vui lòng thử lại sau",
+  statusCode: 503,
+};
+
+function shouldFailClosed() {
+  return process.env.REDIS_FAIL_CLOSED === "true" || process.env.NODE_ENV === "production";
+}
 
 // In-memory fallback when Redis is unavailable (e.g. unit tests without Redis)
 const localJtiBlacklist = new Map(); // jti -> expiresAtMs
@@ -19,22 +30,24 @@ async function blacklistToken(jti, ttlSeconds = 900) {
 
 async function isTokenBlacklisted(jti) {
   if (!jti) return false;
-  const localExp = localJtiBlacklist.get(jti);
-  if (localExp) {
-    if (localExp > Date.now()) return true;
-    localJtiBlacklist.delete(jti);
+  const { client, ready } = getRedisState();
+  if (!ready || !client) {
+    if (shouldFailClosed()) throw new AppError(REDIS_UNAVAILABLE);
+    const localExp = localJtiBlacklist.get(jti);
+    if (localExp) {
+      if (localExp > Date.now()) return true;
+      localJtiBlacklist.delete(jti);
+    }
+    return false;
   }
 
-  const { client, ready } = getRedisState();
-  if (ready && client) {
-    try {
-      const val = await client.get(`bl:jti:${jti}`);
-      return val === "1";
-    } catch {
-      return false;
-    }
+  try {
+    const val = await client.get(`bl:jti:${jti}`);
+    return val === "1";
+  } catch {
+    if (shouldFailClosed()) throw new AppError(REDIS_UNAVAILABLE);
+    return false;
   }
-  return false;
 }
 
 async function revokeUserTokensBefore(adminId, epochMs = Date.now()) {
