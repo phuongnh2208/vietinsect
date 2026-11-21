@@ -296,12 +296,7 @@
 - **Công:** M
 - **Trạng thái:** Đã sửa – commit `3296ea8` (Sprint C – Nhóm 2: SCR-15 Search Workbench tại `/search/advanced` & `/admin/search/advanced` với 8 facet, 5 chế độ hiển thị, URL query sync, debounce 300ms, banner 503 khi ES down, 5/5 Jest component tests PASS).
 
-### DEF-062 · High · Functional
-- **Vi phạm:** F-SR-04, SCR-16 "Query Builder trực quan: thêm/xóa điều kiện tùy ý với logic AND/OR/NOT. Hỗ trợ khoảng giá trị số (độ cao từ X đến Y, kích thước cơ thể từ A đến B) ... Admin: thêm chế độ nhập SQL trực tiếp tương tự GBIF SQL Downloads".
-- **Hiện trạng:** Trong `AdvancedSearchPage.js:50-63` (`buildApiParams`), vòng lặp `for (const r of rules)` gán phẳng `params[r.field] = r.value` nên: (1) **mệnh đề `OR` bị biến thành `AND`**, và nếu có 2 điều kiện cùng trường thì điều kiện sau ghi đè điều kiện trước; (2) **toán tử `CONTAINS` vs `EQUALS` không được gửi lên server**; (3) **mệnh đề `NOT` chỉ lọc tạm trên 25 dòng trả về ở client** (`:74-81`), làm sai số `pagination.total`; (4) **không có lọc khoảng giá trị số** (độ cao, kích thước); (5) **không có chế độ truy vấn SQL trực tiếp (chỉ đọc) cho Admin**; (6) chỉ lưu preset vào `localStorage` mà không dùng bảng `saved_filters` (`009_create_audit_and_config.js:56-64`).
-- **Kỳ vọng:** Backend đánh giá đúng cây biểu thức AND/OR/NOT + khoảng số; lưu bộ lọc vào DB; có SQL Query mode an toàn (read-only) cho Admin.
-- **Đề xuất:** Thêm endpoint `POST /api/specimens/advanced-search` nhận mảng rules `{logic, field, operator, value}` để build điều kiện Knex `andWhere/orWhere/whereNot`; bổ sung chế độ SQL read-only cho Admin.
-- **Công:** L
+\n- **Trạng thái:** Đã sửa (Sprint D – Nhóm 3: SCR-16 QueryBuilderPage + advancedSearch.service.js AND/OR/NOT/between + saved_filters + Admin Read-Only SQL mode)
 
 ### DEF-063 · High · Functional
 - **Vi phạm:** F-SR-05, SCR-18 "Vẽ polygon tự do hoặc hình chữ nhật trên bản đồ (leaflet-draw) để lọc tất cả mẫu vật có tọa độ GPS nằm trong vùng đó. Hiện số lượng mẫu trong vùng realtime khi điều chỉnh polygon".
@@ -643,12 +638,7 @@
 - **Công:** M
 - **Trạng thái:** Đã sửa – commit `a7e174b` (PostgreSQL transactional outbox `es_sync_outbox` ghi cùng transaction với specimen, worker nền `SELECT ... FOR UPDATE SKIP LOCKED` + coalesce + exponential backoff + `dead` + `logger.error`, `ADR-006`, `/api/health` + `/api/search/outbox/*`, 5/5 test tích hợp `esOutbox.sprintc.test.js` PASS)
 
-### DEF-113 · High · Functional
-- **Vi phạm:** F-SR-04, SCR-16 (Advanced Search – Query Builder hỗ trợ AND/OR/NOT, lưu/tải bộ lọc preset, mở cho Admin + User theo C-04, tab SQL chỉ dành cho Admin).
-- **Hiện trạng:** Sau khi chuẩn hóa SCR-15 (Facet Search Workbench) tại `/search` và `/admin/search`, màn hình SCR-16 Query Builder đầy đủ (AND/OR/NOT + presets + tab SQL chỉ Admin) chưa được triển khai.
-- **Kỳ vọng:** Triển khai màn hình SCR-16 riêng đáp ứng đầy đủ F-SR-04 và C-04.
-- **Công:** M
-- **Trạng thái:** Chưa đóng (ghi nhận ở Sprint C – Nhóm 2, chưa triển khai)
+ Đã sửa (Sprint D – Nhóm 3: triển khai SCR-16 tại /search/advanced & /admin/search/advanced theo C-04, tab SQL chỉ Admin)
 
 ### DEF-114 · Medium · Infra
 - **Vi phạm:** SRS §3.4 / F-SP-06 (hạ tầng reverse proxy WebSocket cho Socket.io `/socket.io`).

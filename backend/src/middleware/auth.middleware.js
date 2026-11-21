@@ -36,7 +36,17 @@ async function requireAdmin(req, res, next) {
   }
 
   try {
-    req.admin = await verifyAndCheckBlacklist(token);
+    const decoded = await verifyAndCheckBlacklist(token);
+    if (!decoded || decoded.role !== "admin" || !decoded.adminId) {
+      return next(
+        new AppError({
+          code: "AUTH.FORBIDDEN",
+          message: "Chỉ Admin mới có quyền thực hiện thao tác này",
+          statusCode: 403,
+        }),
+      );
+    }
+    req.admin = decoded;
     next();
   } catch (err) {
     if (err?.statusCode === 503) return next(err);
@@ -65,7 +75,8 @@ async function optionalAdmin(req, res, next) {
   }
 
   try {
-    req.admin = await verifyAndCheckBlacklist(token);
+    const decoded = await verifyAndCheckBlacklist(token);
+    req.admin = decoded && decoded.role === "admin" && decoded.adminId ? decoded : null;
     next();
   } catch (err) {
     if (err?.statusCode === 503) return next(err);

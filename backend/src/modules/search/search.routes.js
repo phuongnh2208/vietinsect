@@ -6,6 +6,7 @@ const router = express.Router();
 const { optionalAdmin, requireAdmin } = require("../../middleware/auth.middleware");
 const esService = require("./elasticsearch.service");
 const esOutbox = require("./esOutbox.service");
+const advancedSearch = require("./advancedSearch.service");
 
 const MAX_RESULT_WINDOW = 10000;
 
@@ -90,6 +91,80 @@ router.post("/outbox/retry-dead", requireAdmin, async (req, res, next) => {
     res.json({ success: true, data: { requeued } });
   } catch (err) {
     next(err);
+  }
+});
+
+/**
+ * POST /api/search/advanced — SCR-16 Visual Query Builder (AND/OR/NOT, khoảng số/ngày).
+ * Mở cho cả Admin và User (theo C-04); User bị ép is_public = true ở tầng SQL.
+ */
+router.post("/advanced", optionalAdmin, async (req, res, next) => {
+  try {
+    const isAdmin = Boolean(req.admin);
+    const result = await advancedSearch.executeQueryBuilder(req.body || {}, { isAdmin });
+    res.json({
+      success: true,
+      data: result.items,
+      pagination: result.pagination,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET/POST/DELETE /api/search/filters — Lưu/tải bộ lọc theo tài khoản Admin (saved_filters).
+ */
+router.get("/filters", requireAdmin, async (req, res, next) => {
+  try {
+    const items = await advancedSearch.listSavedFilters(req.admin.adminId);
+    res.json({ success: true, data: items });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/filters", requireAdmin, async (req, res, next) => {
+  try {
+    const created = await advancedSearch.createSavedFilter(req.admin.adminId, {
+      name: req.body?.name,
+      filterJson: req.body?.filterJson || req.body?.rules || {},
+    });
+    res.status(201).json({ success: true, data: created });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/filters/:id", requireAdmin, async (req, res, next) => {
+  try {
+    await advancedSearch.deleteSavedFilter(req.admin.adminId, req.params.id);
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/search/sql — Chế độ SQL trực tiếp CHỈ dành cho Admin (SCR-16, F-SR-04).
+ * User (chưa đăng nhập hoặc role !== 'admin') gọi endpoint này → 403 FORBIDDEN.
+ */
+router.post("/sql", optionalAdmin, async (req, res, next) => {
+  try {
+    if (!req.admin || req.admin.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        code: "FORBIDDEN",
+        message: "Chỉ Admin mới được phép truy cập chế độ truy vấn SQL trực tiếp",
+      });
+    }
+    const result = await advancedSearch.executeAdminSql(req.body?.sql, {
+      adminId: req.admin.adminId,
+      ipAddress: req.ip || req.socket?.remoteAddress,
+    });
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    return next(err);
   }
 });
 

@@ -19,6 +19,7 @@ import {
   BatchLabelPrintPage,
 } from "./modules/specimen/pages/SpecimenBatchPages";
 import AdvancedSearchPage from "./modules/specimen/pages/AdvancedSearchPage";
+import QueryBuilderPage from "./modules/search/pages/QueryBuilderPage";
 import OccurrenceMapPage from "./modules/map/pages/OccurrenceMapPage";
 import {
   LayerManagerPage,
@@ -45,7 +46,7 @@ const dualContextRoutes = [
   { screenId: "SCR-12", publicPath: "taxonomy", adminPath: "taxonomy", element: <TaxonomyTreePage /> },
   { screenId: "SCR-13", publicPath: "species/:slug", adminPath: "species/:slug", element: <SpeciesProfilePage /> },
   { screenId: "SCR-15", publicPath: "search", adminPath: "search", element: <AdvancedSearchPage /> },
-  { screenId: "SCR-15-alias", publicPath: "search/advanced", adminPath: "search/advanced", element: <AdvancedSearchPage /> },
+  { screenId: "SCR-16", publicPath: "search/advanced", adminPath: "search/advanced", element: <QueryBuilderPage /> },
   { screenId: "SCR-17", publicPath: "media", adminPath: "media", element: <MediaGalleryPage /> },
   { screenId: "SCR-18", publicPath: "map", adminPath: "map", element: <OccurrenceMapPage /> },
   { screenId: "SCR-20", publicPath: "dna", adminPath: "dna", element: <DnaListPage /> },
