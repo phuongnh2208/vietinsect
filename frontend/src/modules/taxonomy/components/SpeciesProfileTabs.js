@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import Icon from "../../../components/ui/Icon";
@@ -23,31 +24,76 @@ const ESRI_SATELLITE_URL =
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 
 export default function SpeciesProfileTabs({ profile }) {
+  const { t } = useTranslation();
   const isAdmin = useIsAdminContext();
   const [active, setActive] = useState(TABS[0].id);
 
+  // Screen 2: Specimens table state with search, province filter, sort, pagination
   const [specimens, setSpecimens] = useState([]);
+  const [specTotal, setSpecTotal] = useState(profile?.specimenCount || 0);
   const [specLoading, setSpecLoading] = useState(false);
+  const [specError, setSpecError] = useState(null);
+  const [specFilters, setSpecFilters] = useState({
+    q: "",
+    provinceId: "",
+    sortOrder: "desc",
+    page: 1,
+    limit: 20,
+  });
+  const [provinces, setProvinces] = useState([]);
 
   const [dnaRecords, setDnaRecords] = useState([]);
   const [dnaLoading, setDnaLoading] = useState(false);
 
   const [mapData, setMapData] = useState({ points: [], provinceClusters: [], totalMatching: 0 });
   const [mapLoading, setMapLoading] = useState(false);
-  const [basemapMode, setBasemapMode] = useState("street"); // street | satellite (SRS F-TX-05)
+  const [basemapMode, setBasemapMode] = useState("street");
+
+  useEffect(() => {
+    specimenService
+      .getLookups()
+      .then((lk) => setProvinces(lk?.provinces || []))
+      .catch(() => {});
+  }, []);
+
+  const loadSpecimens = useCallback(async () => {
+    if (!profile?.id) return;
+    setSpecLoading(true);
+    setSpecError(null);
+    try {
+      const res = await specimenService.getSpecimens({
+        taxonId: profile.id,
+        q: specFilters.q || undefined,
+        provinceId: specFilters.provinceId || undefined,
+        sortBy: "collectionDate",
+        sortOrder: specFilters.sortOrder,
+        page: specFilters.page,
+        limit: specFilters.limit,
+      });
+      setSpecimens(res.items || []);
+      if (res.pagination?.total != null) {
+        setSpecTotal(res.pagination.total);
+      }
+    } catch (err) {
+      setSpecError(err?.response?.data?.message || err?.message || "Không thể tải danh sách mẫu vật.");
+    } finally {
+      setSpecLoading(false);
+    }
+  }, [profile?.id, specFilters]);
+
+  useEffect(() => {
+    loadSpecimens();
+  }, [loadSpecimens]);
 
   useEffect(() => {
     if (!profile?.id) return;
     let cancelled = false;
 
-    async function loadRelatedData() {
-      setSpecLoading(true);
+    async function loadDnaAndMap() {
       setDnaLoading(true);
       setMapLoading(true);
-
       try {
-        const [specRes, dnaByTaxon, mapRes] = await Promise.all([
-          specimenService.getSpecimens({ taxonId: profile.id, limit: 25 }).catch(() => ({ items: [] })),
+        const [dnaByTaxon, mapRes] = await Promise.all([
           dnaService.getDnaList({ taxonId: profile.id, limit: 25 }).catch(() => ({ items: [] })),
           specimenService.getMapOccurrences({ taxonId: profile.id, limit: 500 }).catch(() => ({
             points: [],
@@ -65,193 +111,332 @@ export default function SpeciesProfileTabs({ profile }) {
         }
 
         if (!cancelled) {
-          setSpecimens(specRes.items || []);
           setDnaRecords(finalDna);
           setMapData(mapRes || { points: [], provinceClusters: [], totalMatching: 0 });
         }
       } finally {
         if (!cancelled) {
-          setSpecLoading(false);
           setDnaLoading(false);
           setMapLoading(false);
         }
       }
     }
 
-    loadRelatedData();
+    loadDnaAndMap();
     return () => {
       cancelled = true;
     };
   }, [profile?.id, profile?.scientificName]);
 
+  const notProvided = t("common.notProvided", "Chưa cung cấp");
   const specimenListUrl = isAdmin
     ? `/admin/specimens?taxonId=${profile.id}`
     : `/specimens/search?taxonId=${profile.id}`;
+  const specTotalPages = Math.max(1, Math.ceil((specTotal || 0) / specFilters.limit));
 
   return (
     <div>
-      <div className="tabs-row">
+      {/* Consistent Tab Navigation */}
+      <div className="vi-refined-tabs-row" role="tablist">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
-            className={`tab-button${active === tab.id ? " active" : ""}`}
+            role="tab"
+            aria-selected={active === tab.id}
+            className={`vi-refined-tab-btn${active === tab.id ? " active" : ""}`}
             onClick={() => setActive(tab.id)}
           >
-            <Icon name={tab.icon} size={14} /> {tab.label}
-            {tab.id === "specimens" && profile.specimenCount != null ? ` (${profile.specimenCount})` : ""}
-            {tab.id === "dna" && dnaRecords.length > 0 ? ` (${dnaRecords.length})` : ""}
+            <Icon name={tab.icon} size={15} />
+            <span>{tab.label}</span>
+            {tab.id === "specimens" && profile.specimenCount != null ? (
+              <span className="vi-tab-count-badge">
+                {(profile.specimenCount || 0).toLocaleString("vi-VN")}
+              </span>
+            ) : null}
+            {tab.id === "dna" && dnaRecords.length > 0 ? (
+              <span className="vi-tab-count-badge">{dnaRecords.length}</span>
+            ) : null}
           </button>
         ))}
       </div>
 
-      {/* TAB 1: Hình thái & Sinh thái (Preserve DOM với display: none theo Code Review D4) */}
-      <div style={{ display: active === "morphology" ? "block" : "none" }}>
-        <div className="species-tab-grid" style={{ marginBottom: 20 }}>
-          <div>
-            <h3 className="species-tab-heading">Mô tả Hình thái học (Morphology)</h3>
-            <p className="page-description">
-              {profile.morphologyDescription ||
-                `Đơn vị phân loại ${profile.scientificName} (${profile.rank}) đã được chuẩn hóa trong cơ sở dữ liệu danh pháp côn trùng Việt Nam theo quy tắc ICZN.`}
-            </p>
+      {/* SCREEN 1 — TAB 1: Balanced Two-Column Morphology & Ecology */}
+      <div
+        style={{ display: active === "morphology" ? "block" : "none" }}
+        data-testid="tab-panel-morphology"
+      >
+        <div className="vi-morph-eco-grid">
+          {/* LEFT COLUMN: Morphology & Taxonomic Identity */}
+          <div className="vi-sci-panel">
+            <h3 className="vi-sci-panel-title">
+              <Icon name="leaf" size={15} />
+              <span>Hình thái học &amp; Định danh Khoa học</span>
+            </h3>
+            <dl className="vi-sci-dl">
+              <div className="vi-sci-row">
+                <dt>Mô tả hình thái (Morphology)</dt>
+                <dd>{profile.morphologyDescription || notProvided}</dd>
+              </div>
+              <div className="vi-sci-row">
+                <dt>Tên khoa học (Scientific Name)</dt>
+                <dd>
+                  <strong>
+                    <em>{profile.scientificName}</em>
+                  </strong>{" "}
+                  {profile.scientificNameAuthorship || ""}
+                </dd>
+              </div>
+              <div className="vi-sci-row">
+                <dt>Bậc phân loại (Taxonomic Rank)</dt>
+                <dd>{profile.rank || notProvided}</dd>
+              </div>
+              <div className="vi-sci-row">
+                <dt>Tên thường gọi (Vernacular Name)</dt>
+                <dd>
+                  {profile.vernacularNameVn || profile.vernacularNameEn
+                    ? `${profile.vernacularNameVn || notProvided} / ${
+                        profile.vernacularNameEn || notProvided
+                      }`
+                    : notProvided}
+                </dd>
+              </div>
+              <div className="vi-sci-row">
+                <dt>Trạng thái danh pháp (Taxonomic Status)</dt>
+                <dd>
+                  <span className="vi-status-pill">
+                    {(profile.taxonomicStatus || "accepted").toUpperCase()}
+                  </span>
+                </dd>
+              </div>
+              <div className="vi-sci-row">
+                <dt>Tình trạng bảo tồn (IUCN Red List)</dt>
+                <dd>{profile.iucnStatus || notProvided}</dd>
+              </div>
+            </dl>
           </div>
-          <div>
-            <h3 className="species-tab-heading">Đặc điểm Sinh thái & Sinh cảnh (Ecology)</h3>
-            <p className="page-description">
-              {profile.ecologyDescription ||
-                `Ghi nhận ${profile.specimenCount || 0} tiêu bản/quan sát thực địa tại Việt Nam.`}
-            </p>
+
+          {/* RIGHT COLUMN: Ecology & Habitat */}
+          <div className="vi-sci-panel">
+            <h3 className="vi-sci-panel-title">
+              <Icon name="globe" size={15} />
+              <span>Sinh cảnh &amp; Đặc điểm Sinh thái học</span>
+            </h3>
+            <dl className="vi-sci-dl">
+              <div className="vi-sci-row">
+                <dt>Sinh cảnh (Habitat)</dt>
+                <dd>{profile.habitat || profile.distributionSummary || notProvided}</dd>
+              </div>
+              <div className="vi-sci-row">
+                <dt>Đặc điểm sinh thái (Ecological Characteristics)</dt>
+                <dd>{profile.ecologyDescription || notProvided}</dd>
+              </div>
+              <div className="vi-sci-row">
+                <dt>Giai đoạn phát triển (Life Stage)</dt>
+                <dd>{profile.lifeStage || notProvided}</dd>
+              </div>
+              <div className="vi-sci-row">
+                <dt>Cây chủ / Vật chủ (Host Plants)</dt>
+                <dd>{profile.hostPlants || notProvided}</dd>
+              </div>
+              <div className="vi-sci-row">
+                <dt>Ghi chú sinh thái (Ecological Notes)</dt>
+                <dd>{profile.economicValueDescription || notProvided}</dd>
+              </div>
+              <div className="vi-sci-row">
+                <dt>Số bản ghi mẫu vật liên kết</dt>
+                <dd>
+                  <strong>{(profile.specimenCount || 0).toLocaleString("vi-VN")}</strong> bản ghi mẫu vật
+                </dd>
+              </div>
+            </dl>
           </div>
         </div>
-
-        <table className="vi-dwc-table">
-          <tbody>
-            <tr>
-              <th>Tên khoa học chuẩn (scientificName)</th>
-              <td>
-                <strong>
-                  <em>{profile.scientificName}</em>
-                </strong>{" "}
-                {profile.scientificNameAuthorship || ""}
-              </td>
-            </tr>
-            <tr>
-              <th>Bậc phân loại (taxonRank)</th>
-              <td>{profile.rank}</td>
-            </tr>
-            <tr>
-              <th>Tên thường gọi (vernacularName)</th>
-              <td>
-                {profile.vernacularNameVn || "—"} / {profile.vernacularNameEn || "—"}
-              </td>
-            </tr>
-            <tr>
-              <th>Trạng thái danh pháp (taxonomicStatus)</th>
-              <td>{(profile.taxonomicStatus || "accepted").toUpperCase()}</td>
-            </tr>
-            <tr>
-              <th>Tình trạng bảo tồn (IUCN Red List)</th>
-              <td>{profile.iucnStatus || "NE (Chưa đánh giá)"}</td>
-            </tr>
-            <tr>
-              <th>Tổng số mẫu vật liên kết</th>
-              <td>
-                <strong>{(profile.specimenCount || 0).toLocaleString("vi-VN")}</strong> mẫu vật
-              </td>
-            </tr>
-          </tbody>
-        </table>
       </div>
 
-      {/* TAB 2: Danh sách Mẫu vật thuộc Loài (F-TX-05) */}
-      <div style={{ display: active === "specimens" ? "block" : "none" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 10,
-            marginBottom: 14,
-          }}
-        >
-          <span className="page-description" style={{ margin: 0 }}>
-            Hiển thị <strong>{specimens.length}</strong> /{" "}
-            <strong>{(profile.specimenCount || 0).toLocaleString("vi-VN")}</strong> mẫu vật thuộc{" "}
-            <em>{profile.scientificName}</em>
-          </span>
-          <Link to={specimenListUrl} className="button button-sm button-primary">
-            Xem toàn bộ {(profile.specimenCount || 0).toLocaleString("vi-VN")} mẫu vật →
-          </Link>
+      {/* SCREEN 2 — TAB 2: Professional Scientific Specimen Data Table */}
+      <div
+        style={{ display: active === "specimens" ? "block" : "none" }}
+        data-testid="tab-panel-specimens"
+      >
+        {/* Table Controls Toolbar */}
+        <div className="vi-spec-table-toolbar">
+          <div className="vi-spec-table-summary">
+            Tổng số: <strong>{(specTotal || 0).toLocaleString("vi-VN")}</strong> mẫu vật · Đang hiển
+            thị: <strong>{specimens.length}</strong> bản ghi
+          </div>
+
+          <div className="vi-spec-table-controls">
+            <input
+              type="text"
+              className="vi-compact-input"
+              aria-label="Tìm trong mẫu vật của loài"
+              placeholder="Tìm mã mẫu / địa điểm..."
+              value={specFilters.q}
+              onChange={(e) =>
+                setSpecFilters((p) => ({ ...p, q: e.target.value, page: 1 }))
+              }
+            />
+
+            <select
+              className="vi-compact-select"
+              aria-label="Lọc theo tỉnh thành"
+              value={specFilters.provinceId}
+              onChange={(e) =>
+                setSpecFilters((p) => ({ ...p, provinceId: e.target.value, page: 1 }))
+              }
+            >
+              <option value="">Tất cả tỉnh/thành</option>
+              {provinces.map((prov) => (
+                <option key={prov.id} value={prov.id}>
+                  {prov.nameVn}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="vi-compact-select"
+              aria-label="Sắp xếp theo ngày thu mẫu"
+              value={specFilters.sortOrder}
+              onChange={(e) =>
+                setSpecFilters((p) => ({ ...p, sortOrder: e.target.value, page: 1 }))
+              }
+            >
+              <option value="desc">Ngày thu: Mới nhất</option>
+              <option value="asc">Ngày thu: Cũ nhất</option>
+            </select>
+
+            <Link to={specimenListUrl} className="button button-sm button-primary">
+              Xem toàn bộ {(profile.specimenCount || 0).toLocaleString("vi-VN")} mẫu vật →
+            </Link>
+          </div>
         </div>
 
+        {/* Table Content / Loading / Error / Empty States */}
         {specLoading ? (
-          <LoadingState label="Đang tải danh sách mẫu vật của loài..." />
+          <LoadingState label="Đang tải danh sách mẫu vật thuộc loài..." />
+        ) : specError ? (
+          <EmptyState
+            icon="alert"
+            title="Lỗi tải danh sách mẫu vật"
+            description={specError}
+            action={
+              <button type="button" className="button button-sm button-primary" onClick={loadSpecimens}>
+                Thử lại
+              </button>
+            }
+          />
         ) : specimens.length > 0 ? (
-          <div style={{ overflowX: "auto" }}>
-            <table className="vi-dwc-table">
-              <thead>
-                <tr>
-                  <th>Mã mẫu vật</th>
-                  <th>Tên khoa học</th>
-                  <th>Tỉnh / Thành phố</th>
-                  <th>Ngày thu mẫu</th>
-                  <th>Tọa độ WGS84</th>
-                  <th>Hồ sơ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {specimens.map((sp) => (
-                  <tr key={sp.id}>
-                    <td style={{ fontFamily: "monospace", fontWeight: 700 }}>{sp.specimenCode}</td>
-                    <td>
-                      <em>{sp.scientificName}</em>
-                    </td>
-                    <td>{sp.provinceNameVn || sp.localityDetail || "—"}</td>
-                    <td>{sp.collectionDate || "—"}</td>
-                    <td style={{ fontFamily: "monospace" }}>
-                      {sp.latitude != null && sp.longitude != null
-                        ? `${sp.latitude.toFixed(4)}°N, ${sp.longitude.toFixed(4)}°E`
-                        : "—"}
-                    </td>
-                    <td>
-                      <Link
-                        to={isAdmin ? `/admin/specimens/${sp.id}` : `/specimens/${sp.id}`}
-                        className="dna-ext-link"
-                      >
-                        Chi tiết →
-                      </Link>
-                    </td>
+          <>
+            <div className="vi-table-scroll-wrap">
+              <table className="vi-scientific-data-table" data-testid="species-specimens-table">
+                <thead>
+                  <tr>
+                    <th>Mã mẫu vật</th>
+                    <th>Tên khoa học</th>
+                    <th>Tỉnh / Thành phố</th>
+                    <th>Ngày thu mẫu</th>
+                    <th>Tọa độ (WGS84)</th>
+                    <th>Trạng thái bản ghi</th>
+                    <th style={{ textAlign: "right" }}>Thao tác</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {specimens.map((sp) => {
+                    const detailUrl = isAdmin ? `/admin/specimens/${sp.id}` : `/specimens/${sp.id}`;
+                    const basisLabel =
+                      sp.basisOfRecord === "PRESERVED_SPECIMEN"
+                        ? "Tiêu bản bảo tàng"
+                        : sp.basisOfRecord === "HUMAN_OBSERVATION"
+                        ? "Quan sát thực địa"
+                        : sp.basisOfRecord || "Tiêu bản";
+                    return (
+                      <tr key={sp.id}>
+                        <td className="mono">
+                          <Link to={detailUrl} className="vi-code-link">
+                            {sp.specimenCode || `#${sp.id}`}
+                          </Link>
+                        </td>
+                        <td>
+                          <em>{sp.scientificName || profile.scientificName}</em>
+                        </td>
+                        <td>{sp.provinceNameVn || sp.localityDetail || notProvided}</td>
+                        <td className="mono">
+                          {sp.collectionDate ? String(sp.collectionDate).slice(0, 10) : notProvided}
+                        </td>
+                        <td className="mono">
+                          {sp.latitude != null && sp.longitude != null
+                            ? `${Number(sp.latitude).toFixed(4)}°N, ${Number(sp.longitude).toFixed(
+                                4
+                              )}°E`
+                            : notProvided}
+                        </td>
+                        <td>
+                          <span className="vi-record-status-chip">{basisLabel}</span>
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          <Link to={detailUrl} className="vi-table-action-link">
+                            Xem chi tiết →
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {specTotalPages > 1 && (
+              <div className="vi-compact-pagination">
+                <span>
+                  Trang <strong>{specFilters.page}</strong> / <strong>{specTotalPages}</strong>
+                </span>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    type="button"
+                    className="button button-sm button-ghost"
+                    disabled={specFilters.page <= 1}
+                    onClick={() => setSpecFilters((p) => ({ ...p, page: p.page - 1 }))}
+                  >
+                    ← Trang trước
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-sm button-ghost"
+                    disabled={specFilters.page >= specTotalPages}
+                    onClick={() => setSpecFilters((p) => ({ ...p, page: p.page + 1 }))}
+                  >
+                    Trang sau →
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <EmptyState
             icon="bug"
-            title="Chưa có mẫu vật"
-            description="Chưa ghi nhận mẫu vật nào thuộc đơn vị phân loại này."
+            title="Không tìm thấy mẫu vật phù hợp"
+            description="Chưa ghi nhận mẫu vật nào khớp với bộ lọc hiện tại cho loài này."
           />
         )}
       </div>
 
-      {/* TAB 3: Chuỗi Mã vạch DNA & GenBank / BOLD (F-TX-05, F-DN-03, F-DN-05) */}
+      {/* TAB 3: DNA & GenBank / BOLD */}
       <div style={{ display: active === "dna" ? "block" : "none" }}>
         {dnaLoading ? (
           <LoadingState label="Đang tải trình tự mã vạch DNA của loài..." />
         ) : dnaRecords.length > 0 ? (
-          <div style={{ overflowX: "auto" }}>
-            <table className="vi-dwc-table">
+          <div className="vi-table-scroll-wrap">
+            <table className="vi-scientific-data-table">
               <thead>
                 <tr>
                   <th>Gen Marker</th>
                   <th>GenBank Accession (NCBI)</th>
-                  <th>BOLD Systems (F-DN-03)</th>
+                  <th>BOLD Systems</th>
                   <th>Độ dài (bp)</th>
                   <th>Tỷ lệ G-C</th>
                   <th>Tác giả công bố</th>
-                  <th>Chuỗi FASTA</th>
+                  <th style={{ textAlign: "right" }}>Chuỗi FASTA</th>
                 </tr>
               </thead>
               <tbody>
@@ -260,7 +445,7 @@ export default function SpeciesProfileTabs({ profile }) {
                     <td>
                       <span className="dna-marker-badge">{seq.geneMarker || "COI"}</span>
                     </td>
-                    <td style={{ fontFamily: "monospace", fontWeight: 700 }}>
+                    <td className="mono" style={{ fontWeight: 700 }}>
                       {seq.genbankAccession ? (
                         <a
                           href={`https://www.ncbi.nlm.nih.gov/nuccore/${encodeURIComponent(
@@ -289,18 +474,16 @@ export default function SpeciesProfileTabs({ profile }) {
                           BOLD: {seq.boldProcessId || seq.binUri} ↗
                         </a>
                       ) : (
-                        "—"
+                        notProvided
                       )}
                     </td>
-                    <td style={{ fontFamily: "monospace" }}>{seq.sequenceLengthBp || "—"} bp</td>
-                    <td style={{ fontFamily: "monospace" }}>
-                      {seq.gcContentPct != null ? `${seq.gcContentPct}%` : "—"}
-                    </td>
+                    <td className="mono">{seq.sequenceLengthBp || "—"} bp</td>
+                    <td className="mono">{seq.gcContentPct != null ? `${seq.gcContentPct}%` : "—"}</td>
                     <td>{seq.authorName || "INSDC"}</td>
-                    <td>
+                    <td style={{ textAlign: "right" }}>
                       <Link
                         to={isAdmin ? `/admin/dna/${seq.id}/fasta` : `/dna/${seq.id}/fasta`}
-                        className="button button-sm button-primary"
+                        className="vi-table-action-link"
                       >
                         Xem FASTA →
                       </Link>
@@ -316,10 +499,7 @@ export default function SpeciesProfileTabs({ profile }) {
             title="Chưa có trình tự DNA riêng cho loài này"
             description={`Chưa ghi nhận trình tự COI / GenBank trực tiếp cho ${profile.scientificName}.`}
             action={
-              <Link
-                to={isAdmin ? "/admin/dna" : "/dna"}
-                className="button button-sm button-ghost"
-              >
+              <Link to={isAdmin ? "/admin/dna" : "/dna"} className="button button-sm button-ghost">
                 Tra cứu Kho dữ liệu Phân tử DNA →
               </Link>
             }
@@ -327,7 +507,7 @@ export default function SpeciesProfileTabs({ profile }) {
         )}
       </div>
 
-      {/* TAB 4: Hoạt tính Sinh/Hóa học (F-TX-07) */}
+      {/* TAB 4: Biochemical Activity */}
       <div style={{ display: active === "activity" ? "block" : "none" }}>
         {profile.bioactivity && profile.bioactivity.length > 0 ? (
           <div className="placeholder-list">
@@ -338,7 +518,7 @@ export default function SpeciesProfileTabs({ profile }) {
                     {record.activityType}
                     {record.activityLevel ? ` · ${record.activityLevel}` : ""}
                   </strong>
-                  <span>{record.description || "Không có mô tả chi tiết."}</span>
+                  <span>{record.description || notProvided}</span>
                   {record.referenceTitle ? (
                     <span>
                       Tài liệu: {record.referenceTitle}
@@ -353,24 +533,15 @@ export default function SpeciesProfileTabs({ profile }) {
           <EmptyState
             icon="sparkles"
             title="Chưa có dữ liệu hoạt tính"
-            description="Hoạt tính sinh/hóa học của loài sẽ hiển thị tại đây khi được bổ sung (F-TX-07)."
+            description="Hoạt tính sinh/hóa học của loài sẽ hiển thị tại đây khi được bổ sung."
           />
         )}
       </div>
 
-      {/* TAB 5: Bản đồ Phân bố Không gian Leaflet + Ảnh Vệ tinh (F-TX-05) */}
+      {/* TAB 5: Spatial Distribution */}
       <div style={{ display: active === "distribution" ? "block" : "none" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 10,
-            marginBottom: 12,
-          }}
-        >
-          <span className="page-description" style={{ margin: 0 }}>
+        <div className="vi-spec-table-toolbar">
+          <span className="vi-spec-table-summary">
             Ghi nhận <strong>{mapData.points?.length || 0}</strong> tọa độ phân bố GPS của{" "}
             <em>{profile.scientificName}</em> tại Việt Nam.
           </span>
@@ -408,7 +579,7 @@ export default function SpeciesProfileTabs({ profile }) {
         {mapLoading ? (
           <LoadingState label="Đang tải bản đồ phân bố không gian..." />
         ) : active === "distribution" ? (
-          <div style={{ height: 420, border: "1px solid #111111" }}>
+          <div style={{ height: 420, border: "1px solid #DCE3E8" }}>
             <MapContainer
               center={[16.2, 106.5]}
               zoom={5}
@@ -438,8 +609,8 @@ export default function SpeciesProfileTabs({ profile }) {
                         <em>{pt.scientificName}</em>
                       </strong>
                       <div>Mã mẫu: {pt.code}</div>
-                      <div>Tỉnh/Thành: {pt.provinceNameVn || "—"}</div>
-                      <div>Ngày thu: {pt.collectionDate || "—"}</div>
+                      <div>Tỉnh/Thành: {pt.provinceNameVn || notProvided}</div>
+                      <div>Ngày thu: {pt.collectionDate || notProvided}</div>
                       <div style={{ marginTop: 4 }}>
                         <Link to={isAdmin ? `/admin/specimens/${pt.id}` : `/specimens/${pt.id}`}>
                           Xem hồ sơ mẫu vật →

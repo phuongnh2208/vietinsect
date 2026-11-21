@@ -2934,14 +2934,14 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   gap: 6px;
 }
-.taxonomy-node {
+.taxonomy-chain .taxonomy-node {
   display: flex;
   flex-direction: column;
   padding: 4px 8px;
   background: #F8FAF9;
   border: 1px solid #E2E8F0;
 }
-.taxonomy-node.is-current {
+.taxonomy-chain .taxonomy-node.is-current {
   background: #EEF6EE;
   border-color: #2E7D32;
 }
@@ -4071,3 +4071,1010 @@ a.taxonomy-node-name:hover {
 }
 
 
+
+
+/* ==========================================================================
+   GLOBAL UI/UX REFINEMENT — 5 SCIENTIFIC SCREENS (SPECIES, SPECIMENS, TAXONOMY, IMAGE MODAL, MEDIA)
+   ========================================================================== */
+
+/* Shared Compact Scientific Tokens & Controls */
+.vi-compact-input,
+.vi-compact-select {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #DCE3E8;
+  background: #FFFFFF;
+  color: #171717;
+  font-size: 12.5px;
+  border-radius: 3px;
+}
+.vi-compact-input:focus,
+.vi-compact-select:focus {
+  outline: none;
+  border-color: #237A35;
+}
+.vi-rank-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #103B25;
+  color: #FFFFFF;
+  border-radius: 2px;
+}
+.vi-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  background: #E8F5E9;
+  color: #237A35;
+  border: 1px solid #A5D6A7;
+  border-radius: 2px;
+}
+.vi-iucn-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  font-size: 10.5px;
+  font-weight: 800;
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #F59E0B;
+  border-radius: 2px;
+}
+
+/* SCREEN 1: Species Detail Page */
+.vi-species-top-nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.vi-tax-breadcrumb-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748B;
+}
+.vi-tax-crumb-link {
+  color: #237A35;
+  font-weight: 700;
+  text-decoration: none;
+}
+.vi-tax-crumb-link:hover {
+  text-decoration: underline;
+}
+.vi-tax-crumb-sep {
+  color: #CBD5E1;
+}
+.vi-tax-crumb-badge {
+  background: #F8FAF9;
+  border: 1px solid #DCE3E8;
+  padding: 1px 6px;
+  font-size: 11.5px;
+  color: #171717;
+}
+.vi-tax-crumb-badge small {
+  color: #64748B;
+  font-weight: 600;
+}
+
+.vi-species-compact-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  border: 1px solid #DCE3E8;
+  background: #FFFFFF;
+}
+.vi-species-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.vi-species-primary-title {
+  font-size: clamp(22px, 2.4vw, 30px);
+  font-weight: 800;
+  color: #171717;
+  margin: 2px 0 4px;
+  line-height: 1.2;
+}
+.vi-species-authorship {
+  font-size: 15px;
+  font-weight: 500;
+  color: #64748B;
+}
+.vi-species-vernacular-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #334155;
+}
+.vi-dot-sep {
+  color: #94A3B8;
+}
+.vi-species-header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.vi-species-tabs-card {
+  padding: 0 18px 18px;
+  border: 1px solid #DCE3E8;
+  background: #FFFFFF;
+}
+
+/* Refined Tab Bar */
+.vi-refined-tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1px solid #DCE3E8;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.vi-refined-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 42px;
+  padding: 0 14px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #64748B;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+.vi-refined-tab-btn:hover {
+  color: #171717;
+  background: #F8FAF9;
+}
+.vi-refined-tab-btn.active {
+  color: #103B25;
+  border-bottom-color: #237A35;
+  background: #F8FAF9;
+}
+.vi-tab-count-badge {
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #E2E8F0;
+  color: #1E293B;
+  border-radius: 10px;
+}
+.vi-refined-tab-btn.active .vi-tab-count-badge {
+  background: #237A35;
+  color: #FFFFFF;
+}
+
+/* Balanced Two-Column Morphology & Ecology Grid */
+.vi-morph-eco-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+.vi-sci-panel {
+  border: 1px solid #DCE3E8;
+  background: #F8FAF9;
+  padding: 14px 16px;
+}
+.vi-sci-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #103B25;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 0 0 10px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #DCE3E8;
+}
+.vi-sci-dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+.vi-sci-row {
+  display: grid;
+  grid-template-columns: 42% 58%;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid #E2E8F0;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.vi-sci-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.vi-sci-row dt {
+  color: #64748B;
+  font-weight: 600;
+}
+.vi-sci-row dd {
+  margin: 0;
+  color: #171717;
+  word-break: break-word;
+}
+
+/* SCREEN 2: Scientific Data Table */
+.vi-spec-table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #F8FAF9;
+  border: 1px solid #DCE3E8;
+}
+.vi-spec-table-summary {
+  font-size: 12.5px;
+  color: #334155;
+}
+.vi-spec-table-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.vi-table-scroll-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #DCE3E8;
+}
+.vi-scientific-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  background: #FFFFFF;
+}
+.vi-scientific-data-table thead th {
+  background: #F8FAF9;
+  color: #103B25;
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 9px 12px;
+  border-bottom: 1px solid #DCE3E8;
+  text-align: left;
+  white-space: nowrap;
+}
+.vi-scientific-data-table tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #EEF2F6;
+  color: #171717;
+  vertical-align: middle;
+}
+.vi-scientific-data-table tbody tr:hover {
+  background: #F4F9F5;
+}
+.vi-record-status-chip {
+  display: inline-block;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #F1F5F9;
+  color: #334155;
+  border: 1px solid #CBD5E1;
+  border-radius: 2px;
+}
+.vi-table-action-link {
+  color: #237A35;
+  font-weight: 700;
+  font-size: 12px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.vi-table-action-link:hover {
+  text-decoration: underline;
+}
+.vi-compact-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #64748B;
+}
+
+/* SCREEN 3: Compact Two-Panel Taxonomy Tree */
+.vi-compact-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.vi-compact-h1 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #171717;
+  margin: 2px 0;
+}
+.vi-compact-subtitle {
+  font-size: 12.5px;
+  color: #64748B;
+  margin: 0;
+}
+.vi-taxonomy-two-panel {
+  display: grid;
+  grid-template-columns: 62% calc(38% - 14px);
+  gap: 14px;
+  align-items: start;
+}
+.vi-taxonomy-explorer-left {
+  border: 1px solid #DCE3E8;
+  background: #FFFFFF;
+  padding: 12px;
+}
+.vi-taxonomy-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.vi-taxonomy-search-box {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #DCE3E8;
+  background: #F8FAF9;
+}
+.vi-taxonomy-search-box input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  font-size: 12.5px;
+  color: #171717;
+}
+.vi-taxonomy-search-box input:focus {
+  outline: none;
+}
+.vi-clear-search-btn {
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  color: #64748B;
+  cursor: pointer;
+}
+.vi-search-spinner {
+  font-size: 11px;
+  color: #237A35;
+  white-space: nowrap;
+}
+.vi-taxonomy-suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: #FFFFFF;
+  border: 1px solid #103B25;
+  max-height: 260px;
+  overflow-y: auto;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+.vi-taxonomy-suggestion-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 10px;
+  border: none;
+  border-bottom: 1px solid #F1F5F9;
+  background: #FFFFFF;
+  font-size: 12.5px;
+  cursor: pointer;
+  text-align: left;
+}
+.vi-taxonomy-suggestion-row:hover {
+  background: #F0FDF4;
+}
+
+.vi-tree-root-ul,
+.vi-tree-children-ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.vi-tree-root-ul {
+  max-height: 70vh;
+  overflow-y: auto;
+  border-top: 1px solid #EEF2F6;
+  padding-top: 4px;
+}
+.vi-tree-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 3px 8px;
+  border-bottom: 1px solid #F8FAFC;
+  cursor: pointer;
+  font-size: 12.5px;
+  transition: background 120ms ease;
+}
+.vi-tree-row:hover {
+  background: #F4F9F5;
+}
+.vi-tree-row.is-selected {
+  background: #E8F5E9;
+  border-left: 3px solid #237A35;
+}
+.vi-tree-row.is-rank-match {
+  background: #FEFCE8;
+}
+.vi-tree-toggle-btn {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  padding: 0;
+}
+.vi-tree-toggle-spacer {
+  width: 20px;
+  display: inline-block;
+}
+.vi-tree-rank-badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: #E2E8F0;
+  color: #334155;
+  letter-spacing: 0.04em;
+}
+.vi-tree-rank-badge.rank-order {
+  background: #DCFCE7;
+  color: #166534;
+}
+.vi-tree-rank-badge.rank-family {
+  background: #E0F2FE;
+  color: #075985;
+}
+.vi-tree-rank-badge.rank-genus,
+.vi-tree-rank-badge.rank-species {
+  background: #FEF3C7;
+  color: #92400E;
+}
+.vi-tree-sci-name {
+  color: #171717;
+  font-size: 13px;
+}
+.vi-tree-common-name {
+  color: #64748B;
+  font-size: 12px;
+}
+.vi-tree-metrics {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.vi-tree-child-pill {
+  font-size: 11px;
+  color: #64748B;
+}
+.vi-tree-spec-pill {
+  font-size: 11px;
+  font-weight: 700;
+  color: #237A35;
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  padding: 0 6px;
+  border-radius: 2px;
+}
+.vi-tree-loading-row {
+  font-size: 11.5px;
+  color: #64748B;
+  padding-block: 4px;
+}
+
+.vi-taxonomy-detail-panel {
+  border: 1px solid #DCE3E8;
+  background: #FFFFFF;
+  padding: 16px;
+  position: sticky;
+  top: 12px;
+}
+.vi-tax-detail-header {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.vi-tax-detail-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #171717;
+  margin: 0;
+}
+.vi-tax-detail-author {
+  font-size: 12.5px;
+  color: #64748B;
+  margin-top: 2px;
+}
+.vi-tax-detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* SCREEN 4: Specimen Image Viewer Modal (63% stage / 37% metadata) */
+.vi-img-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.vi-img-modal-container {
+  width: min(1200px, 95vw);
+  max-height: 90vh;
+  background: #FFFFFF;
+  border: 1px solid #DCE3E8;
+  display: grid;
+  grid-template-columns: 63% 37%;
+  overflow: hidden;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.28);
+}
+.vi-img-modal-stage {
+  position: relative;
+  background: #1E2421;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 440px;
+  max-height: 90vh;
+  overflow: hidden;
+}
+.vi-img-modal-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  z-index: 2;
+}
+.vi-img-modal-counter,
+.vi-img-modal-shot-badge {
+  background: rgba(255, 255, 255, 0.14);
+  color: #F8FAFC;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 2px;
+}
+.vi-img-modal-canvas {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 44px;
+  overflow: auto;
+}
+.vi-img-modal-photo {
+  max-width: 100%;
+  max-height: 72vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  transition: transform 150ms ease;
+}
+.vi-img-modal-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #94A3B8;
+  font-size: 13px;
+}
+.vi-img-modal-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(15, 23, 42, 0.55);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.vi-img-modal-nav.prev {
+  left: 10px;
+}
+.vi-img-modal-nav.next {
+  right: 10px;
+}
+.vi-img-modal-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(15, 23, 42, 0.5);
+  z-index: 2;
+}
+.vi-img-ctrl-btn {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 9px;
+  cursor: pointer;
+}
+.vi-img-zoom-label {
+  color: #E2E8F0;
+  font-size: 11.5px;
+  font-family: monospace;
+  min-width: 44px;
+  text-align: center;
+}
+.vi-img-modal-meta {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #FFFFFF;
+  border-left: 1px solid #DCE3E8;
+}
+.vi-img-modal-meta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #DCE3E8;
+}
+.vi-img-modal-title {
+  font-size: 19px;
+  font-weight: 800;
+  color: #171717;
+  margin: 0;
+}
+.vi-img-meta-dl {
+  margin: 10px 0;
+  display: flex;
+  flex-direction: column;
+}
+.vi-img-meta-row {
+  display: grid;
+  grid-template-columns: 40% 60%;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #F1F5F9;
+  font-size: 12px;
+}
+.vi-img-meta-row dt {
+  color: #64748B;
+  font-weight: 600;
+}
+.vi-img-meta-row dd {
+  margin: 0;
+  color: #171717;
+  word-break: break-word;
+}
+.vi-img-modal-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #DCE3E8;
+}
+
+/* SCREEN 5: Media Library — Above-the-Fold Gallery Priority */
+.vi-media-page-compact {
+  padding-top: 10px !important;
+}
+.vi-media-compact-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #DCE3E8;
+}
+.vi-media-compact-h1 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #171717;
+  margin: 0;
+  line-height: 1.25;
+}
+.vi-media-compact-desc {
+  font-size: 12px;
+  color: #64748B;
+  margin: 2px 0 0;
+}
+.vi-media-inline-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.vi-inline-stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #F8FAF9;
+  border: 1px solid #DCE3E8;
+  font-size: 12px;
+}
+.vi-inline-stat-label {
+  color: #64748B;
+}
+.vi-inline-stat-val {
+  color: #103B25;
+  font-weight: 800;
+}
+
+.vi-media-sticky-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  background: #FFFFFF;
+  border: 1px solid #DCE3E8;
+  padding: 7px 10px;
+  margin-bottom: 12px;
+}
+.vi-media-toolbar-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.vi-media-search-input-wrap {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #DCE3E8;
+  background: #F8FAF9;
+}
+.vi-media-search-input-wrap input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  font-size: 12.5px;
+  color: #171717;
+}
+.vi-media-search-input-wrap input:focus {
+  outline: none;
+}
+.vi-media-adv-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 7px;
+  margin-top: 7px;
+  border-top: 1px solid #EEF2F6;
+}
+.vi-compact-check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+
+.vi-media-grid-refined {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (min-width: 1550px) {
+  .vi-media-grid-refined {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+.vi-media-card-refined {
+  border: 1px solid #DCE3E8;
+  background: #FFFFFF;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.vi-media-photo-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #F1F5F3;
+  overflow: hidden;
+  cursor: pointer;
+}
+.vi-media-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 220ms ease;
+}
+.vi-media-card-refined:hover .vi-media-photo-img {
+  transform: scale(1.03);
+}
+.vi-media-shot-chip {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: rgba(16, 59, 37, 0.82);
+  color: #FFFFFF;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+.vi-media-hover-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 59, 37, 0.35);
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+.vi-media-photo-box:hover .vi-media-hover-overlay {
+  opacity: 1;
+}
+.vi-media-broken-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #64748B;
+  font-size: 11.5px;
+}
+.vi-media-card-caption {
+  padding: 8px 10px;
+  border-top: 1px solid #EEF2F6;
+}
+.vi-media-card-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+.vi-media-sci-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #171717;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vi-media-order-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.vi-media-card-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 11.5px;
+}
+.vi-media-prov-text {
+  color: #64748B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vi-media-del-btn {
+  border: none;
+  background: transparent;
+  color: #B91C1C;
+  cursor: pointer;
+  padding: 2px;
+}
+.vi-media-skeleton-card {
+  border: 1px solid #DCE3E8;
+  padding: 8px;
+}
+.vi-media-skeleton-thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #E2E8F0;
+}
+.vi-media-skeleton-lines {
+  height: 28px;
+  margin-top: 8px;
+  background: #F1F5F9;
+}
+
+/* Responsive Breakpoints (1280px, 768px, 390px) */
+@media (max-width: 1100px) {
+  .vi-media-grid-refined {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 860px) {
+  .vi-morph-eco-grid,
+  .vi-taxonomy-two-panel,
+  .vi-img-modal-container {
+    grid-template-columns: 1fr;
+  }
+  .vi-img-modal-stage {
+    min-height: 280px;
+    max-height: 48vh;
+  }
+  .vi-img-modal-meta {
+    border-left: none;
+    border-top: 1px solid #DCE3E8;
+    max-height: 42vh;
+  }
+  .vi-media-grid-refined {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .vi-media-grid-refined {
+    grid-template-columns: 1fr;
+  }
+  .vi-sci-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

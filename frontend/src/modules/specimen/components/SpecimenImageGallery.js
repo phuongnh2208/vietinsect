@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Icon from "../../../components/ui/Icon";
+import SpecimenImageViewerModal from "../../media/components/SpecimenImageViewerModal";
 
 export default function SpecimenImageGallery({
   images = [],
@@ -173,63 +174,17 @@ export default function SpecimenImageGallery({
         </div>
       )}
 
-      {/* Lightbox Modal */}
-      {lightboxOpen && currentImg && (
-        <div className="vi-lightbox-backdrop" onClick={() => setLightboxOpen(false)}>
-          <div className="vi-lightbox-content" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className="lightbox-close-btn"
-              onClick={() => setLightboxOpen(false)}
-              aria-label="Đóng"
-            >
-              <Icon name="close" size={20} />
-            </button>
-
-            {currentList.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  className="lightbox-nav-btn prev"
-                  onClick={() =>
-                    setSelectedIdx(
-                      (prev) => (prev - 1 + currentList.length) % currentList.length,
-                    )
-                  }
-                  aria-label="Ảnh trước"
-                >
-                  <Icon name="chevron-left" size={24} />
-                </button>
-                <button
-                  type="button"
-                  className="lightbox-nav-btn next"
-                  onClick={() => setSelectedIdx((prev) => (prev + 1) % currentList.length)}
-                  aria-label="Ảnh tiếp theo"
-                >
-                  <Icon name="chevron-right" size={24} />
-                </button>
-              </>
-            )}
-
-            <img
-              src={currentImg.url}
-              alt={scientificName}
-              className="lightbox-img"
-            />
-
-            <div className="lightbox-caption">
-              <strong><em>{scientificName}</em></strong>
-              {currentImg.attribution && <span> · {currentImg.attribution}</span>}
-              {currentImg.licenseCode && (
-                <span className="lightbox-license"> ({currentImg.licenseCode.toUpperCase()})</span>
-              )}
-              <span className="lightbox-counter">
-                {selectedIdx + 1} / {currentList.length}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Screen 4: Unified Scientific Image Viewer Modal */}
+      <SpecimenImageViewerModal
+        open={lightboxOpen && Boolean(currentImg)}
+        items={currentList.map((img) => ({
+          ...img,
+          scientificName: img.referenceScientificName || scientificName,
+        }))}
+        currentIndex={selectedIdx}
+        onIndexChange={setSelectedIdx}
+        onClose={() => setLightboxOpen(false)}
+      />
     </div>
   );
 }

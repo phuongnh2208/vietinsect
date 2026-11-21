@@ -14,7 +14,7 @@ export default function SpeciesProfilePage() {
   const { t } = useTranslation();
   const isAdmin = useIsAdminContext();
   const navigate = useNavigate();
-  const [status, setStatus] = useState("loading"); // loading | success | error
+  const [status, setStatus] = useState("loading");
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -42,7 +42,7 @@ export default function SpeciesProfilePage() {
         if (!cancelled) {
           setError(
             err.response?.status === 404
-              ? t("taxonomy.errorNotFound")
+              ? t("taxonomy.errorNotFound", "Không tìm thấy hồ sơ loài yêu cầu.")
               : err.response?.data?.message || err.message
           );
           setStatus("error");
@@ -56,7 +56,7 @@ export default function SpeciesProfilePage() {
     };
   }, [slug, retryCount, t]);
 
-  if (status === "loading") {
+  if (status === "loading" || !profile) {
     return (
       <div className="page-container page-content vi-page-enter">
         <div className="card panel">
@@ -95,72 +95,100 @@ export default function SpeciesProfilePage() {
     );
   }
 
-  return (
-    <div className="page-container page-content vi-page-enter">
-      {/* Top Back & Breadcrumb Bar */}
-      <div className="vi-header-nav-row" style={{ marginBottom: 14 }}>
-        <div className="vi-header-nav-left">
-          <button
-            type="button"
-            className="vi-back-page-btn"
-            onClick={handleGoBack}
-            title="Quay lại trang trước"
-          >
-            <Icon name="chevron-left" size={15} />
-            <span>Quay lại</span>
-          </button>
+  const taxBreadcrumbs = [
+    { rank: "Kingdom", name: profile.kingdomName || "Animalia" },
+    { rank: "Phylum", name: profile.phylumName || "Arthropoda" },
+    { rank: "Class", name: profile.className || "Insecta" },
+    profile.orderName && { rank: "Order", name: profile.orderName },
+    profile.familyName && { rank: "Family", name: profile.familyName },
+    profile.genusName && { rank: "Genus", name: profile.genusName, italic: true },
+  ].filter(Boolean);
 
-          <nav className="vi-specimen-breadcrumb" aria-label="Breadcrumb">
-            <Link to={isAdmin ? "/admin/dashboard" : "/"}>Trang chủ</Link>
-            <Icon name="chevron-right" size={12} />
-            <Link to={isAdmin ? "/admin/taxonomy" : "/taxonomy"}>
-              Cây phân loại học
-            </Link>
-            <Icon name="chevron-right" size={12} />
-            <span className="breadcrumb-current">
-              <em>{profile.scientificName}</em>
-            </span>
-          </nav>
-        </div>
+  return (
+    <div className="page-container page-content vi-page-enter" data-testid="species-profile-page">
+      {/* Compact Breadcrumb & Taxonomic Classification Row */}
+      <div className="vi-species-top-nav">
+        <button
+          type="button"
+          className="vi-back-page-btn"
+          onClick={handleGoBack}
+          title="Quay lại trang trước"
+        >
+          <Icon name="chevron-left" size={14} />
+          <span>Quay lại</span>
+        </button>
+
+        <nav className="vi-tax-breadcrumb-strip" aria-label="Taxonomic hierarchy">
+          <Link to={isAdmin ? "/admin/taxonomy" : "/taxonomy"} className="vi-tax-crumb-link">
+            Cây phân loại
+          </Link>
+          {taxBreadcrumbs.map((b) => (
+            <React.Fragment key={`${b.rank}-${b.name}`}>
+              <span className="vi-tax-crumb-sep">/</span>
+              <span className="vi-tax-crumb-badge" title={b.rank}>
+                <small>{b.rank}:</small>{" "}
+                {b.italic ? <em>{b.name}</em> : <strong>{b.name}</strong>}
+              </span>
+            </React.Fragment>
+          ))}
+        </nav>
       </div>
 
-      <div className="page-header species-profile-header">
-        <div>
-          <div className="eyebrow">
-            <Icon name="leaf" size={14} />
-            Hồ sơ loài sinh học ({profile.rank})
+      {/* Compact Scientific Species Header */}
+      <header className="card vi-species-compact-header">
+        <div className="vi-species-header-main">
+          <div className="vi-species-badges-row">
+            <span className="vi-rank-pill">{profile.rank || "Species"}</span>
+            <span className="vi-status-pill">
+              {(profile.taxonomicStatus || "accepted").toUpperCase()}
+            </span>
+            {profile.iucnStatus ? (
+              <span className="vi-iucn-pill" title="IUCN Red List Status">
+                IUCN: {profile.iucnStatus}
+              </span>
+            ) : null}
           </div>
-          <h1
-            className="taxonomy-name"
-            style={{ fontSize: "clamp(28px, 3.5vw, 44px)", margin: "8px 0 4px" }}
-          >
+
+          <h1 className="vi-species-primary-title">
             <em>{profile.scientificName}</em>
+            {profile.scientificNameAuthorship ? (
+              <span className="vi-species-authorship"> {profile.scientificNameAuthorship}</span>
+            ) : null}
           </h1>
-          {profile.vernacularNameVn ? (
-            <p
-              className="page-description"
-              style={{ fontSize: "15px", color: "#334E68", fontWeight: 600, margin: "4px 0 14px" }}
-            >
-              Tên tiếng Việt: {profile.vernacularNameVn}
-            </p>
-          ) : null}
-          <ExternalLinkBadges
-            externalLinks={profile.externalLinks}
-            iucnStatus={profile.iucnStatus}
-          />
+
+          <div className="vi-species-vernacular-row">
+            <span>
+              <strong>Tên tiếng Việt:</strong>{" "}
+              {profile.vernacularNameVn || t("common.notProvided", "Chưa cung cấp")}
+            </span>
+            <span className="vi-dot-sep">·</span>
+            <span>
+              <strong>Tên tiếng Anh:</strong>{" "}
+              {profile.vernacularNameEn || t("common.notProvided", "Chưa cung cấp")}
+            </span>
+          </div>
+
+          <div style={{ marginTop: 8 }}>
+            <ExternalLinkBadges
+              externalLinks={profile.externalLinks}
+              iucnStatus={profile.iucnStatus}
+            />
+          </div>
         </div>
 
-        <div className="hero-actions">
+        <div className="vi-species-header-actions">
           <Link
             to={
               isAdmin
                 ? `/admin/specimens?taxonId=${profile.id}`
                 : `/specimens/search?taxonId=${profile.id}`
             }
-            className="button button-ghost"
+            className="button button-sm button-secondary"
           >
-            <Icon name="bug" size={16} />
-            Mẫu vật ({profile.specimenCount || 0})
+            <Icon name="bug" size={15} />
+            <span>
+              Mẫu vật (<strong>{(profile.specimenCount || 0).toLocaleString("vi-VN")}</strong>)
+            </span>
           </Link>
           <Link
             to={
@@ -168,25 +196,26 @@ export default function SpeciesProfilePage() {
                 ? `/admin/map?q=${encodeURIComponent(profile.scientificName)}`
                 : `/map?q=${encodeURIComponent(profile.scientificName)}`
             }
-            className="button button-ghost"
+            className="button button-sm button-ghost"
           >
-            <Icon name="map" size={16} />
-            Bản đồ phân bố
+            <Icon name="map" size={15} />
+            <span>Bản đồ phân bố</span>
           </Link>
           {isAdmin ? (
             <button
               type="button"
-              className="button button-primary"
+              className="button button-sm button-primary"
               onClick={() => navigate("/admin/taxonomy/editor")}
             >
-              <Icon name="edit" size={16} />
-              Sửa hồ sơ loài
+              <Icon name="edit" size={15} />
+              <span>Sửa hồ sơ</span>
             </button>
           ) : null}
         </div>
-      </div>
+      </header>
 
-      <section className="card panel">
+      {/* Main Tabbed Content Section */}
+      <section className="card vi-species-tabs-card">
         <SpeciesProfileTabs profile={profile} />
       </section>
     </div>

@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Icon from "../../../components/ui/Icon";
-import LoadingState from "../../../components/ui/LoadingState";
 import EmptyState from "../../../components/ui/EmptyState";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { useToast } from "../../../components/ui/ToastProvider";
@@ -9,17 +8,27 @@ import useIsAdminContext from "../../../hooks/useIsAdminContext";
 import mediaService, { ALLOWED_MEDIA_LICENSES } from "../media.service";
 import specimenService from "../../specimen/specimen.service";
 import { getOrderColor } from "../../specimen/specimen.constants";
+import SpecimenImageViewerModal from "../components/SpecimenImageViewerModal";
 
+/**
+ * MediaGalleryPage (Screen 5 — /media)
+ * - Compact 1-line header + inline statistics pills (NO 4 oversized dashboard cards).
+ * - Compact sticky horizontal filter toolbar.
+ * - Image Gallery placed immediately below so the first row of specimen images is visible at 1440×900 without scrolling.
+ */
 export default function MediaGalleryPage() {
   const isAdmin = useIsAdminContext();
   const { toast } = useToast();
 
   const [qInput, setQInput] = useState("");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [filters, setFilters] = useState({
     q: "",
     order: "",
     provinceId: "",
+    shotType: "",
     licenseCode: "",
+    sortBy: "newest",
     dwcaOnly: false,
     voucheredOnly: false,
     page: 1,
@@ -31,7 +40,9 @@ export default function MediaGalleryPage() {
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 24, totalPages: 0 });
   const [status, setStatus] = useState("loading");
-  const [lightboxItem, setLightboxItem] = useState(null);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [brokenIds, setBrokenIds] = useState({});
+  const [viewerIndex, setViewerIndex] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
 
   // Admin Upload Modal
@@ -65,7 +76,7 @@ export default function MediaGalleryPage() {
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       setFilters((p) => (p.q === qInput.trim() ? p : { ...p, q: qInput.trim(), page: 1 }));
-    }, 320);
+    }, 280);
     return () => clearTimeout(debounceRef.current);
   }, [qInput]);
 
@@ -88,13 +99,16 @@ export default function MediaGalleryPage() {
 
   const fetchMedia = useCallback(async () => {
     setStatus("loading");
+    setErrorMsg("");
     try {
       const res = await mediaService.getMediaList(filters);
-      setItems(res.items);
-      setPagination(res.pagination);
+      setItems(res.items || []);
+      setPagination(res.pagination || { total: 0, page: 1, limit: 24, totalPages: 0 });
       setStatus("success");
     } catch (err) {
-      toast(err.response?.data?.message || "Không thể tải thư viện hình ảnh", "error");
+      const msg = err?.response?.data?.message || "Không thể tải thư viện hình ảnh";
+      setErrorMsg(msg);
+      toast(msg, "error");
       setStatus("error");
     }
   }, [filters, toast]);
@@ -102,6 +116,22 @@ export default function MediaGalleryPage() {
   useEffect(() => {
     fetchMedia();
   }, [fetchMedia]);
+
+  const handleResetFilters = () => {
+    setQInput("");
+    setFilters({
+      q: "",
+      order: "",
+      provinceId: "",
+      shotType: "",
+      licenseCode: "",
+      sortBy: "newest",
+      dwcaOnly: false,
+      voucheredOnly: false,
+      page: 1,
+      limit: 24,
+    });
+  };
 
   const handleUploadSubmit = async (e) => {
     e.preventDefault();
@@ -137,7 +167,7 @@ export default function MediaGalleryPage() {
       await mediaService.deleteMedia(pendingDelete.id);
       toast("Đã xóa ảnh khỏi MinIO & CSDL", "success");
       setPendingDelete(null);
-      if (lightboxItem?.id === pendingDelete.id) setLightboxItem(null);
+      setViewerIndex(null);
       fetchMedia();
       refreshStats();
     } catch (err) {
@@ -148,148 +178,146 @@ export default function MediaGalleryPage() {
   const specBasePath = isAdmin ? "/admin/specimens" : "/specimens";
 
   return (
-    <div className="page-container page-content vi-page-enter">
-      <div className="page-header">
-        <div>
-          <div className="eyebrow">
-            <Icon name="sparkles" size={14} />
-            Thư viện Hình ảnh Lưu trữ Nội bộ (MinIO Object Storage)
+    <div className="page-container page-content vi-media-page-compact" data-testid="media-library-page">
+      {/* A & B: Compact Top Header + Single Horizontal Row of Inline Statistics */}
+      <header className="vi-media-compact-header">
+        <div className="vi-media-title-block">
+          <div className="eyebrow" style={{ marginBottom: 2 }}>
+            <Icon name="image" size={13} />
+            <span>THƯ VIỆN HÌNH ẢNH</span>
           </div>
-          <h1>Thư viện hình ảnh côn trùng Việt Nam</h1>
-          <p className="page-description">
-            Toàn bộ hình ảnh được lưu trữ trực tiếp trên cụm máy chủ <strong>MinIO nội bộ</strong> và kiểm soát
-            giấy phép Creative Commons riêng biệt trên từng tấm ảnh (loại bỏ hoàn toàn ảnh cấm phái sinh ND).
+          <h1 className="vi-media-compact-h1">Thư viện hình ảnh côn trùng Việt Nam</h1>
+          <p className="vi-media-compact-desc">
+            Tư liệu ảnh tiêu bản và thực địa lưu trữ trên cụm MinIO nội bộ, chuẩn hóa giấy phép Creative Commons.
           </p>
         </div>
 
-        {isAdmin ? (
-          <div className="hero-actions" style={{ marginTop: 0 }}>
+        <div className="vi-media-inline-stats" data-testid="media-compact-stats">
+          <div className="vi-inline-stat-item">
+            <span className="vi-inline-stat-label">Tổng ảnh</span>
+            <strong className="vi-inline-stat-val">
+              {(stats?.totalImages ?? pagination.total ?? 0).toLocaleString("vi-VN")}
+            </strong>
+          </div>
+          <div className="vi-inline-stat-item">
+            <span className="vi-inline-stat-label">Mẫu vật có ảnh</span>
+            <strong className="vi-inline-stat-val">
+              {(stats?.specimensWithMedia ?? 0).toLocaleString("vi-VN")}
+            </strong>
+          </div>
+          <div className="vi-inline-stat-item">
+            <span className="vi-inline-stat-label">Chuẩn GBIF</span>
+            <strong className="vi-inline-stat-val">
+              {(stats?.dwcaExportable ?? 0).toLocaleString("vi-VN")}
+            </strong>
+          </div>
+          <div className="vi-inline-stat-item">
+            <span className="vi-inline-stat-label">Lưu trữ</span>
+            <strong className="vi-inline-stat-val">MinIO VN</strong>
+          </div>
+
+          {isAdmin ? (
             <button
               type="button"
-              className="button button-primary"
+              className="button button-sm button-primary"
               onClick={() => setUploadOpen(true)}
             >
-              <Icon name="upload" size={16} />
-              Tải ảnh lên MinIO
+              <Icon name="upload" size={14} />
+              <span>Tải ảnh lên</span>
             </button>
-          </div>
-        ) : null}
-      </div>
-
-      {/* KPI Metrics */}
-      {stats ? (
-        <div className="metric-grid" style={{ marginBottom: 20 }}>
-          <article className="card metric-card">
-            <div className="metric-head">
-              <span>Tổng ảnh trên MinIO</span>
-              <span className="metric-icon">
-                <Icon name="layers" size={16} />
-              </span>
-            </div>
-            <div className="metric-value">{(stats.totalImages || 0).toLocaleString()}</div>
-            <div className="metric-foot">
-              Gắn với {(stats.specimensWithMedia || 0).toLocaleString()} mẫu vật
-            </div>
-          </article>
-
-          <article className="card metric-card">
-            <div className="metric-head">
-              <span>Đạt chuẩn xuất DwC-A (GBIF)</span>
-              <span className="metric-icon">
-                <Icon name="check" size={16} />
-              </span>
-            </div>
-            <div className="metric-value">{(stats.dwcaExportable || 0).toLocaleString()}</div>
-            <div className="metric-foot">Giấy phép mở CC0 & CC BY 4.0</div>
-          </article>
-
-          <article className="card metric-card">
-            <div className="metric-head">
-              <span>Hiển thị Web (Hạn chế NC/SA)</span>
-              <span className="metric-icon">
-                <Icon name="shield" size={16} />
-              </span>
-            </div>
-            <div className="metric-value">{(stats.restrictedNcSa || 0).toLocaleString()}</div>
-            <div className="metric-foot">Tự động tách khỏi gói xuất CC BY</div>
-          </article>
-
-          <article className="card metric-card">
-            <div className="metric-head">
-              <span>Hạ tầng lưu trữ</span>
-              <span className="metric-icon">
-                <Icon name="database" size={16} />
-              </span>
-            </div>
-            <div className="metric-value" style={{ fontSize: 22 }}>
-              MinIO VN
-            </div>
-            <div className="metric-foot">Bucket: vietinsect-media</div>
-          </article>
+          ) : null}
         </div>
-      ) : null}
+      </header>
 
-      {/* Filter Bar */}
-      <section className="card panel" style={{ marginBottom: 20 }}>
-        <div className="vi-filter-grid">
-          <div className="form-field" style={{ marginBottom: 0 }}>
-            <label>Tìm loài / Mã mẫu vật / Tác giả</label>
+      {/* C & H: Compact Sticky Horizontal Filter Toolbar */}
+      <section className="vi-media-sticky-toolbar" aria-label="Bộ lọc thư viện ảnh">
+        <div className="vi-media-toolbar-row">
+          <div className="vi-media-search-input-wrap">
+            <Icon name="search" size={14} />
             <input
+              type="text"
+              aria-label="Tìm theo tên khoa học hoặc mã mẫu vật"
               value={qInput}
               onChange={(e) => setQInput(e.target.value)}
-              placeholder="VD: Papilio, Odonata, GBIF-..."
+              placeholder="Tìm tên loài, mã mẫu vật, tác giả..."
             />
           </div>
 
-          <div className="form-field" style={{ marginBottom: 0 }}>
-            <label>Bộ côn trùng (Order)</label>
-            <select
-              value={filters.order}
-              onChange={(e) => setFilters((p) => ({ ...p, order: e.target.value, page: 1 }))}
-            >
-              <option value="">Tất cả các Bộ</option>
-              {lookups.orders.map((o) => (
-                <option key={o.id} value={o.scientificName}>
-                  {o.scientificName}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            className="vi-compact-select"
+            aria-label="Lọc theo bộ côn trùng"
+            value={filters.order}
+            onChange={(e) => setFilters((p) => ({ ...p, order: e.target.value, page: 1 }))}
+          >
+            <option value="">Tất cả Bộ (Order)</option>
+            {lookups.orders.map((o) => (
+              <option key={o.id} value={o.scientificName}>
+                {o.scientificName}
+              </option>
+            ))}
+          </select>
 
-          <div className="form-field" style={{ marginBottom: 0 }}>
-            <label>Tỉnh / Thành phố</label>
-            <select
-              value={filters.provinceId}
-              onChange={(e) => setFilters((p) => ({ ...p, provinceId: e.target.value, page: 1 }))}
-            >
-              <option value="">Tất cả tỉnh/thành</option>
-              {lookups.provinces.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nameVn}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            className="vi-compact-select"
+            aria-label="Lọc theo tỉnh thành"
+            value={filters.provinceId}
+            onChange={(e) => setFilters((p) => ({ ...p, provinceId: e.target.value, page: 1 }))}
+          >
+            <option value="">Tất cả tỉnh/thành</option>
+            {lookups.provinces.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.nameVn}
+              </option>
+            ))}
+          </select>
 
-          <div className="form-field" style={{ marginBottom: 0 }}>
-            <label>Giấy phép ảnh (License)</label>
-            <select
-              value={filters.licenseCode}
-              onChange={(e) => setFilters((p) => ({ ...p, licenseCode: e.target.value, page: 1 }))}
-            >
-              <option value="">Tất cả giấy phép hợp lệ</option>
-              {ALLOWED_MEDIA_LICENSES.map((lic) => (
-                <option key={lic.code} value={lic.code}>
-                  {lic.code.toUpperCase()}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            className="vi-compact-select"
+            aria-label="Lọc theo góc chụp"
+            value={filters.shotType}
+            onChange={(e) => setFilters((p) => ({ ...p, shotType: e.target.value, page: 1 }))}
+          >
+            <option value="">Tất cả góc chụp</option>
+            <option value="habitus">Toàn thân (Habitus)</option>
+            <option value="dorsal">Mặt lưng (Dorsal)</option>
+            <option value="lateral">Mặt bên (Lateral)</option>
+            <option value="field">Thực địa (Field)</option>
+          </select>
+
+          <select
+            className="vi-compact-select"
+            aria-label="Lọc theo giấy phép"
+            value={filters.licenseCode}
+            onChange={(e) => setFilters((p) => ({ ...p, licenseCode: e.target.value, page: 1 }))}
+          >
+            <option value="">Tất cả giấy phép</option>
+            {ALLOWED_MEDIA_LICENSES.map((lic) => (
+              <option key={lic.code} value={lic.code}>
+                {lic.code.toUpperCase()}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            className="button button-sm button-ghost"
+            onClick={() => setShowAdvancedFilters((v) => !v)}
+          >
+            {showAdvancedFilters ? "Ẩn lọc phụ" : "Lọc phụ"}
+          </button>
+
+          <button
+            type="button"
+            className="button button-sm button-ghost"
+            onClick={handleResetFilters}
+          >
+            Đặt lại
+          </button>
         </div>
 
-        <div className="vi-filter-subbar">
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 18, alignItems: "center" }}>
-            <label style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+        {showAdvancedFilters ? (
+          <div className="vi-media-adv-filter-row">
+            <label className="vi-compact-check-label">
               <input
                 type="checkbox"
                 checked={filters.dwcaOnly}
@@ -297,10 +325,9 @@ export default function MediaGalleryPage() {
                   setFilters((p) => ({ ...p, dwcaOnly: e.target.checked, page: 1 }))
                 }
               />
-              Chỉ ảnh xuất được gói DwC-A cho GBIF (CC0 / CC BY 4.0)
+              <span>Chỉ ảnh xuất gói DwC-A (CC0 / CC BY 4.0)</span>
             </label>
-
-            <label style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            <label className="vi-compact-check-label">
               <input
                 type="checkbox"
                 checked={filters.voucheredOnly}
@@ -308,118 +335,126 @@ export default function MediaGalleryPage() {
                   setFilters((p) => ({ ...p, voucheredOnly: e.target.checked, page: 1 }))
                 }
               />
-              Chỉ ảnh gắn mẫu vật bảo tàng (Preserved Voucher)
+              <span>Chỉ ảnh gắn tiêu bản bảo tàng (Preserved Voucher)</span>
             </label>
           </div>
-
-          <button
-            type="button"
-            className="button button-sm button-ghost"
-            onClick={() => {
-              setQInput("");
-              setFilters({
-                q: "",
-                order: "",
-                provinceId: "",
-                licenseCode: "",
-                dwcaOnly: false,
-                voucheredOnly: false,
-                page: 1,
-                limit: 24,
-              });
-            }}
-          >
-            Đặt lại bộ lọc
-          </button>
-        </div>
+        ) : null}
       </section>
 
-      {/* Media Plate Grid */}
+      {/* D, E, F, G: Primary Image Gallery immediately visible in first viewport */}
       {status === "loading" ? (
+        <div className="vi-media-grid-refined" data-testid="media-loading-skeleton">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="card vi-media-skeleton-card">
+              <div className="vi-media-skeleton-thumb" />
+              <div className="vi-media-skeleton-lines" />
+            </div>
+          ))}
+        </div>
+      ) : status === "error" ? (
         <div className="card panel">
-          <LoadingState label="Đang tải tư liệu ảnh từ cụm lưu trữ MinIO..." />
+          <EmptyState
+            icon="alert"
+            title="Lỗi tải thư viện hình ảnh"
+            description={errorMsg}
+            action={
+              <button type="button" className="button button-sm button-primary" onClick={fetchMedia}>
+                Thử lại
+              </button>
+            }
+          />
         </div>
       ) : items.length === 0 ? (
         <div className="card panel">
           <EmptyState
             icon="layers"
-            title="Chưa có hình ảnh khớp bộ lọc"
-            description="Thử bỏ bớt điều kiện lọc hoặc tải lên ảnh mẫu vật mới vào MinIO."
+            title="Không có hình ảnh khớp bộ lọc"
+            description="Thử đặt lại bộ lọc hoặc thay đổi từ khóa tìm kiếm."
+            action={
+              <button
+                type="button"
+                className="button button-sm button-secondary"
+                onClick={handleResetFilters}
+              >
+                Đặt lại bộ lọc
+              </button>
+            }
           />
         </div>
       ) : (
         <>
-          <div className="vi-media-grid">
-            {items.map((img) => {
+          <div className="vi-media-grid-refined" data-testid="media-gallery-grid">
+            {items.map((img, idx) => {
               const orderColor = getOrderColor(img.orderName);
+              const isBroken = Boolean(brokenIds[img.id]);
               return (
-                <article key={img.id} className="card vi-media-card">
+                <article key={img.id} className="card vi-media-card-refined">
                   <div
-                    className="vi-media-thumb-wrap"
-                    onClick={() => setLightboxItem(img)}
+                    className="vi-media-photo-box"
+                    onClick={() => setViewerIndex(idx)}
                     role="button"
                     tabIndex={0}
-                    onKeyDown={(e) => e.key === "Enter" && setLightboxItem(img)}
+                    onKeyDown={(e) => e.key === "Enter" && setViewerIndex(idx)}
                   >
-                    <img
-                      src={img.url}
-                      alt={img.scientificName}
-                      loading="lazy"
-                      className="vi-media-thumb"
-                    />
+                    {!isBroken ? (
+                      <img
+                        src={img.thumbnailUrl || img.url}
+                        alt={img.scientificName}
+                        loading="lazy"
+                        className="vi-media-photo-img"
+                        onError={() => setBrokenIds((prev) => ({ ...prev, [img.id]: true }))}
+                      />
+                    ) : (
+                      <div className="vi-media-broken-fallback">
+                        <Icon name="image" size={24} />
+                        <span>Ảnh không khả dụng</span>
+                      </div>
+                    )}
+
+                    {img.shotType ? (
+                      <span className="vi-media-shot-chip">{img.shotType}</span>
+                    ) : null}
+
                     <span
                       className={`status-badge vi-media-license-chip ${
                         img.isDwcaExportable ? "status-public" : "status-warning"
                       }`}
                     >
-                      {img.licenseCode.toUpperCase()}
+                      {(img.licenseCode || "cc-by").toUpperCase()}
                     </span>
+
+                    <div className="vi-media-hover-overlay">
+                      <span>Phóng to ảnh</span>
+                    </div>
                   </div>
 
-                  <div className="vi-media-card-body">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
+                  <div className="vi-media-card-caption">
+                    <div className="vi-media-card-title-row">
+                      <em className="vi-media-sci-name" title={img.scientificName}>
+                        {img.scientificName}
+                      </em>
                       <span
-                        className="status-badge"
-                        style={{ background: orderColor, color: "#FFFFFF", fontSize: 9 }}
-                      >
-                        {img.orderName || "Insecta"}
-                      </span>
-                      <span style={{ fontSize: 11, color: "var(--vi-muted)", fontWeight: 600 }}>
-                        {img.provinceNameVn || "Việt Nam"}
-                      </span>
+                        className="vi-media-order-dot"
+                        style={{ background: orderColor }}
+                        title={img.orderName || "Insecta"}
+                      />
                     </div>
 
-                    <strong className="taxonomy-name" style={{ fontSize: 15, marginTop: 6, display: "block" }}>
-                      {img.scientificName}
-                    </strong>
-
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: "var(--vi-muted)",
-                        marginTop: 4,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                      title={img.attribution}
-                    >
-                      {img.attribution || "VietInsect MinIO Archive"}
-                    </div>
-
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, paddingTop: 8, borderTop: "1px solid #E2E8F0" }}>
-                      <Link to={`${specBasePath}/${img.specimenId}`} className="vi-code-link">
+                    <div className="vi-media-card-meta-row">
+                      <Link to={`${specBasePath}/${img.specimenId}`} className="vi-code-link mono">
                         {img.specimenCode || `#${img.specimenId}`}
                       </Link>
+                      <span className="vi-media-prov-text">
+                        {img.provinceNameVn || "Việt Nam"}
+                      </span>
                       {isAdmin ? (
                         <button
                           type="button"
-                          className="icon-button"
-                          style={{ width: 28, height: 28, color: "#B0241A" }}
+                          className="vi-media-del-btn"
                           title="Xóa ảnh khỏi MinIO"
                           onClick={() => setPendingDelete(img)}
                         >
-                          <Icon name="close" size={14} />
+                          <Icon name="close" size={12} />
                         </button>
                       ) : null}
                     </div>
@@ -429,10 +464,10 @@ export default function MediaGalleryPage() {
             })}
           </div>
 
-          <div className="card vi-pagination-bar" style={{ marginTop: 18 }}>
-            <div style={{ fontSize: 13, color: "var(--vi-muted)" }}>
-              Trang <strong>{pagination.page}</strong> / <strong>{pagination.totalPages}</strong> · Tổng{" "}
-              <strong>{pagination.total.toLocaleString()}</strong> ảnh
+          <div className="card vi-pagination-bar" style={{ marginTop: 14, padding: "10px 16px" }}>
+            <div style={{ fontSize: 12, color: "var(--vi-muted)" }}>
+              Trang <strong>{pagination.page}</strong> / <strong>{pagination.totalPages || 1}</strong> · Tổng{" "}
+              <strong>{(pagination.total || 0).toLocaleString("vi-VN")}</strong> ảnh
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button
@@ -456,89 +491,15 @@ export default function MediaGalleryPage() {
         </>
       )}
 
-      {/* Lightbox Xem chi tiết ảnh */}
-      {lightboxItem ? (
-        <div className="dialog-backdrop" onClick={() => setLightboxItem(null)}>
-          <div
-            className="dialog-card"
-            style={{ width: "min(860px, 95vw)", padding: 22 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="icon-button dialog-close"
-              onClick={() => setLightboxItem(null)}
-              aria-label="Đóng"
-            >
-              <Icon name="close" size={18} />
-            </button>
-            <div style={{ display: "grid", gridTemplateColumns: "1.25fr 0.75fr", gap: 20, alignItems: "start" }}>
-              <div style={{ background: "#111111", border: "1px solid #111111", display: "grid", placeItems: "center", minHeight: 340 }}>
-                <img
-                  src={lightboxItem.url}
-                  alt={lightboxItem.scientificName}
-                  style={{ maxWidth: "100%", maxHeight: "68vh", objectFit: "contain" }}
-                />
-              </div>
-              <div>
-                <span className="eyebrow">MinIO Object · {lightboxItem.storageBucket}</span>
-                <h2 className="taxonomy-name" style={{ marginTop: 4 }}>
-                  {lightboxItem.scientificName}
-                </h2>
-                <div className="placeholder-list" style={{ marginTop: 12 }}>
-                  <div className="placeholder-row">
-                    <div>
-                      <strong>Giấy phép bản quyền</strong>
-                      <span>{lightboxItem.licenseLabel}</span>
-                    </div>
-                    <span
-                      className={`status-badge ${
-                        lightboxItem.isDwcaExportable ? "status-public" : "status-warning"
-                      }`}
-                    >
-                      {lightboxItem.isDwcaExportable ? "DwC-A OK" : "WEB ONLY"}
-                    </span>
-                  </div>
-                  <div className="placeholder-row">
-                    <div>
-                      <strong>Ghi công tác giả (Attribution)</strong>
-                      <span>{lightboxItem.attribution || "—"}</span>
-                    </div>
-                  </div>
-                  <div className="placeholder-row">
-                    <div>
-                      <strong>Mẫu vật & Địa điểm</strong>
-                      <span>
-                        {lightboxItem.specimenCode} · {lightboxItem.provinceNameVn || "Việt Nam"} ·{" "}
-                        {lightboxItem.collectionDate || "—"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                  <Link
-                    to={`${specBasePath}/${lightboxItem.specimenId}`}
-                    className="button button-primary"
-                    style={{ flex: 1 }}
-                  >
-                    Hồ sơ mẫu vật →
-                  </Link>
-                  {lightboxItem.sourceUrl ? (
-                    <a
-                      href={lightboxItem.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="button button-ghost"
-                    >
-                      Nguồn gốc ↗
-                    </a>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {/* Screen 4: Redesigned Specimen Image Viewer Modal */}
+      <SpecimenImageViewerModal
+        open={viewerIndex !== null}
+        items={items}
+        currentIndex={viewerIndex ?? 0}
+        onIndexChange={setViewerIndex}
+        onClose={() => setViewerIndex(null)}
+        specimenBasePath={specBasePath}
+      />
 
       {/* Modal Tải ảnh lên MinIO (Admin) */}
       {uploadOpen ? (
@@ -560,7 +521,7 @@ export default function MediaGalleryPage() {
             <h2 style={{ marginTop: 4, marginBottom: 14 }}>Tải ảnh mẫu vật lên máy chủ nội bộ</h2>
 
             <div className="form-field" style={{ position: "relative" }}>
-              <label>Tìm & Chọn Mẫu vật liên kết *</label>
+              <label>Tìm &amp; Chọn Mẫu vật liên kết *</label>
               <input
                 value={specQuery}
                 onChange={(e) => setSpecQuery(e.target.value)}
@@ -583,23 +544,25 @@ export default function MediaGalleryPage() {
                       }}
                     >
                       <strong>{s.specimenCode}</strong>
-                      <span>{s.scientificName}</span>
+                      <span>
+                        <em>{s.scientificName}</em>
+                      </span>
                     </div>
                   ))}
                 </div>
               ) : null}
               {uploadForm.specimenLabel ? (
-                <small style={{ color: "#2E7D32", fontWeight: 700 }}>
+                <small style={{ color: "#237A35", fontWeight: 700 }}>
                   Đã chọn: {uploadForm.specimenLabel}
                 </small>
               ) : null}
             </div>
 
             <div className="form-field">
-              <label>Tệp ảnh mẫu vật (JPEG / PNG / WebP ≤ 15MB) *</label>
+              <label>Tệp ảnh mẫu vật (JPEG / PNG ≤ 15MB) *</label>
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png"
                 onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
                 required
               />
