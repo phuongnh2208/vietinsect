@@ -37,6 +37,22 @@ router.get("/:id", optionalAdmin, specimenController.getById);
 
 // Quản trị: tạo mới, nhập hàng loạt, chỉnh sửa hàng loạt, cập nhật, đổi trạng thái công khai đơn lẻ / hàng loạt, xóa mềm
 router.post("/", requireAdmin, validateCreateSpecimen, specimenController.create);
+router.get("/bulk-import/template", optionalAdmin, async (_req, res, next) => {
+  try {
+    const buffer = await bulkImportJob.generateImportTemplateExcel();
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="vietinsect-import-template-22cols-v1.0.xlsx"',
+    );
+    res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
+});
 router.post(
   "/bulk-import/preview",
   requireAdmin,

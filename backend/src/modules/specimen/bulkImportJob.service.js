@@ -1,6 +1,7 @@
 "use strict";
 
 const crypto = require("crypto");
+const ExcelJS = require("exceljs");
 const knex = require("../../config/knex");
 const logger = require("../../config/logger");
 const { emitImportProgress } = require("../../config/socket");
@@ -242,10 +243,50 @@ function getImportJob(jobId) {
   return importJobs.get(jobId) || null;
 }
 
+const TEMPLATE_22_COLUMNS = [
+  { key: "specimenCode", vn: "Mã mẫu vật", en: "Specimen Code", note: "Chuỗi duy nhất (VD: VAST-2026-0001)" },
+  { key: "scientificName", vn: "Tên khoa học *", en: "Scientific Name *", note: "Bắt buộc (VD: Papilio demoleus)" },
+  { key: "commonNameVn", vn: "Tên tiếng Việt", en: "Vietnamese Common Name", note: "VD: Bướm phượng chanh" },
+  { key: "commonNameEn", vn: "Tên tiếng Anh", en: "English Common Name", note: "VD: Lime Butterfly" },
+  { key: "orderName", vn: "Bộ", en: "Order", note: "VD: Lepidoptera" },
+  { key: "familyName", vn: "Họ", en: "Family", note: "VD: Papilionidae" },
+  { key: "genusName", vn: "Giống", en: "Genus", note: "VD: Papilio" },
+  { key: "provinceName", vn: "Tỉnh/Thành phố", en: "Province", note: "34 tỉnh/thành Việt Nam" },
+  { key: "district", vn: "Quận/Huyện", en: "District", note: "Tùy chọn" },
+  { key: "commune", vn: "Xã/Phường", en: "Commune", note: "Tùy chọn" },
+  { key: "localityDetail", vn: "Địa điểm chi tiết", en: "Locality Detail", note: "VD: VQG Cúc Phương" },
+  { key: "latitude", vn: "Vĩ độ (WGS84)", en: "Decimal Latitude", note: "Số thực 8.18–23.39" },
+  { key: "longitude", vn: "Kinh độ (WGS84)", en: "Decimal Longitude", note: "Số thực 102.14–109.46" },
+  { key: "gpsAccuracyM", vn: "Sai số GPS (m)", en: "Coordinate Uncertainty (m)", note: "Số dương (VD: 10)" },
+  { key: "elevationM", vn: "Độ cao (m)", en: "Elevation (m)", note: "Số thực (-500..9000)" },
+  { key: "collectionDate", vn: "Ngày thu mẫu *", en: "Event Date *", note: "Bắt buộc chuẩn YYYY-MM-DD" },
+  { key: "recordedBy", vn: "Người thu mẫu", en: "Recorded By", note: "VD: VAST Field Team" },
+  { key: "institutionCode", vn: "Mã cơ quan", en: "Institution Code", note: "VD: VAST" },
+  { key: "basisOfRecord", vn: "Loại bản ghi DwC", en: "Basis Of Record", note: "PRESERVED_SPECIMEN / HUMAN_OBSERVATION" },
+  { key: "sex", vn: "Giới tính", en: "Sex", note: "male / female / unknown" },
+  { key: "individualCount", vn: "Số lượng cá thể", en: "Individual Count", note: "Số nguyên >= 1" },
+  { key: "isPublic", vn: "Công khai", en: "Is Public", note: "true / false" },
+];
+
+async function generateImportTemplateExcel() {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "VietInsect - VAST";
+  const sheet = wb.addWorksheet("VietInsect_22Cols_Template");
+
+  sheet.addRow(TEMPLATE_22_COLUMNS.map((c) => c.key));
+  sheet.addRow(TEMPLATE_22_COLUMNS.map((c) => `${c.vn} / ${c.en}`));
+  sheet.addRow(TEMPLATE_22_COLUMNS.map((c) => c.note));
+
+  const buf = await wb.xlsx.writeBuffer();
+  return Buffer.from(buf);
+}
+
 module.exports = {
   MAX_IMPORT_ROWS,
   PREVIEW_LIMIT,
+  TEMPLATE_22_COLUMNS,
   previewImportRows,
   startBulkImportJob,
   getImportJob,
+  generateImportTemplateExcel,
 };

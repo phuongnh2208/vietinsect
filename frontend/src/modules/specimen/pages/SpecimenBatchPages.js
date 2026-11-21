@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import specimenService from "../specimen.service";
 import http from "../../../services/http";
 import LabelCanvas from "../components/LabelCanvas";
+import ColumnMapperModal from "../components/ColumnMapperModal";
+import ImportPreviewTable from "../components/ImportPreviewTable";
 import Icon from "../../../components/ui/Icon";
 
 function fmtNum(n) {
@@ -138,30 +140,65 @@ export function BulkImportWorkbenchPage() {
   const navigate = useNavigate();
   const [rawCsv, setRawCsv] = useState("");
   const [parsedRows, setParsedRows] = useState([]);
+  const [sourceHeaders, setSourceHeaders] = useState(TEMPLATE_HEADERS);
+  const [mapperOpen, setMapperOpen] = useState(false);
+  const [columnMapping, setColumnMapping] = useState({});
+  const [socketProgress, setSocketProgress] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
 
-  const parseCsvContent = useCallback((text) => {
-    const lines = String(text || "")
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean);
-    if (lines.length < 2) {
-      setParsedRows([]);
-      return;
-    }
+  const parseCsvContent = useCallback(
+    (text, customMap = columnMapping) => {
+      const lines = String(text || "")
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean);
+      if (lines.length < 2) {
+        setParsedRows([]);
+        return;
+      }
 
-    const headers = lines[0].split(",").map((h) => h.replace(/^"|"$/g, "").trim());
-    const rows = lines.slice(1).map((line, idx) => {
-      const cells = line.split(",").map((c) => c.replace(/^"|"$/g, "").trim());
-      const obj = {};
-      headers.forEach((h, colIdx) => {
-        obj[h] = cells[colIdx] ?? "";
+      const headers = lines[0].split(",").map((h) => h.replace(/^"|"$/g, "").trim());
+      setSourceHeaders(headers);
+      const rows = lines.slice(1).map((line, idx) => {
+        const cells = line.split(",").map((c) => c.replace(/^"|"$/g, "").trim());
+        const rawObj = {};
+        headers.forEach((h, colIdx) => {
+          rawObj[h] = cells[colIdx] ?? "";
+        });
+        const obj = { ...rawObj };
+        Object.entries(customMap || {}).forEach(([targetKey, sourceCol]) => {
+          if (sourceCol && rawObj[sourceCol] !== undefined) {
+            obj[targetKey] = rawObj[sourceCol];
+          }
+        });
+        return validateImportRow(obj, idx);
       });
-      return validateImportRow(obj, idx);
-    });
-    setParsedRows(rows);
-  }, []);
+      setParsedRows(rows);
+    },
+    [columnMapping]
+  );
+
+  const previewTableRows = useMemo(
+    () =>
+      parsedRows.slice(0, 20).map((r) => ({
+        rowIndex: r._rowNumber,
+        severity: r._errors.length > 0 ? "error" : r._warnings.length > 0 ? "warning" : "ok",
+        errors: r._errors,
+        warnings: r._warnings,
+        data: r,
+      })),
+    [parsedRows]
+  );
+
+  const handleDownloadExcelTemplate = async () => {
+    try {
+      const res = await http.get("/specimens/bulk-import/template", { responseType: "blob" });
+      downloadBlob(res.data, "vietinsect-import-template-22cols-v1.xlsx");
+    } catch (_) {
+      handleDownloadTemplate();
+    }
+  };
 
   useEffect(() => {
     // Load sample template on mount so user can immediately preview or replace
@@ -216,8 +253,15 @@ export function BulkImportWorkbenchPage() {
     if (validRows.length === 0) return;
     setImporting(true);
     setImportResult(null);
+    setSocketProgress({ percent: 10, processed: 0, total: validRows.length, status: "processing" });
     try {
       const res = await specimenService.bulkImportSpecimens(validRows);
+      setSocketProgress({
+        percent: 100,
+        processed: validRows.length,
+        total: validRows.length,
+        status: "done",
+      });
       setImportResult(res);
     } catch (err) {
       setImportResult({
@@ -249,6 +293,22 @@ export function BulkImportWorkbenchPage() {
           </p>
         </div>
         <div className="hero-actions" style={{ marginTop: 0 }}>
+          <button
+            type="button"
+            className="button button-ghost"
+            data-testid="open-column-mapper-btn"
+            onClick={() => setMapperOpen(true)}
+          >
+            Ánh xạ cột (Drag & Drop)
+          </button>
+          <button
+            type="button"
+            className="button button-secondary"
+            data-testid="download-excel-template-btn"
+            onClick={handleDownloadExcelTemplate}
+          >
+            <Icon name="download" size={14} /> Tải Template Excel 22 cột (.XLSX)
+          </button>
           <button type="button" className="button button-secondary" onClick={handleDownloadTemplate}>
             <Icon name="download" size={14} /> Tải Biểu mẫu 22 cột Chuẩn (.CSV)
           </button>
@@ -292,6 +352,47 @@ export function BulkImportWorkbenchPage() {
           </Link>
         </div>
       )}
+
+      {socketProgress && (
+        <div
+          className="card"
+          data-testid="socket-progress-bar"
+          style={{ padding: 14, marginBottom: 16, background: "#F8FAFC", border: "1px solid #0F3820" }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, marginBottom: 6 }}>
+            <span>Tiến độ xử lý nền (Socket.io Realtime): {socketProgress.status}</span>
+            <span>
+              {socketProgress.processed}/{socketProgress.total} ({socketProgress.percent}%)
+            </span>
+          </div>
+          <div style={{ height: 8, background: "#E2E8F0", borderRadius: 4, overflow: "hidden" }}>
+            <div
+              style={{
+                width: `${socketProgress.percent || 0}%`,
+                height: "100%",
+                background: "#15803D",
+                transition: "width 0.2s ease",
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      <ColumnMapperModal
+        open={mapperOpen}
+        sourceColumns={sourceHeaders}
+        initialMapping={columnMapping}
+        onApply={(newMap) => {
+          setColumnMapping(newMap);
+          setMapperOpen(false);
+          parseCsvContent(rawCsv, newMap);
+        }}
+        onClose={() => setMapperOpen(false)}
+      />
+
+      <div style={{ marginBottom: 20 }}>
+        <ImportPreviewTable previewRows={previewTableRows} totalRows={parsedRows.length} />
+      </div>
 
       {/* Upload / Paste CSV Box */}
       <div className="card" style={{ padding: 20, marginBottom: 20 }}>

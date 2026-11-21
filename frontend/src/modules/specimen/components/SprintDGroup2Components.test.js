@@ -1,8 +1,10 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import ColumnMapperModal from "./ColumnMapperModal";
 import ImportPreviewTable from "./ImportPreviewTable";
 import ImageUploadZone from "./ImageUploadZone";
+import { BulkImportWorkbenchPage } from "../pages/SpecimenBatchPages";
 
 describe("Sprint D Group 2 Frontend Components (F-SP-06 & F-SP-08)", () => {
   test("ColumnMapperModal maps source columns to target fields and invokes onApply", () => {
@@ -57,5 +59,19 @@ describe("Sprint D Group 2 Frontend Components (F-SP-06 & F-SP-08)", () => {
     ]);
     expect(screen.getByRole("alert")).toHaveTextContent("evil.html: chỉ chấp nhận JPG/PNG");
     expect(screen.getByTestId("image-upload-list")).toHaveTextContent("beetle.jpg");
+  });
+
+  test("BulkImportWorkbenchPage integrates ColumnMapperModal, ImportPreviewTable, and 22-col Excel template button", () => {
+    render(
+      <MemoryRouter>
+        <BulkImportWorkbenchPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId("import-preview-table")).toBeInTheDocument();
+    expect(screen.getByTestId("download-excel-template-btn")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("open-column-mapper-btn"));
+    expect(screen.getByTestId("column-mapper-modal")).toBeInTheDocument();
   });
 });

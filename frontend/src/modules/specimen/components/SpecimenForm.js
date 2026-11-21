@@ -3,6 +3,7 @@ import Icon from "../../../components/ui/Icon";
 import taxonomyService from "../../taxonomy/taxonomy.service";
 import specimenService from "../specimen.service";
 import { BASIS_OF_RECORD_LABELS } from "../specimen.constants";
+import ImageUploadZone from "./ImageUploadZone";
 
 const INITIAL_FORM = {
   specimenCode: "",
@@ -396,6 +397,13 @@ export default function SpecimenForm({ initialData = null, onSubmit, onCancel, s
           value={form.notes}
           onChange={(e) => updateField("notes", e.target.value)}
           placeholder="Ghi chú đặc điểm nhận dạng, phương pháp bẫy đèn/vợt..."
+        />
+      </div>
+
+      <div style={{ marginTop: 12, marginBottom: 12 }}>
+        <ImageUploadZone
+          disabled={submitting}
+          onFilesSelected={(files) => updateField("pendingImages", files)}
         />
       </div>
 
