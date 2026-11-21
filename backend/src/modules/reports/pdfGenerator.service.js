@@ -135,13 +135,15 @@ function resolveExecutablePath() {
 async function getBrowser() {
   if (!browserPromise) {
     const executablePath = resolveExecutablePath();
+    // Chỉ bật --no-sandbox khi chạy dưới user không phải root (Linux container non-root) hoặc Windows dev
+    const isRootLinux = typeof process.getuid === "function" && process.getuid() === 0;
+    const sandboxArgs = isRootLinux ? [] : ["--no-sandbox", "--disable-setuid-sandbox"];
     browserPromise = puppeteer
       .launch({
         headless: true,
         ...(executablePath ? { executablePath } : {}),
         args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
+          ...sandboxArgs,
           "--disable-dev-shm-usage",
           "--disable-gpu",
           "--font-render-hinting=none",
