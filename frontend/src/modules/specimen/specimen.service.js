@@ -41,14 +41,17 @@ async function getAnalytics(params = {}) {
   return data.data;
 }
 
-async function getMapOccurrences(params = {}) {
+async function getMapOccurrences(params = {}, options = {}) {
   const cleanParams = {};
   Object.entries(params).forEach(([key, val]) => {
     if (val !== undefined && val !== null && val !== "") {
       cleanParams[key] = val;
     }
   });
-  const { data } = await http.get("/specimens/map", { params: cleanParams });
+  const { data } = await http.get("/specimens/map", {
+    params: cleanParams,
+    signal: options.signal,
+  });
   return data.data;
 }
 

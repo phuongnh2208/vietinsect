@@ -7,6 +7,7 @@ import Icon from "../../../components/ui/Icon";
 import { useToast } from "../../../components/ui/ToastProvider";
 import useIsAdminContext from "../../../hooks/useIsAdminContext";
 import specimenService from "../../specimen/specimen.service";
+import createLeafletHeatLayer from "../utils/leafletHeatLayer";
 import {
   BASIS_OF_RECORD_LABELS,
   formatBasisOfRecord,
@@ -161,12 +162,13 @@ export default function OccurrenceMapPage() {
   );
   const [selectedProtectedArea, setSelectedProtectedArea] = useState("");
   const [mapZoom, setMapZoom] = useState(initialLat && initialLon ? 9 : VIETNAM_ZOOM);
+  const [debouncedZoom, setDebouncedZoom] = useState(initialLat && initialLon ? 9 : VIETNAM_ZOOM);
 
   // Display & Clustering settings (Section 5.E & Section 8)
   const [showMarkers, setShowMarkers] = useState(true);
   const [enableClustering, setEnableClustering] = useState(false);
   const [syncMapExtent, setSyncMapExtent] = useState(false);
-  const [heatmapStyle, setHeatmapStyle] = useState("hybrid"); // hybrid | grid | provinces
+  const [heatmapStyle, setHeatmapStyle] = useState("heatmap"); // heatmap | grid | clusters
 
   // Ecological & Thematic GIS Layers (Section 7)
   const [ecologicalLayers, setEcologicalLayers] = useState({
@@ -210,6 +212,16 @@ export default function OccurrenceMapPage() {
     totalMatching: 0,
     returnedPoints: 0,
     summary: { totalOccurrences: 0, distinctSpeciesCount: 0, provincesCount: 0 },
+    densityMeta: {
+      method: "POSTGIS_ADAPTIVE_SPATIAL_GRID",
+      gridSizeDeg: 0.2,
+      gridSizeKm: 22.3,
+      cellCount: 0,
+      minCellCount: 0,
+      medianCellCount: 0,
+      p75CellCount: 0,
+      maxCellCount: 0,
+    },
     points: [],
     provinceClusters: [],
     regionClusters: [],
@@ -221,15 +233,27 @@ export default function OccurrenceMapPage() {
   const mapRef = useRef(null);
   const tileLayerRef = useRef(null);
   const elevationLayerRef = useRef(null);
+  const heatLayerRef = useRef(null);
   const dataLayerGroupRef = useRef(null);
   const thematicLayerGroupRef = useRef(null);
   const parksLayerGroupRef = useRef(null);
   const canvasRendererRef = useRef(null);
   const debounceRef = useRef(null);
+  const zoomDebounceRef = useRef(null);
+  const abortControllerRef = useRef(null);
   const viewModeRef = useRef(viewMode);
   const syncMapExtentRef = useRef(syncMapExtent);
   viewModeRef.current = viewMode;
   syncMapExtentRef.current = syncMapExtent;
+
+  // Debounce map zoom changes so scale-adaptive PostGIS grid updates smoothly without request storms
+  useEffect(() => {
+    clearTimeout(zoomDebounceRef.current);
+    zoomDebounceRef.current = setTimeout(() => {
+      setDebouncedZoom(mapZoom);
+    }, 320);
+    return () => clearTimeout(zoomDebounceRef.current);
+  }, [mapZoom]);
 
   useEffect(() => {
     specimenService
@@ -569,18 +593,54 @@ export default function OccurrenceMapPage() {
     return () => clearTimeout(timer);
   }, [isFullscreen, showMobileSidebar]);
 
-  // Fetch PostGIS Spatial Occurrences & Aggregations
+  // Fetch PostGIS Spatial Occurrences & Scale-Adaptive Aggregations (with AbortController cancellation)
   const fetchOccurrences = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    abortControllerRef.current = controller;
+
     setLoading(true);
     try {
       const params = {
         ...filters,
+        zoom: viewMode === "heatmap" ? debouncedZoom : undefined,
         lat: viewMode === "radius" ? radiusPin.lat : undefined,
         lon: viewMode === "radius" ? radiusPin.lon : undefined,
         radiusKm: viewMode === "radius" ? radiusPin.radiusKm : undefined,
       };
-      const data = await specimenService.getMapOccurrences(params);
+      const data = await specimenService.getMapOccurrences(
+        params,
+        controller ? { signal: controller.signal } : {},
+      );
+      if (controller && controller.signal.aborted) return;
       if (data) {
+        const heatCells = (data.heatGrid || []).filter(
+          (g) =>
+            g &&
+            g.lat != null &&
+            g.lon != null &&
+            !Number.isNaN(Number(g.lat)) &&
+            !Number.isNaN(Number(g.lon)) &&
+            Number(g.lat) >= -90 &&
+            Number(g.lat) <= 90 &&
+            Number(g.lon) >= -180 &&
+            Number(g.lon) <= 180 &&
+            Number(g.count) > 0,
+        );
+        const sortedCounts = heatCells.map((g) => Number(g.count)).sort((a, b) => a - b);
+        const cellCount = sortedCounts.length;
+        const computedMeta = data.densityMeta || {
+          method: "POSTGIS_ADAPTIVE_SPATIAL_GRID",
+          gridSizeDeg: 0.2,
+          gridSizeKm: 22.3,
+          cellCount,
+          minCellCount: cellCount > 0 ? sortedCounts[0] : 0,
+          medianCellCount: cellCount > 0 ? sortedCounts[Math.floor((cellCount - 1) * 0.5)] : 0,
+          p75CellCount: cellCount > 0 ? sortedCounts[Math.floor((cellCount - 1) * 0.75)] : 0,
+          maxCellCount: cellCount > 0 ? sortedCounts[cellCount - 1] : 0,
+        };
         setMapData({
           totalMatching: Number(data.totalMatching || 0),
           returnedPoints: Number(data.returnedPoints ?? (data.points || []).length),
@@ -589,18 +649,39 @@ export default function OccurrenceMapPage() {
             distinctSpeciesCount: 0,
             provincesCount: (data.provinceClusters || []).length,
           },
-          points: data.points || [],
+          densityMeta: computedMeta,
+          points: (data.points || []).filter(
+            (pt) =>
+              pt &&
+              pt.lat != null &&
+              pt.lon != null &&
+              !Number.isNaN(Number(pt.lat)) &&
+              !Number.isNaN(Number(pt.lon)) &&
+              Number(pt.lat) >= -90 &&
+              Number(pt.lat) <= 90 &&
+              Number(pt.lon) >= -180 &&
+              Number(pt.lon) <= 180,
+          ),
           provinceClusters: data.provinceClusters || [],
           regionClusters: data.regionClusters || [],
-          heatGrid: data.heatGrid || [],
+          heatGrid: heatCells,
         });
       }
     } catch (err) {
+      if (
+        err?.name === "CanceledError" ||
+        err?.name === "AbortError" ||
+        err?.code === "ERR_CANCELED"
+      ) {
+        return;
+      }
       toast(err.response?.data?.message || "Không thể tải dữ liệu bản đồ GIS", "error");
     } finally {
-      setLoading(false);
+      if (!controller || !controller.signal.aborted) {
+        setLoading(false);
+      }
     }
-  }, [filters, viewMode, radiusPin, toast]);
+  }, [filters, viewMode, debouncedZoom, radiusPin, toast]);
 
   useEffect(() => {
     fetchOccurrences();
@@ -849,9 +930,14 @@ export default function OccurrenceMapPage() {
   useEffect(() => {
     const layerGroup = dataLayerGroupRef.current;
     const renderer = canvasRendererRef.current;
-    if (!layerGroup || !mapRef.current) return;
+    const map = mapRef.current;
+    if (!layerGroup || !map) return;
 
     layerGroup.clearLayers();
+    if (heatLayerRef.current) {
+      map.removeLayer(heatLayerRef.current);
+      heatLayerRef.current = null;
+    }
 
     // 1. PostGIS Radius Query Circle & Center Pin
     if (viewMode === "radius" && radiusPin.lat != null && radiusPin.lon != null) {
@@ -912,81 +998,90 @@ export default function OccurrenceMapPage() {
       }).addTo(layerGroup);
     }
 
-    // 3. Density / Heatmap Mode (0.25 deg PostGIS grid + Smooth Thermal Halos + Circular Provincial Nodes)
+    // 3. Genuine Spatial Density Heatmap Mode (PostGIS Scale-Adaptive Spatial Grid + Leaflet 2D Canvas Kernel Density)
     if (viewMode === "heatmap") {
       const heatCells = mapData.heatGrid || [];
-      const maxGrid = heatCells.reduce((m, g) => Math.max(m, g.count), 1);
+      if (heatCells.length === 0) return;
 
-      if (heatmapStyle !== "provinces") {
-        heatCells.forEach((cell) => {
-          const color = heatColor(cell.count, maxGrid);
-          const norm = Math.pow(cell.count / maxGrid, 0.5);
-          const radiusPx = Math.round(10 + norm * 18);
+      const maxGrid = heatCells.reduce((m, g) => Math.max(m, Number(g.count || 0)), 1);
+      const gridDeg = Number(mapData.densityMeta?.gridSizeDeg) || 0.2;
+      const halfDeg = gridDeg / 2;
+      const gridKm = Number(mapData.densityMeta?.gridSizeKm) || Number((gridDeg * 111.32).toFixed(1));
 
-          // Lớp 1: Vầng nhiệt lan tỏa mềm (Outer Thermal Halo) trên Canvas
-          L.circleMarker([cell.lat, cell.lon], {
+      // Tính bán kính hạt nhân (kernel radius & blur) thích ứng theo mức thu phóng để không biến toàn quốc thành 1 vùng đỏ đồng nhất
+      const heatRadius =
+        mapZoom <= 5 ? 15 : mapZoom === 6 ? 19 : mapZoom <= 8 ? 24 : mapZoom <= 10 ? 28 : 34;
+      const heatBlur =
+        mapZoom <= 5 ? 12 : mapZoom === 6 ? 15 : mapZoom <= 8 ? 18 : mapZoom <= 10 ? 20 : 24;
+
+      // Dựng mảng [lat, lon, normalizedWeight] từ trọng tâm tọa độ thực của từng ô lưới PostGIS
+      const heatPoints = heatCells.map((cell) => {
+        const weight = Math.min(
+          1,
+          Math.max(0.16, Math.pow(Number(cell.count || 1) / maxGrid, 0.48)),
+        );
+        return [Number(cell.lat), Number(cell.lon), weight];
+      });
+
+      const heatLayer = createLeafletHeatLayer(heatPoints, {
+        radius: heatRadius,
+        blur: heatBlur,
+        max: 1.0,
+        minOpacity: 0.24,
+        maxOpacity: 0.86,
+      });
+      heatLayer.addTo(map);
+      heatLayerRef.current = heatLayer;
+
+      // Vẽ ô lưới tương tác (ẩn hoặc viền mảnh khi bật kiểu 'grid') để người dùng nhấp vào tra cứu số bản ghi thực của từng ô
+      heatCells.forEach((cell) => {
+        const cLat = cell.cellLat != null ? Number(cell.cellLat) : Number(cell.lat);
+        const cLon = cell.cellLon != null ? Number(cell.cellLon) : Number(cell.lon);
+        const color = heatColor(cell.count, maxGrid);
+        const showGridOutline = heatmapStyle === "grid";
+
+        L.rectangle(
+          [
+            [cLat - halfDeg, cLon - halfDeg],
+            [cLat + halfDeg, cLon + halfDeg],
+          ],
+          {
             renderer,
-            radius: Math.round(radiusPx * 1.9),
             fillColor: color,
-            color: color,
-            weight: 0,
-            fillOpacity: 0.15,
-            interactive: false,
-          }).addTo(layerGroup);
-
-          // Lớp 2: Ô lưới chuẩn địa lý PostGIS 0.25° × 0.25° (Geographic Grid Cell)
-          L.rectangle(
-            [
-              [cell.lat - 0.125, cell.lon - 0.125],
-              [cell.lat + 0.125, cell.lon + 0.125],
-            ],
+            color: showGridOutline ? color : "transparent",
+            weight: showGridOutline ? 0.9 : 0,
+            opacity: showGridOutline ? 0.78 : 0,
+            fillOpacity: showGridOutline ? 0.22 : 0.01,
+          },
+        )
+          .bindPopup(
+            `<div class="vi-gis-specimen-popup">
+              <div class="vi-gis-popup-header">
+                <div class="vi-gis-popup-badges">
+                  <span class="vi-gis-popup-rank" style="background:${color};">OCCURRENCE RECORD DENSITY</span>
+                  <span class="vi-gis-popup-code">~${gridKm} × ${gridKm} KM</span>
+                </div>
+                <div class="vi-gis-popup-title" style="font-style:normal;">Mật độ điểm ghi nhận mẫu vật</div>
+              </div>
+              <dl class="vi-gis-popup-dl">
+                <div><dt>Trọng tâm ghi nhận</dt><dd class="mono">${formatWgs84(cell.lat, cell.lon)}</dd></div>
+                <div><dt>Số điểm ghi nhận</dt><dd><strong>${Number(cell.count).toLocaleString()}</strong> bản ghi mẫu vật</dd></div>
+                <div><dt>Độ phân giải ô lưới</dt><dd>${gridDeg}° × ${gridDeg}° (~${gridKm} km)</dd></div>
+                <div><dt>Tỷ lệ so với cực đại</dt><dd>${((Number(cell.count) / maxGrid) * 100).toFixed(1)}%</dd></div>
+              </dl>
+            </div>`,
             {
-              renderer,
-              fillColor: color,
-              color,
-              weight: 0.8,
-              opacity: 0.68,
-              fillOpacity: 0.34,
+              maxWidth: 310,
+              minWidth: 250,
+              autoPanPaddingTopLeft: [20, 64],
+              autoPanPaddingBottomRight: [20, 84],
             },
           )
-            .bindPopup(
-              `<div class="vi-gis-specimen-popup">
-                <div class="vi-gis-popup-header">
-                  <div class="vi-gis-popup-badges">
-                    <span class="vi-gis-popup-rank" style="background:${color};">POSTGIS 0.25° GRID</span>
-                    <span class="vi-gis-popup-code">~27.5 × 27.5 KM</span>
-                  </div>
-                  <div class="vi-gis-popup-title" style="font-style:normal;">Ô lưới mật độ không gian</div>
-                </div>
-                <dl class="vi-gis-popup-dl">
-                  <div><dt>Tâm ô lưới</dt><dd class="mono">${formatWgs84(cell.lat, cell.lon)}</dd></div>
-                  <div><dt>Mật độ ghi nhận</dt><dd><strong>${cell.count.toLocaleString()}</strong> mẫu vật</dd></div>
-                  <div><dt>Tỷ lệ so với đỉnh</dt><dd>${((cell.count / maxGrid) * 100).toFixed(1)}%</dd></div>
-                </dl>
-              </div>`,
-              {
-                maxWidth: 300,
-                minWidth: 245,
-                autoPanPaddingTopLeft: [20, 64],
-                autoPanPaddingBottomRight: [20, 84],
-              },
-            )
-            .addTo(layerGroup);
+          .addTo(layerGroup);
+      });
 
-          // Lớp 3: Nhân nhiệt trung tâm (Inner Thermal Core)
-          L.circleMarker([cell.lat, cell.lon], {
-            renderer,
-            radius: Math.max(4, Math.round(radiusPx * 0.45)),
-            fillColor: color,
-            color: "#FFFFFF",
-            weight: 0.8,
-            fillOpacity: 0.82,
-            interactive: false,
-          }).addTo(layerGroup);
-        });
-      }
-
-      if (heatmapStyle !== "grid") {
+      // Tùy chọn phụ: chỉ hiển thị nhãn cụm tỉnh khi người dùng chủ động bật "clusters"
+      if (heatmapStyle === "clusters") {
         const clusters = mapData.provinceClusters || [];
         const maxProv = clusters.reduce((m, c) => Math.max(m, c.count), 1);
 
@@ -994,7 +1089,7 @@ export default function OccurrenceMapPage() {
           if (cluster.lat == null || cluster.lon == null) return;
           const color = heatColor(cluster.count, maxProv);
           const ratio = Math.pow(cluster.count / maxProv, 0.55);
-          const size = Math.round(26 + ratio * 16);
+          const size = Math.round(24 + ratio * 14);
           const countLabel =
             cluster.count >= 1000 ? `${(cluster.count / 1000).toFixed(1)}k` : cluster.count;
           const shortProv = String(cluster.provinceNameVn || "").replace(/^(Tỉnh|Thành phố)\s+/i, "");
@@ -1002,52 +1097,16 @@ export default function OccurrenceMapPage() {
           const icon = L.divIcon({
             className: "vi-leaflet-cluster-icon",
             html: `<div class="vi-density-node-wrap">
-              <div class="vi-density-node-circle" style="width:${size}px;height:${size}px;background:${color};box-shadow:0 0 0 4px ${color}38, 0 3px 8px rgba(0,0,0,0.26);">
+              <div class="vi-density-node-circle" style="width:${size}px;height:${size}px;background:${color};">
                 <span>${countLabel}</span>
               </div>
-              ${
-                idx < 10
-                  ? `<span class="vi-density-node-label">${escapeHtml(shortProv)}</span>`
-                  : ""
-              }
+              ${idx < 8 ? `<span class="vi-density-node-label">${escapeHtml(shortProv)}</span>` : ""}
             </div>`,
             iconSize: [size + 36, size + 20],
             iconAnchor: [(size + 36) / 2, size / 2],
           });
 
-          L.marker([cluster.lat, cluster.lon], { icon })
-            .bindPopup(
-              `<div class="vi-gis-specimen-popup">
-                <div class="vi-gis-popup-header">
-                  <div class="vi-gis-popup-badges">
-                    <span class="vi-gis-popup-rank" style="background:${color};">PROVINCE DENSITY</span>
-                    <span class="vi-gis-popup-code">TOP #${idx + 1}</span>
-                  </div>
-                  <div class="vi-gis-popup-title" style="font-style:normal;">${escapeHtml(cluster.provinceNameVn)}</div>
-                </div>
-                <dl class="vi-gis-popup-dl">
-                  <div><dt>Tổng mẫu vật</dt><dd><strong>${cluster.count.toLocaleString()}</strong> bản ghi</dd></div>
-                  ${
-                    cluster.speciesCount
-                      ? `<div><dt>Độ giàu loài</dt><dd><strong>${cluster.speciesCount.toLocaleString()}</strong> loài</dd></div>`
-                      : ""
-                  }
-                  ${
-                    cluster.region
-                      ? `<div><dt>Vùng sinh thái</dt><dd>${escapeHtml(cluster.region)}</dd></div>`
-                      : ""
-                  }
-                  <div><dt>Tọa độ trọng tâm</dt><dd class="mono">${formatWgs84(cluster.lat, cluster.lon)}</dd></div>
-                </dl>
-              </div>`,
-              {
-                maxWidth: 300,
-                minWidth: 250,
-                autoPanPaddingTopLeft: [20, 64],
-                autoPanPaddingBottomRight: [20, 84],
-              },
-            )
-            .addTo(layerGroup);
+          L.marker([cluster.lat, cluster.lon], { icon }).addTo(layerGroup);
         });
       }
       return;
@@ -1798,21 +1857,27 @@ export default function OccurrenceMapPage() {
               {viewMode === "heatmap" ? (
                 <div className="vi-gis-field">
                   <label htmlFor="gis-heatmap-style">
-                    {isEn ? "Density Display Layer" : "Kiểu hiển thị mật độ không gian"}
+                    {isEn ? "Occurrence Density View" : "Kiểu hiển thị Mật độ điểm ghi nhận"}
                   </label>
                   <select
                     id="gis-heatmap-style"
                     value={heatmapStyle}
                     onChange={(e) => setHeatmapStyle(e.target.value)}
                   >
-                    <option value="hybrid">
-                      {isEn ? "Hybrid (0.25° Grid + Province Nodes)" : "Kết hợp (Lưới nhiệt 0.25° + Cụm tỉnh)"}
+                    <option value="heatmap">
+                      {isEn
+                        ? "Continuous Kernel Heatmap (Recommended)"
+                        : "Bản đồ nhiệt liên tục (Chuẩn Kernel Density)"}
                     </option>
                     <option value="grid">
-                      {isEn ? "0.25° Spatial Heat Grid Only" : "Chỉ lưới nhiệt không gian 0.25°"}
+                      {isEn
+                        ? "Heatmap + PostGIS Spatial Grid Cells"
+                        : "Bản đồ nhiệt + Ô lưới định lượng PostGIS"}
                     </option>
-                    <option value="provinces">
-                      {isEn ? "Provincial Density Circles Only" : "Chỉ vòng tròn mật độ Tỉnh/Thành"}
+                    <option value="clusters">
+                      {isEn
+                        ? "Heatmap + Provincial Count Labels"
+                        : "Bản đồ nhiệt + Nhãn tổng hợp Tỉnh/Thành"}
                     </option>
                   </select>
                 </div>
@@ -2301,7 +2366,34 @@ export default function OccurrenceMapPage() {
           {/* LEAFLET CANVAS CONTAINER */}
           <div ref={mapContainerRef} className="vi-leaflet-canvas" />
 
-          {/* SECTION 10: COLLAPSIBLE MAP LEGEND & SPATIAL STATISTICS PANEL */}
+          {/* MEANINGFUL EMPTY STATE OVERLAY WHEN NO OCCURRENCES MATCH (Section 3.8 & 8.5) */}
+          {!loading &&
+            (mapData.totalMatching === 0 ||
+              (viewMode === "heatmap" && (mapData.heatGrid || []).length === 0)) && (
+              <div className="vi-gis-empty-overlay" data-testid="webgis-empty-state">
+                <div className="vi-gis-empty-card">
+                  <strong>
+                    {isEn
+                      ? "No valid occurrence records in current filter"
+                      : "Không có điểm ghi nhận mẫu vật hợp lệ trong phạm vi lọc"}
+                  </strong>
+                  <p>
+                    {isEn
+                      ? "No georeferenced records match the active filter criteria or spatial extent. Areas without records do not display density hotspots."
+                      : "Không tìm thấy bản ghi tọa độ WGS84 hợp lệ khớp với điều kiện lọc hiện tại. Các khu vực chưa có dữ liệu thu mẫu sẽ giữ nguyên nền bản đồ trống."}
+                  </p>
+                  <button
+                    type="button"
+                    className="button button-sm button-primary"
+                    onClick={handleResetAllFilters}
+                  >
+                    {t("webgis.actions.resetAll")}
+                  </button>
+                </div>
+              </div>
+            )}
+
+          {/* SECTION 4, 5 & 10: COLLAPSIBLE MAP LEGEND & SPATIAL STATISTICS PANEL */}
           <div
             className={`vi-gis-legend-panel ${legendCollapsed ? "is-collapsed" : ""}`}
             data-testid="gis-legend-panel"
@@ -2312,7 +2404,13 @@ export default function OccurrenceMapPage() {
                 className="vi-gis-legend-toggle"
                 onClick={() => setLegendCollapsed((prev) => !prev)}
               >
-                <strong>{t("webgis.actions.legendPanel")}</strong>
+                <strong>
+                  {viewMode === "heatmap"
+                    ? isEn
+                      ? "MẬT ĐỘ GHI NHẬN (OCCURRENCE RECORD DENSITY)"
+                      : "MẬT ĐỘ GHI NHẬN (OCCURRENCE RECORD DENSITY)"
+                    : t("webgis.actions.legendPanel")}
+                </strong>
                 <span>{legendCollapsed ? "▴" : "▾"}</span>
               </button>
             </div>
@@ -2321,55 +2419,73 @@ export default function OccurrenceMapPage() {
               <div className="vi-gis-legend-body">
                 {/* Dynamic Mode Legend */}
                 {viewMode === "heatmap" ? (
-                  <div className="vi-gis-legend-row">
-                    <span className="vi-gis-legend-label">
-                      {isEn ? "Density Scale:" : "Phổ mật độ không gian:"}
-                    </span>
-                    <span className="vi-gis-heat-ramp-bar" aria-hidden="true" />
-                    <span>
-                      <i className="is-round" style={{ background: "#15803D" }} />{" "}
-                      {isEn ? "Low" : "Thấp (<200)"}
-                    </span>
-                    <span>
-                      <i className="is-round" style={{ background: "#65A30D" }} />{" "}
-                      {isEn ? "Moderate" : "Trung bình"}
-                    </span>
-                    <span>
-                      <i className="is-round" style={{ background: "#D97706" }} />{" "}
-                      {isEn ? "Moderate-High" : "Khá cao"}
-                    </span>
-                    <span>
-                      <i className="is-round" style={{ background: "#EA580C" }} />{" "}
-                      {isEn ? "High" : "Cao"}
-                    </span>
-                    <span>
-                      <i className="is-round" style={{ background: "#DC2626" }} />{" "}
-                      {isEn ? "Hotspot" : "Điểm nóng (>10k)"}
-                    </span>
-                    <div className="vi-gis-density-quick-pills">
-                      <button
-                        type="button"
-                        className={heatmapStyle === "hybrid" ? "active" : ""}
-                        onClick={() => setHeatmapStyle("hybrid")}
-                      >
-                        {isEn ? "Grid + Provinces" : "Lưới + Tỉnh"}
-                      </button>
-                      <button
-                        type="button"
-                        className={heatmapStyle === "grid" ? "active" : ""}
-                        onClick={() => setHeatmapStyle("grid")}
-                      >
-                        {isEn ? "0.25° Grid" : "Chỉ lưới 0.25°"}
-                      </button>
-                      <button
-                        type="button"
-                        className={heatmapStyle === "provinces" ? "active" : ""}
-                        onClick={() => setHeatmapStyle("provinces")}
-                      >
-                        {isEn ? "Provinces" : "Chỉ cụm tỉnh"}
-                      </button>
+                  <>
+                    <div className="vi-gis-legend-row">
+                      <span className="vi-gis-legend-label">
+                        {isEn ? "MẬT ĐỘ GHI NHẬN:" : "MẬT ĐỘ GHI NHẬN:"}
+                      </span>
+                      <span className="vi-gis-continuous-scale">
+                        <span className="vi-scale-end">
+                          {mapData.densityMeta?.maxCellCount > 0
+                            ? `${isEn ? "Low" : "Thấp"} (${mapData.densityMeta.minCellCount.toLocaleString()})`
+                            : isEn
+                              ? "Low"
+                              : "Thấp"}
+                        </span>
+                        <span className="vi-gis-heat-ramp-bar" aria-hidden="true" />
+                        <span className="vi-scale-mid">
+                          {mapData.densityMeta?.maxCellCount > 0
+                            ? `${isEn ? "Medium" : "Trung bình"} (~${(
+                                mapData.densityMeta.medianCellCount ||
+                                Math.max(1, Math.round(mapData.densityMeta.maxCellCount * 0.25))
+                              ).toLocaleString()})`
+                            : isEn
+                              ? "Medium"
+                              : "Trung bình"}
+                        </span>
+                        <span className="vi-scale-end is-high">
+                          {mapData.densityMeta?.maxCellCount > 0
+                            ? `${isEn ? "High" : "Cao"} (${mapData.densityMeta.maxCellCount.toLocaleString()} ${
+                                isEn ? "records/cell" : "bản ghi/ô"
+                              } ~${mapData.densityMeta.gridSizeKm || 22.3}km)`
+                            : isEn
+                              ? "High"
+                              : "Cao"}
+                        </span>
+                      </span>
+                      <div className="vi-gis-density-quick-pills">
+                        <button
+                          type="button"
+                          className={heatmapStyle === "heatmap" ? "active" : ""}
+                          onClick={() => setHeatmapStyle("heatmap")}
+                        >
+                          {isEn ? "Heatmap" : "Bề mặt nhiệt"}
+                        </button>
+                        <button
+                          type="button"
+                          className={heatmapStyle === "grid" ? "active" : ""}
+                          onClick={() => setHeatmapStyle("grid")}
+                        >
+                          {isEn ? "+ Spatial Grid" : "+ Ô lưới PostGIS"}
+                        </button>
+                        <button
+                          type="button"
+                          className={heatmapStyle === "clusters" ? "active" : ""}
+                          onClick={() => setHeatmapStyle("clusters")}
+                        >
+                          {isEn ? "+ Province Totals" : "+ Cụm tỉnh"}
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                    <div
+                      className="vi-gis-density-disclaimer"
+                      data-testid="webgis-density-disclaimer"
+                    >
+                      {isEn
+                        ? "Note: Represents spatial concentration of recorded specimen occurrences (Occurrence Record Density / survey effort), NOT actual insect population abundance or species richness."
+                        : "Lưu ý khoa học: Biểu diễn mức độ tập trung điểm ghi nhận mẫu vật (Mật độ điểm ghi nhận / cường độ thu mẫu), KHÔNG đại diện cho mật độ quần thể côn trùng thực tế ngoài tự nhiên."}
+                    </div>
+                  </>
                 ) : (
                   <div className="vi-gis-legend-row">
                     <span className="vi-gis-legend-label">

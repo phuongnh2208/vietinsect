@@ -232,6 +232,16 @@ async function getMapOccurrences(filters, { isAdmin = false } = {}) {
       distinctSpeciesCount: 0,
       provincesCount: provinceClusters.length,
     },
+    densityMeta: result.densityMeta || {
+      method: "POSTGIS_ADAPTIVE_SPATIAL_GRID",
+      gridSizeDeg: 0.2,
+      gridSizeKm: 22.3,
+      cellCount: (result.heatGrid || []).length,
+      minCellCount: 0,
+      medianCellCount: 0,
+      p75CellCount: 0,
+      maxCellCount: (result.heatGrid || []).reduce((m, g) => Math.max(m, Number(g.count || 0)), 0),
+    },
     points: result.points.map((pt) => ({
       id: Number(pt.specimen_id),
       code: pt.specimen_code,
@@ -260,6 +270,8 @@ async function getMapOccurrences(filters, { isAdmin = false } = {}) {
     heatGrid: result.heatGrid.map((g) => ({
       lat: Number(g.lat),
       lon: Number(g.lon),
+      cellLat: g.cell_lat != null ? Number(g.cell_lat) : Number(g.lat),
+      cellLon: g.cell_lon != null ? Number(g.cell_lon) : Number(g.lon),
       count: Number(g.count),
     })),
   };

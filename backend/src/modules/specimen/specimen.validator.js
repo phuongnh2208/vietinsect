@@ -60,6 +60,8 @@ const mapQuerySchema = Joi.object({
   lat: Joi.number().min(-90).max(90),
   lon: Joi.number().min(-180).max(180),
   radiusKm: Joi.number().min(0.1).max(1000),
+  zoom: Joi.number().integer().min(1).max(22),
+  gridSizeDeg: Joi.number().min(0.005).max(2.0),
   limit: Joi.number().integer().min(50).max(MAX_MAP_LIMIT).default(DEFAULT_MAP_LIMIT),
 });
 

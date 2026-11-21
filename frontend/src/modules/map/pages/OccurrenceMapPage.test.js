@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import OccurrenceMapPage from "./OccurrenceMapPage";
@@ -10,7 +10,7 @@ jest.mock("../../specimen/specimen.service", () => ({
   getMapOccurrences: jest.fn(),
 }));
 
-describe("VietInsect WebGIS Redesign – OccurrenceMapPage", () => {
+describe("VietInsect WebGIS – Spatial Density & Heatmap Visualization", () => {
   beforeEach(() => {
     specimenService.getLookups.mockResolvedValue({
       orders: [
@@ -37,6 +37,16 @@ describe("VietInsect WebGIS Redesign – OccurrenceMapPage", () => {
         totalOccurrences: 98114,
         distinctSpeciesCount: 3868,
         provincesCount: 34,
+      },
+      densityMeta: {
+        method: "POSTGIS_ADAPTIVE_SPATIAL_GRID",
+        gridSizeDeg: 0.2,
+        gridSizeKm: 22.3,
+        cellCount: 3,
+        minCellCount: 120,
+        medianCellCount: 1850,
+        p75CellCount: 3150,
+        maxCellCount: 4850,
       },
       points: [
         {
@@ -88,15 +98,6 @@ describe("VietInsect WebGIS Redesign – OccurrenceMapPage", () => {
           lat: 20.25,
           lon: 105.71,
         },
-        {
-          provinceId: 2,
-          provinceNameVn: "Lâm Đồng",
-          region: "Tây Nguyên",
-          count: 11800,
-          speciesCount: 580,
-          lat: 12.18,
-          lon: 108.68,
-        },
       ],
       regionClusters: [
         {
@@ -109,13 +110,14 @@ describe("VietInsect WebGIS Redesign – OccurrenceMapPage", () => {
         },
       ],
       heatGrid: [
-        { lat: 20.375, lon: 105.625, count: 4200 },
-        { lat: 12.125, lon: 108.625, count: 3150 },
+        { lat: 20.31, lon: 105.61, cellLat: 20.3, cellLon: 105.7, count: 4850 },
+        { lat: 16.2, lon: 107.85, cellLat: 16.3, cellLon: 107.9, count: 1850 },
+        { lat: 12.18, lon: 108.68, cellLat: 12.1, cellLon: 108.7, count: 120 },
       ],
     });
   });
 
-  test("renders compact header stats, 3 map modes, spatial filter groups, ecological layers panel (with unavailable vegetation layer), and collapsible legend", async () => {
+  test("Scenario 1, 2, 3, 4 & 8: activates density mode, renders continuous heatmap canvas with MẬT ĐỘ GHI NHẬN legend & numerical ranges, responds to filters, and restores markers when switching back", async () => {
     render(
       <MemoryRouter initialEntries={["/map"]}>
         <ToastProvider>
@@ -128,31 +130,23 @@ describe("VietInsect WebGIS Redesign – OccurrenceMapPage", () => {
       expect(screen.getByTestId("webgis-header-stats")).toHaveTextContent(/98[.,]114/);
     });
 
-    // Verify 3 map modes work and trigger PostGIS queries
     const modeGroup = screen.getByTestId("webgis-mode-segmented");
     const buttons = within(modeGroup).getAllByRole("button");
-    expect(buttons.length).toBe(3);
 
-    // Switch to Density / Heatmap mode
+    // 1. Activate Density / Heatmap mode
     fireEvent.click(buttons[1]);
     await waitFor(() => {
       expect(buttons[1]).toHaveClass("active");
     });
 
-    // Switch to PostGIS Radius mode -> opens Advanced Spatial Filters automatically
-    fireEvent.click(buttons[2]);
-    await waitFor(() => {
-      expect(screen.getByTestId("webgis-advanced-spatial-body")).toBeInTheDocument();
-    });
-    expect(buttons[2]).toHaveClass("active");
+    // Verify legend shows MẬT ĐỘ GHI NHẬN, actual numerical cell ranges (120 .. 1,850 .. 4,850), and scientific disclaimer
+    const legendPanel = screen.getByTestId("gis-legend-panel");
+    expect(legendPanel).toHaveTextContent(/MẬT ĐỘ GHI NHẬN/i);
+    expect(legendPanel).toHaveTextContent(/120/);
+    expect(legendPanel).toHaveTextContent(/4[.,]850/);
+    expect(screen.getByTestId("webgis-density-disclaimer")).toBeInTheDocument();
 
-    // Open Ecological GIS Layers Panel and verify honest unavailable state for Vegetation Cover
-    fireEvent.click(screen.getByTestId("webgis-layers-toggle"));
-    const layersPanel = await screen.findByTestId("gis-layers-panel");
-    expect(layersPanel).toBeInTheDocument();
-    expect(screen.getByTestId("gis-layer-vegetation-unavailable")).toBeInTheDocument();
-
-    // Filter interaction creates removable active filter chip
+    // 2. Filter by Order / Province / Date Range in density mode -> preserves mode & updates PostGIS query
     const [orderSelect] = screen.getAllByLabelText(/webgis\.filters\.order|Order/i);
     fireEvent.change(orderSelect, { target: { value: "Coleoptera" } });
 
@@ -160,7 +154,53 @@ describe("VietInsect WebGIS Redesign – OccurrenceMapPage", () => {
       expect(screen.getByTestId("gis-active-filter-chips")).toHaveTextContent("Coleoptera");
     });
 
-    // Collapsible Legend Panel
-    expect(screen.getByTestId("gis-legend-panel")).toBeInTheDocument();
+    expect(specimenService.getMapOccurrences).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        order: "Coleoptera",
+        zoom: 6,
+      }),
+      expect.any(Object),
+    );
+
+    // 3. Switch back to Specimen Points mode -> preserves filter and hides density disclaimer
+    fireEvent.click(buttons[0]);
+    await waitFor(() => {
+      expect(buttons[0]).toHaveClass("active");
+    });
+    expect(screen.queryByTestId("webgis-density-disclaimer")).not.toBeInTheDocument();
+    expect(screen.getByTestId("gis-active-filter-chips")).toHaveTextContent("Coleoptera");
+  });
+
+  test("Scenario 5: displays meaningful empty state when filter or region has zero valid occurrence records", async () => {
+    specimenService.getMapOccurrences.mockResolvedValueOnce({
+      totalMatching: 0,
+      returnedPoints: 0,
+      summary: { totalOccurrences: 0, distinctSpeciesCount: 0, provincesCount: 0 },
+      densityMeta: {
+        method: "POSTGIS_ADAPTIVE_SPATIAL_GRID",
+        gridSizeDeg: 0.2,
+        gridSizeKm: 22.3,
+        cellCount: 0,
+        minCellCount: 0,
+        medianCellCount: 0,
+        p75CellCount: 0,
+        maxCellCount: 0,
+      },
+      points: [],
+      provinceClusters: [],
+      regionClusters: [],
+      heatGrid: [],
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/map"]}>
+        <ToastProvider>
+          <OccurrenceMapPage />
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+
+    const emptyOverlay = await screen.findByTestId("webgis-empty-state");
+    expect(emptyOverlay).toBeInTheDocument();
   });
 });

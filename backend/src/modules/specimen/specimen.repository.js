@@ -296,22 +296,52 @@ async function findMany(filters, { includePrivate = false } = {}) {
  * 2. provinceClusters: mật độ tổng hợp trên TOÀN BỘ tập kết quả khớp lọc theo tỉnh/thành
  * 3. heatGrid: lưới mật độ không gian (0.25 độ ~ 25km) trên toàn bộ tập kết quả khớp lọc
  */
+/**
+ * Xác định độ phân giải ô lưới không gian PostGIS (độ kinh/vĩ) tương ứng với mức thu phóng (zoom) của bản đồ.
+ */
+function resolveGridSizeDeg(filters = {}) {
+  if (filters.gridSizeDeg && Number(filters.gridSizeDeg) >= 0.005 && Number(filters.gridSizeDeg) <= 2) {
+    return Number(filters.gridSizeDeg);
+  }
+  const zoom = Number(filters.zoom) || 6;
+  if (zoom >= 13) return 0.01;  // ~1.1 km
+  if (zoom >= 11) return 0.025; // ~2.8 km
+  if (zoom >= 9) return 0.05;   // ~5.5 km
+  if (zoom >= 7) return 0.125;  // ~13.8 km
+  return 0.2;                   // ~22.2 km ở tỷ lệ toàn quốc (zoom <= 6)
+}
+
+/**
+ * Điều kiện kiểm tra tọa độ địa lý WGS84 hợp lệ trên PostGIS (loại trừ NULL, NaN, ngoài dải [-90..90, -180..180], hoặc (0,0)).
+ */
+function applyValidCoordinatesConstraint(qb) {
+  qb.whereNotNull("s.collection_point").whereRaw(
+    `ST_Y(s.collection_point::geometry) BETWEEN -90 AND 90
+     AND ST_X(s.collection_point::geometry) BETWEEN -180 AND 180
+     AND NOT (ST_Y(s.collection_point::geometry) = 0 AND ST_X(s.collection_point::geometry) = 0)`,
+  );
+  return qb;
+}
+
 async function findMapData(filters, { includePrivate = false } = {}) {
   const limit = Number(filters.limit) || 3000;
+  const gridSizeDeg = resolveGridSizeDeg(filters);
+  const invGrid = Number((1 / gridSizeDeg).toFixed(6));
+  const halfGrid = Number((gridSizeDeg / 2).toFixed(6));
   const needRegistryJoin = Boolean(
     filters.basisOfRecord ||
       (filters.institutionCode && String(filters.institutionCode).trim()) ||
       (filters.q && filters.q.trim()),
   );
 
-  // 1. Đếm tổng & gom cụm theo Tỉnh/thành (bao gồm Độ giàu loài Species Richness & Vùng sinh thái)
+  // 1. Đếm tổng & gom cụm theo Tỉnh/thành (loại trừ tọa độ không hợp lệ & bản ghi trùng specimen_id)
   const clusterQb = knex({ s: "specimens" })
     .leftJoin({ p: "provinces" }, "s.province_id", "p.province_id")
     .leftJoin({ t1: "taxa" }, "s.taxon_id", "t1.taxon_id");
   if (needRegistryJoin) {
     clusterQb.join({ sr: "specimen_registry" }, "s.specimen_id", "sr.specimen_id");
   }
-  clusterQb.whereNotNull("s.collection_point");
+  applyValidCoordinatesConstraint(clusterQb);
   applyFilters(clusterQb, filters, { includePrivate, needRegistryJoin });
 
   const clusterPromise = clusterQb
@@ -322,7 +352,7 @@ async function findMapData(filters, { includePrivate = false } = {}) {
       knex.raw("COALESCE(p.province_name_vn, 'Chưa rõ tỉnh/thành') AS province_name_vn"),
       "p.province_name_en",
       "p.region",
-      knex.raw("COUNT(*)::int AS count"),
+      knex.raw("COUNT(DISTINCT s.specimen_id)::int AS count"),
       knex.raw("COUNT(DISTINCT s.taxon_id) FILTER (WHERE t1.taxon_rank = 'Species')::int AS species_count"),
       knex.raw("ROUND(AVG(ST_Y(s.collection_point::geometry))::numeric, 5)::float AS lat"),
       knex.raw("ROUND(AVG(ST_X(s.collection_point::geometry))::numeric, 5)::float AS lon"),
@@ -334,33 +364,42 @@ async function findMapData(filters, { includePrivate = false } = {}) {
   if (needRegistryJoin) {
     summaryQb.join({ sr: "specimen_registry" }, "s.specimen_id", "sr.specimen_id");
   }
-  summaryQb.whereNotNull("s.collection_point");
+  applyValidCoordinatesConstraint(summaryQb);
   applyFilters(summaryQb, filters, { includePrivate, needRegistryJoin });
   const summaryPromise = summaryQb
     .select(
-      knex.raw("COUNT(*)::int AS total_occurrences"),
+      knex.raw("COUNT(DISTINCT s.specimen_id)::int AS total_occurrences"),
       knex.raw("COUNT(DISTINCT s.taxon_id) FILTER (WHERE t1.taxon_rank = 'Species')::int AS distinct_species_count"),
       knex.raw("COUNT(DISTINCT s.province_id) FILTER (WHERE s.province_id IS NOT NULL)::int AS provinces_count"),
     )
     .first();
 
-  // 2. Lưới mật độ không gian (Grid 0.25 độ) để vẽ Heatmap chuẩn xác cho cả 100k+ điểm
+  // 2. Lưới mật độ không gian PostGIS thích ứng theo tỷ lệ thu phóng (Adaptive Spatial Grid Aggregation)
+  // Trả về trọng tâm tọa độ thực của các điểm trong ô lưới (lat, lon), tâm ô lưới (cell_lat, cell_lon), và số bản ghi duy nhất (count)
   const gridQb = knex({ s: "specimens" });
   if (needRegistryJoin) {
     gridQb.join({ sr: "specimen_registry" }, "s.specimen_id", "sr.specimen_id");
   }
-  gridQb.whereNotNull("s.collection_point");
+  applyValidCoordinatesConstraint(gridQb);
   applyFilters(gridQb, filters, { includePrivate, needRegistryJoin });
 
   const gridPromise = gridQb
     .select(
-      knex.raw("ROUND((FLOOR(ST_Y(s.collection_point::geometry) * 4) / 4.0 + 0.125)::numeric, 4)::float AS lat"),
-      knex.raw("ROUND((FLOOR(ST_X(s.collection_point::geometry) * 4) / 4.0 + 0.125)::numeric, 4)::float AS lon"),
-      knex.raw("COUNT(*)::int AS count"),
+      knex.raw(
+        "ROUND((FLOOR(ST_Y(s.collection_point::geometry) * ?) / ? + ?)::numeric, 5)::float AS cell_lat",
+        [invGrid, invGrid, halfGrid],
+      ),
+      knex.raw(
+        "ROUND((FLOOR(ST_X(s.collection_point::geometry) * ?) / ? + ?)::numeric, 5)::float AS cell_lon",
+        [invGrid, invGrid, halfGrid],
+      ),
+      knex.raw("ROUND(AVG(ST_Y(s.collection_point::geometry))::numeric, 5)::float AS lat"),
+      knex.raw("ROUND(AVG(ST_X(s.collection_point::geometry))::numeric, 5)::float AS lon"),
+      knex.raw("COUNT(DISTINCT s.specimen_id)::int AS count"),
     )
     .groupByRaw("1, 2")
     .orderBy("count", "desc")
-    .limit(600);
+    .limit(1200);
 
   // 3. Điểm mẫu vật chi tiết
   const pointsQb = knex({ s: "specimens" })
@@ -370,7 +409,6 @@ async function findMapData(filters, { includePrivate = false } = {}) {
     .leftJoin({ t3: "taxa" }, "t2.parent_id", "t3.taxon_id")
     .leftJoin({ t4: "taxa" }, "t3.parent_id", "t4.taxon_id")
     .leftJoin({ p: "provinces" }, "s.province_id", "p.province_id")
-    .whereNotNull("s.collection_point")
     .select(
       "s.specimen_id",
       "sr.specimen_code",
@@ -407,6 +445,8 @@ async function findMapData(filters, { includePrivate = false } = {}) {
       knex.raw("ROUND(ST_X(s.collection_point::geometry)::numeric, 5)::float AS lon"),
     );
 
+  applyValidCoordinatesConstraint(pointsQb);
+
   if (filters.lat != null && filters.lon != null && filters.radiusKm != null) {
     pointsQb.select(
       knex.raw(
@@ -431,13 +471,38 @@ async function findMapData(filters, { includePrivate = false } = {}) {
       ? Number(summaryRow.total_occurrences)
       : provinceClusters.reduce((acc, row) => acc + Number(row.count || 0), 0);
 
+  // Tính phân vị thống kê mật độ thực tế trên các ô lưới có mẫu vật
+  const sortedCounts = (heatGrid || [])
+    .map((g) => Number(g.count || 0))
+    .filter((c) => c > 0)
+    .sort((a, b) => a - b);
+  const cellCount = sortedCounts.length;
+  const minCellCount = cellCount > 0 ? sortedCounts[0] : 0;
+  const maxCellCount = cellCount > 0 ? sortedCounts[cellCount - 1] : 0;
+  const medianCellCount =
+    cellCount > 0 ? sortedCounts[Math.floor((cellCount - 1) * 0.5)] : 0;
+  const p75CellCount =
+    cellCount > 0 ? sortedCounts[Math.floor((cellCount - 1) * 0.75)] : 0;
+
   return {
     totalMatching,
     returnedPoints: points.length,
     summary: {
       totalOccurrences: totalMatching,
       distinctSpeciesCount: Number(summaryRow?.distinct_species_count || 0),
-      provincesCount: Number(summaryRow?.provinces_count || provinceClusters.filter((c) => c.province_id != null).length),
+      provincesCount: Number(
+        summaryRow?.provinces_count || provinceClusters.filter((c) => c.province_id != null).length,
+      ),
+    },
+    densityMeta: {
+      method: "POSTGIS_ADAPTIVE_SPATIAL_GRID",
+      gridSizeDeg,
+      gridSizeKm: Number((gridSizeDeg * 111.32).toFixed(1)),
+      cellCount,
+      minCellCount,
+      medianCellCount,
+      p75CellCount,
+      maxCellCount,
     },
     points,
     provinceClusters,

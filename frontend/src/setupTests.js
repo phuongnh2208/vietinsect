@@ -33,6 +33,11 @@ if (typeof HTMLCanvasElement !== 'undefined') {
       fillText: () => {},
       drawImage: () => {},
       createLinearGradient: () => ({ addColorStop: () => {} }),
+      createRadialGradient: () => ({ addColorStop: () => {} }),
+      getImageData: (_x, _y, w = 1, h = 1) => ({
+        data: new Uint8ClampedArray(Math.max(1, w) * Math.max(1, h) * 4),
+      }),
+      putImageData: () => {},
     };
   };
 }
