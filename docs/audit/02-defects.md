@@ -647,6 +647,13 @@
 - **Công:** S
 - **Trạng thái:** Chưa đóng (ghi nhận theo yêu cầu sau Nhóm 2 Sprint D, chưa sửa)
 
+### DEF-115 · High · Security
+- **Vi phạm:** F-SR-04 / SCR-16 & §5.2 (cứng hóa chế độ truy vấn SQL trực tiếp của Admin).
+- **Hiện trạng:** Chế độ SQL trực tiếp ban đầu chỉ dùng `SET LOCAL ROLE` tùy chọn khi có biến môi trường `DB_READONLY_ROLE` và kiểm tra regex đơn giản, chưa bắt buộc trả 503 khi thiếu role chỉ-đọc `vietinsect_readonly` và chưa kiểm tra AST + whitelist hàm SQL.
+- **Kỳ vọng:** Bắt buộc `DB_READONLY_ROLE=vietinsect_readonly` (thiếu hoặc `SET LOCAL ROLE` lỗi → trả `503`, tuyệt đối không chạy bằng role chính); migration tạo role `vietinsect_readonly` chỉ `GRANT SELECT` trên bảng khoa học cho phép; parse AST bằng `node-sql-parser` kết hợp whitelist hàm SQL, chặn comment lồng/CTE ghi/`SELECT INTO`/`pg_catalog`/`information_schema`.
+- **Công:** M
+- **Trạng thái:** Đã sửa (migration `022_create_readonly_sql_role.js` + bắt buộc `DB_READONLY_ROLE` 503 + AST parser `node-sql-parser` + function whitelist)
+
 ### DEF-108 · Medium · Data
 - **Vi phạm:** F-GI-06 / SCR-25 (thống kê độ giàu loài theo tỉnh chính xác).
 - **Hiện trạng:** `backend/src/modules/specimen/specimen.repository.js:993` (`getAnalytics` → `richnessPromise`) dùng `COUNT(*)::int AS specimen_count` trên `FROM provinces p LEFT JOIN specimens s ...`, khiến tỉnh không có mẫu vật vẫn bị đếm là `1` thay vì `0`.

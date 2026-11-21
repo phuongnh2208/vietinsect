@@ -33,6 +33,7 @@ describe("Sprint D Group 3 – SCR-16 Query Builder (AND/OR/NOT) & Admin Read-On
 
     const taxon = await knex("taxa").where("taxon_rank", "Species").first();
     taxonId = taxon.taxon_id;
+    process.env.DB_READONLY_ROLE = "vietinsect_readonly";
 
     const pubRes = await request(app)
       .post("/api/specimens")
@@ -91,13 +92,46 @@ describe("Sprint D Group 3 – SCR-16 Query Builder (AND/OR/NOT) & Admin Read-On
     expect(userRes.status).toBe(403);
   });
 
-  it("2. Admin SQL mode rejects DROP, UPDATE, DELETE, multiple statements (;), and sensitive tables, while logging every query to audit_logs", async () => {
+  it("2. Admin SQL mode enforces DB_READONLY_ROLE (503 when missing/invalid), blocks dangerous functions/CTEs/INTO/comments/tables, enforces 500-row limit & timeout, and logs to audit_logs", async () => {
+    // Missing DB_READONLY_ROLE -> 503 (never runs as main DB role)
+    const savedRole = process.env.DB_READONLY_ROLE;
+    delete process.env.DB_READONLY_ROLE;
+    const noRoleRes = await request(app)
+      .post("/api/search/sql")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ sql: "SELECT specimen_id FROM specimens LIMIT 1" });
+    expect(noRoleRes.status).toBe(503);
+    expect(noRoleRes.body.code).toBe("SQL.READONLY_ROLE_UNAVAILABLE");
+
+    // Non-existent DB_READONLY_ROLE -> SET LOCAL ROLE fails -> 503
+    process.env.DB_READONLY_ROLE = "nonexistent_readonly_role_xyz";
+    const badRoleRes = await request(app)
+      .post("/api/search/sql")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ sql: "SELECT specimen_id FROM specimens LIMIT 1" });
+    expect(badRoleRes.status).toBe(503);
+    process.env.DB_READONLY_ROLE = savedRole || "vietinsect_readonly";
+
     const badQueries = [
       "DROP TABLE specimens",
       "UPDATE specimens SET is_public = true",
       "DELETE FROM specimens WHERE specimen_id = 1",
       "SELECT specimen_id FROM specimens; DROP TABLE specimens",
+      "SELECT 1 /* outer /* nested comment */ */ ; SELECT 2",
+      "SELECT 1\u2028; SELECT 2",
+      "SELECT pg_read_file('/etc/passwd')",
+      "SELECT lo_import('/etc/passwd')",
+      "SELECT dblink('host=evil.com', 'SELECT 1')",
+      "SELECT pg_sleep(5)",
       "SELECT * FROM admin_users",
+      "SELECT * FROM audit_logs",
+      "SELECT * FROM saved_filters",
+      "SELECT * FROM pg_catalog.pg_shadow",
+      "SELECT * FROM information_schema.tables",
+      "WITH t AS (INSERT INTO specimens(taxon_id) VALUES (1) RETURNING specimen_id) SELECT * FROM t",
+      "SELECT specimen_id INTO temp_hack FROM specimens",
+      "SET ROLE postgres",
+      "COPY specimens TO '/tmp/a.csv'",
     ];
 
     for (const sql of badQueries) {
@@ -109,17 +143,18 @@ describe("Sprint D Group 3 – SCR-16 Query Builder (AND/OR/NOT) & Admin Read-On
       expect(res.body.code).toBe("SQL.FORBIDDEN_QUERY");
     }
 
-    // Valid read-only SELECT succeeds and writes audit_logs
+    // Valid read-only SELECT with whitelisted functions (COUNT, LOWER, COALESCE) succeeds & limits <= 500 rows
     const okRes = await request(app)
       .post("/api/search/sql")
       .set("Authorization", `Bearer ${adminToken}`)
       .send({
-        sql: `SELECT specimen_id, common_name_vn, elevation_m FROM specimens WHERE specimen_id = ${Number(pubId)}`,
+        sql: `SELECT specimen_id, LOWER(COALESCE(common_name_vn, '')) AS name_lower, elevation_m FROM specimens WHERE specimen_id = ${Number(pubId)}`,
       });
     expect(okRes.status).toBe(200);
     expect(okRes.body.data.rowCount).toBe(1);
+    expect(okRes.body.data.maxRows).toBe(500);
     expect(okRes.body.data.columns).toEqual(
-      expect.arrayContaining(["specimen_id", "common_name_vn", "elevation_m"]),
+      expect.arrayContaining(["specimen_id", "name_lower", "elevation_m"]),
     );
 
     const auditRow = await knex("audit_logs")

@@ -1,10 +1,77 @@
 "use strict";
 
+const { Parser } = require("node-sql-parser");
 const knex = require("../../config/knex");
 const { insertAuditLog } = require("../system/system.repository");
 
+const sqlParser = new Parser();
 const MAX_SQL_ROWS = 500;
 const SQL_TIMEOUT_MS = 3000;
+
+const ALLOWED_SQL_FUNCTIONS = new Set([
+  // Aggregates & math
+  "count",
+  "sum",
+  "avg",
+  "min",
+  "max",
+  "round",
+  "floor",
+  "ceil",
+  "ceiling",
+  "abs",
+  // String, null, conditional
+  "lower",
+  "upper",
+  "trim",
+  "btrim",
+  "ltrim",
+  "rtrim",
+  "length",
+  "char_length",
+  "substring",
+  "substr",
+  "replace",
+  "concat",
+  "coalesce",
+  "nullif",
+  "greatest",
+  "least",
+  // Date / time
+  "date_trunc",
+  "extract",
+  "date_part",
+  "to_char",
+  "now",
+  "current_date",
+  "current_timestamp",
+  "age",
+  "cast",
+  // PostGIS read-only spatial helpers
+  "st_x",
+  "st_y",
+  "st_astext",
+  "st_asgeojson",
+  "st_distance",
+  "st_dwithin",
+  "st_within",
+  "st_contains",
+  "st_intersects",
+  "st_centroid",
+  "st_area",
+  "st_srid",
+  "st_setsrid",
+  "st_makepoint",
+  "st_geomfromtext",
+  // SQL grammar constructs followed by '('
+  "in",
+  "values",
+  "exists",
+  "over",
+  "filter",
+  "within",
+  "position",
+]);
 
 const FIELD_MAP = {
   scientificName: { col: "t1.scientific_name", type: "text" },
@@ -49,7 +116,7 @@ const FORBIDDEN_SQL_KEYWORDS =
   /\b(DROP|UPDATE|DELETE|INSERT|ALTER|TRUNCATE|CREATE|GRANT|REVOKE|COPY|EXECUTE|EXEC|CALL|DO|SET|RESET|VACUUM|ANALYZE|REFRESH|LOCK|COMMENT|SECURITY|REASSIGN|CLUSTER|DISCARD|LOAD|LISTEN|NOTIFY|UNLISTEN|PREPARE|DEALLOCATE)\b/i;
 
 const FORBIDDEN_SQL_IDENTIFIERS =
-  /\b(pg_sleep|pg_read_file|pg_ls_dir|pg_stat_activity|dblink|lo_import|lo_export|admin_users|audit_logs|system_config)\b/i;
+  /\b(pg_catalog|information_schema|pg_sleep|pg_read_file|pg_read_binary_file|pg_ls_dir|pg_stat_activity|dblink|lo_import|lo_export|admin_users|audit_logs|system_config|saved_filters|es_sync_outbox)\b/i;
 
 function createSqlError(message, code = "SQL.FORBIDDEN_QUERY", statusCode = 400) {
   const err = new Error(message);
@@ -59,9 +126,34 @@ function createSqlError(message, code = "SQL.FORBIDDEN_QUERY", statusCode = 400)
 }
 
 /**
- * Kiểm tra nghiêm ngặt câu lệnh SQL chỉ-đọc cho Admin (SCR-16, F-SR-04):
- * - Chỉ cho phép 1 câu lệnh SELECT duy nhất
- * - Chặn; (nhiều câu lệnh), comment ẩn lệnh, từ khóa DDL/DML và bảng hệ thống nhạy cảm
+ * Loại bỏ comment lồng nhau /* ... /* ... */ ... */ và comment dòng --
+ */
+function stripSqlCommentsAndLiterals(rawSql) {
+  let s = rawSql;
+  // Strip nested block comments iteratively
+  let prev;
+  let guard = 0;
+  do {
+    prev = s;
+    s = s.replace(/\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\//g, " ");
+    guard += 1;
+  } while (s !== prev && guard < 20);
+
+  if (s.includes("/*") || s.includes("*/")) {
+    throw createSqlError("Phát hiện comment SQL lồng nhau hoặc không đóng hợp lệ");
+  }
+
+  // Strip single-line comments
+  s = s.replace(/--[^\r\n]*/g, " ");
+  return s.trim();
+}
+
+/**
+ * Kiểm tra nghiêm ngặt câu lệnh SQL chỉ-đọc cho Admin (SCR-16, F-SR-04, DEF-115):
+ * - Parse AST bằng node-sql-parser (dialect Postgresql) kết hợp kiểm tra từ vựng
+ * - Chỉ cho phép 1 statement SELECT duy nhất (chặn CTE ghi WITH ... INSERT/UPDATE/DELETE và SELECT ... INTO)
+ * - Chỉ cho phép gọi hàm nằm trong ALLOWED_SQL_FUNCTIONS whitelist
+ * - Chặn pg_catalog, information_schema và các bảng hệ thống nhạy cảm
  */
 function validateReadOnlySelectSql(rawSql) {
   if (!rawSql || typeof rawSql !== "string" || !rawSql.trim()) {
@@ -70,29 +162,73 @@ function validateReadOnlySelectSql(rawSql) {
   if (rawSql.length > 4000) {
     throw createSqlError("Câu lệnh SQL vượt quá độ dài cho phép (4000 ký tự)");
   }
+  // Chặn ký tự điều khiển / unicode lạ ngoài khoảng chuẩn
+  // eslint-disable-next-line no-control-regex
+  if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\u2028\u2029\uFEFF]/.test(rawSql)) {
+    throw createSqlError("Câu lệnh SQL chứa ký tự điều khiển hoặc Unicode không hợp lệ");
+  }
 
-  // Loại bỏ comment -- và /* */ để kiểm tra
-  const withoutComments = rawSql
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/--[^\r\n]*/g, " ")
-    .trim();
-
-  // Chỉ cho phép dấu ; tùy chọn duy nhất ở cuối cùng
+  const withoutComments = stripSqlCommentsAndLiterals(rawSql);
   const strippedTrailingSemicolon = withoutComments.replace(/;\s*$/, "").trim();
+
   if (strippedTrailingSemicolon.includes(";")) {
     throw createSqlError("Không cho phép thực thi nhiều câu lệnh SQL (chặn dấu ';')");
   }
 
-  if (!/^SELECT\b/i.test(strippedTrailingSemicolon)) {
+  // Mask string literals '....' before keyword/function scan
+  const maskedLiterals = strippedTrailingSemicolon.replace(/'(?:''|[^'])*'/g, "''");
+
+  if (!/^(SELECT|WITH)\b/i.test(maskedLiterals)) {
     throw createSqlError("Chế độ SQL chỉ cho phép câu lệnh SELECT");
   }
 
-  if (FORBIDDEN_SQL_KEYWORDS.test(strippedTrailingSemicolon)) {
+  if (/\bINTO\b/i.test(maskedLiterals)) {
+    throw createSqlError("Không cho phép SELECT ... INTO");
+  }
+
+  if (FORBIDDEN_SQL_KEYWORDS.test(maskedLiterals)) {
     throw createSqlError("Câu lệnh chứa từ khóa bị cấm (chỉ cho phép SELECT chỉ-đọc)");
   }
 
-  if (FORBIDDEN_SQL_IDENTIFIERS.test(strippedTrailingSemicolon)) {
+  if (FORBIDDEN_SQL_IDENTIFIERS.test(maskedLiterals)) {
     throw createSqlError("Câu lệnh truy cập bảng hoặc hàm hệ thống bị hạn chế");
+  }
+
+  // Kiểm tra whitelist hàm SQL: mọi định danh theo sau bởi '(' phải thuộc ALLOWED_SQL_FUNCTIONS
+  const fnRegex = /\b([a-zA-Z_][a-zA-Z0-9_.]*)\s*\(/g;
+  let match;
+  while ((match = fnRegex.exec(maskedLiterals)) !== null) {
+    const fnName = match[1].toLowerCase();
+    if (!ALLOWED_SQL_FUNCTIONS.has(fnName)) {
+      throw createSqlError(`Hàm SQL '${match[1]}' không nằm trong danh sách cho phép`, "SQL.FORBIDDEN_QUERY", 400);
+    }
+  }
+
+  // Parse AST bằng node-sql-parser (PostgreSQL dialect)
+  let ast;
+  try {
+    ast = sqlParser.astify(strippedTrailingSemicolon, { database: "Postgresql" });
+  } catch (parseErr) {
+    throw createSqlError(`Cú pháp SQL không hợp lệ hoặc không được phép: ${parseErr.message}`);
+  }
+
+  const statements = Array.isArray(ast) ? ast : [ast];
+  if (statements.length !== 1 || !statements[0] || statements[0].type !== "select") {
+    throw createSqlError("Chỉ cho phép duy nhất 1 câu lệnh SELECT");
+  }
+
+  const selectAst = statements[0];
+  if (selectAst.into && (selectAst.into.expr || selectAst.into.position)) {
+    throw createSqlError("Không cho phép SELECT ... INTO");
+  }
+
+  if (Array.isArray(selectAst.with)) {
+    for (const cte of selectAst.with) {
+      const subAst = cte?.stmt?.ast || cte?.stmt;
+      if (!subAst || subAst.type !== "select") {
+        throw createSqlError("CTE (WITH) chỉ được phép chứa câu lệnh SELECT chỉ-đọc");
+      }
+    }
   }
 
   return strippedTrailingSemicolon;
@@ -241,12 +377,21 @@ async function executeQueryBuilder(payload = {}, { isAdmin = false } = {}) {
 }
 
 /**
- * Thực thi SQL trực tiếp cho Admin:
- * - Chỉ cho phép SELECT單 câu lệnh
- * - Chạy trong transaction READ ONLY + statement_timeout + LIMIT 500
- * - Mọi truy vấn (thành công hoặc bị từ chối) đều ghi vào audit_logs
+ * Thực thi SQL trực tiếp cho Admin (DEF-115):
+ * - BẮT BUỘC DB_READONLY_ROLE (thiếu cấu hình hoặc SET LOCAL ROLE lỗi → trả 503, KHÔNG chạy bằng role chính)
+ * - Chạy trong transaction READ ONLY + search_path cố định + statement_timeout + LIMIT 500
+ * - Mọi truy vấn đều ghi vào audit_logs
  */
-async function executeAdminSql(rawSql, { adminId, ipAddress } = {}) {
+async function executeAdminSql(rawSql, { adminId, ipAddress, timeoutMs = SQL_TIMEOUT_MS } = {}) {
+  const readonlyRole = process.env.DB_READONLY_ROLE ? String(process.env.DB_READONLY_ROLE).trim() : "";
+  if (!readonlyRole) {
+    throw createSqlError(
+      "Chế độ SQL trực tiếp tạm ngừng do chưa cấu hình DB_READONLY_ROLE",
+      "SQL.READONLY_ROLE_UNAVAILABLE",
+      503,
+    );
+  }
+
   let cleanSql;
   try {
     cleanSql = validateReadOnlySelectSql(rawSql);
@@ -265,9 +410,17 @@ async function executeAdminSql(rawSql, { adminId, ipAddress } = {}) {
   try {
     const result = await knex.transaction(async (trx) => {
       await trx.raw("SET LOCAL TRANSACTION READ ONLY");
-      await trx.raw(`SET LOCAL statement_timeout = '${SQL_TIMEOUT_MS}ms'`);
-      if (process.env.DB_READONLY_ROLE) {
-        await trx.raw("SET LOCAL ROLE ??", [process.env.DB_READONLY_ROLE]);
+      await trx.raw("SET LOCAL search_path = public, pg_temp");
+      await trx.raw(`SET LOCAL statement_timeout = '${Number(timeoutMs) || SQL_TIMEOUT_MS}ms'`);
+      try {
+        await trx.raw("SET LOCAL ROLE ??", [readonlyRole]);
+      } catch (roleErr) {
+        const err = createSqlError(
+          `Không thể kích hoạt role chỉ-đọc (${readonlyRole}): ${roleErr.message}`,
+          "SQL.READONLY_ROLE_UNAVAILABLE",
+          503,
+        );
+        throw err;
       }
       const wrappedSql = `SELECT * FROM (${cleanSql}) AS _admin_sql_q LIMIT ${MAX_SQL_ROWS}`;
       return trx.raw(wrappedSql);
@@ -300,6 +453,9 @@ async function executeAdminSql(rawSql, { adminId, ipAddress } = {}) {
       ipAddress,
       details: { sql: cleanSql.slice(0, 500), error: err?.message },
     }).catch(() => {});
+    if (err?.statusCode === 503) {
+      throw err;
+    }
     const e = new Error(`Lỗi thực thi SQL: ${err?.message}`);
     e.statusCode = 400;
     e.code = "SQL.EXECUTION_ERROR";
