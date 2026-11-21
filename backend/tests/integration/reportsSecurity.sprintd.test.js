@@ -5,6 +5,7 @@ jest.setTimeout(60000);
 const pdfParse = require("pdf-parse");
 const pdfGenerator = require("../../src/modules/reports/pdfGenerator.service");
 const labelService = require("../../src/modules/specimen/label.service");
+const reportsService = require("../../src/modules/reports/reports.service");
 
 describe("Sprint D Group 1 Security Hardening", () => {
   afterAll(async () => {
@@ -43,5 +44,21 @@ describe("Sprint D Group 1 Security Hardening", () => {
     const parsed = await pdfParse(pdfBuf);
     expect(parsed.text).toContain("Safe text");
     expect(parsed.text).not.toContain("PWNED");
+  });
+
+  it("2. Formula injection & DOCX XML escape: neutralizes =HYPERLINK, +, -, @, tab, CR", () => {
+    expect(reportsService.sanitizeSpreadsheetCell('=HYPERLINK("http://evil.com","click")')).toBe(
+      '\'=HYPERLINK("http://evil.com","click")',
+    );
+    expect(reportsService.sanitizeSpreadsheetCell("+1+1")).toBe("'+1+1");
+    expect(reportsService.sanitizeSpreadsheetCell("-2+3")).toBe("'-2+3");
+    expect(reportsService.sanitizeSpreadsheetCell("@SUM(A1:A2)")).toBe("'@SUM(A1:A2)");
+    expect(reportsService.sanitizeSpreadsheetCell("\t=1+1")).toBe("'\t=1+1");
+    expect(reportsService.sanitizeSpreadsheetCell("\r=1+1")).toBe("'\r=1+1");
+    expect(reportsService.sanitizeSpreadsheetCell("Papilio demoleus")).toBe("Papilio demoleus");
+    expect(reportsService.sanitizeSpreadsheetCell(42)).toBe(42);
+
+    // DOCX text strips illegal XML control characters
+    expect(reportsService.sanitizeDocxText("Safe\x00\x07<xml>&text")).toBe("Safe<xml>&text");
   });
 });

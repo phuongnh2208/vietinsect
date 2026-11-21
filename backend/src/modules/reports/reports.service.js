@@ -21,6 +21,31 @@ const {
   formatUtcPlus7,
 } = require("./pdfGenerator.service");
 
+const FORMULA_PREFIX_RE = /^[=+\-@\t\r]/;
+// eslint-disable-next-line no-control-regex
+const XML_INVALID_CTRL_RE = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g;
+
+/**
+ * Chống Formula Injection (CSV/XLSX): vô hiệu hóa chuỗi bắt đầu bằng = + - @ \t \r.
+ */
+function sanitizeSpreadsheetCell(value) {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "number" || typeof value === "boolean") return value;
+  const str = String(value);
+  if (FORMULA_PREFIX_RE.test(str)) {
+    return `'${str}`;
+  }
+  return str;
+}
+
+/**
+ * Loại bỏ ký tự điều khiển không hợp lệ trong XML cho DOCX (docx tự escape < > & " ').
+ */
+function sanitizeDocxText(value) {
+  if (value === null || value === undefined) return "";
+  return String(value).replace(XML_INVALID_CTRL_RE, "");
+}
+
 /**
  * Lấy dữ liệu báo cáo thống kê tổng hợp (F-RP-01).
  * Ép s.is_public = true ở tầng SQL query khi !isAdmin.
@@ -185,13 +210,18 @@ async function generateSummaryExcel({ isAdmin = false } = {}) {
   const topSheet = wb.addWorksheet("Top_10_Tinh");
   topSheet.addRow(["STT", "Tỉnh / Thành phố", "Số mẫu vật", "Số loài"]);
   data.topProvinces.forEach((p, idx) => {
-    topSheet.addRow([idx + 1, p.province_name_vn, Number(p.specimen_count), Number(p.species_count)]);
+    topSheet.addRow([
+      idx + 1,
+      sanitizeSpreadsheetCell(p.province_name_vn),
+      Number(p.specimen_count),
+      Number(p.species_count),
+    ]);
   });
 
   const orderSheet = wb.addWorksheet("Theo_Bo");
   orderSheet.addRow(["Bộ côn trùng", "Số mẫu vật"]);
   data.byOrder.forEach((o) => {
-    orderSheet.addRow([o.order_name, Number(o.specimen_count)]);
+    orderSheet.addRow([sanitizeSpreadsheetCell(o.order_name), Number(o.specimen_count)]);
   });
 
   const arrayBuffer = await wb.xlsx.writeBuffer();
@@ -347,7 +377,7 @@ async function generateChecklistDocx(filters = {}, { isAdmin = false } = {}) {
           `${r.vernacular_name_vn || "—"}${r.vernacular_name_en ? ` / ${r.vernacular_name_en}` : ""}`,
           String(r.specimen_count || 0),
           String(r.iucn_status || "NE"),
-        ].map((val) => new TableCell({ children: [new Paragraph(val)] })),
+        ].map((val) => new TableCell({ children: [new Paragraph(sanitizeDocxText(val))] })),
       }),
   );
 
@@ -384,6 +414,8 @@ async function generateChecklistDocx(filters = {}, { isAdmin = false } = {}) {
 }
 
 module.exports = {
+  sanitizeSpreadsheetCell,
+  sanitizeDocxText,
   getSummaryReportData,
   generateSummaryPdf,
   generateSummaryExcel,
