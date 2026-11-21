@@ -46,12 +46,20 @@ app.use(
 
 // Health check (kèm trạng thái Elasticsearch & Outbox — DEF-059, DEF-112)
 const { getOutboxStats } = require("./src/modules/search/esOutbox.service");
+const { optionalAdmin } = require("./src/middleware/auth.middleware");
 
-app.get("/api/health", async (req, res) => {
-  const [elasticsearch, esOutbox] = await Promise.all([
+app.get("/api/health", optionalAdmin, async (req, res) => {
+  const [elasticsearch, outboxStats] = await Promise.all([
     checkEsHealth(),
     getOutboxStats(),
   ]);
+  const outboxStatus =
+    outboxStats.error || outboxStats.dead > 0 || outboxStats.oldestPendingAgeSeconds > 60
+      ? "degraded"
+      : "ok";
+  const esOutbox = req.admin
+    ? { status: outboxStatus, ...outboxStats }
+    : { status: outboxStatus };
   res.json({
     success: true,
     message: "VietInsect API đang hoạt động",

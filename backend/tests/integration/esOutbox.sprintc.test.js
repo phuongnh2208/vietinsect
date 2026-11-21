@@ -81,12 +81,23 @@ describe("Sprint C Group 3 – PostgreSQL Transactional Outbox for ES Sync (DEF-
     }
   });
 
-  it("(b) Simulate worker/process restart → ES is synced once ES recovers, and /api/health reports esOutbox", async () => {
-    // Health endpoint includes esOutbox stats
-    const healthRes = await request(app).get("/api/health");
-    expect(healthRes.status).toBe(200);
-    expect(healthRes.body.services.esOutbox).toEqual(
+  it("(b) Simulate worker/process restart → ES is synced once ES recovers, and /api/health hides counts from non-Admin while showing details to Admin", async () => {
+    // Public /api/health only exposes aggregate status (ok/degraded), NOT counts
+    const publicHealthRes = await request(app).get("/api/health");
+    expect(publicHealthRes.status).toBe(200);
+    expect(["ok", "degraded"]).toContain(publicHealthRes.body.services.esOutbox.status);
+    expect(publicHealthRes.body.services.esOutbox.pending).toBeUndefined();
+    expect(publicHealthRes.body.services.esOutbox.dead).toBeUndefined();
+    expect(publicHealthRes.body.services.esOutbox.oldestPendingAgeSeconds).toBeUndefined();
+
+    // Admin /api/health exposes full outbox metrics
+    const adminHealthRes = await request(app)
+      .get("/api/health")
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(adminHealthRes.status).toBe(200);
+    expect(adminHealthRes.body.services.esOutbox).toEqual(
       expect.objectContaining({
+        status: expect.stringMatching(/^(ok|degraded)$/),
         pending: expect.any(Number),
         dead: expect.any(Number),
         oldestPendingAgeSeconds: expect.any(Number),
@@ -217,5 +228,63 @@ describe("Sprint C Group 3 – PostgreSQL Transactional Outbox for ES Sync (DEF-
 
     const finalRow = await knex("es_sync_outbox").where("id", row.id).first();
     expect(finalRow.status).toBe("done");
+  });
+
+  it("(f) cleanupOutbox deletes done rows > 7 days and dead rows > 90 days while retaining recent done and dead <= 90 days", async () => {
+    const inserted = await knex("es_sync_outbox")
+      .insert([
+        {
+          entity_type: "specimen",
+          entity_id: specimenId,
+          op: "upsert",
+          priority: 0,
+          status: "done",
+          created_at: knex.raw("NOW() - INTERVAL '10 days'"),
+          processed_at: knex.raw("NOW() - INTERVAL '8 days'"),
+        },
+        {
+          entity_type: "specimen",
+          entity_id: specimenId,
+          op: "upsert",
+          priority: 0,
+          status: "done",
+          created_at: knex.raw("NOW() - INTERVAL '2 days'"),
+          processed_at: knex.raw("NOW() - INTERVAL '2 days'"),
+        },
+        {
+          entity_type: "specimen",
+          entity_id: specimenId,
+          op: "upsert",
+          priority: 0,
+          status: "dead",
+          created_at: knex.raw("NOW() - INTERVAL '30 days'"),
+        },
+        {
+          entity_type: "specimen",
+          entity_id: specimenId,
+          op: "upsert",
+          priority: 0,
+          status: "dead",
+          created_at: knex.raw("NOW() - INTERVAL '95 days'"),
+        },
+      ])
+      .returning("id");
+
+    const [oldDoneId, recentDoneId, recentDeadId, oldDeadId] = inserted.map((r) => r.id);
+
+    const result = await esOutbox.cleanupOutbox({ doneRetentionDays: 7, deadRetentionDays: 90 });
+    expect(result.deletedDone).toBeGreaterThanOrEqual(1);
+    expect(result.deletedDead).toBeGreaterThanOrEqual(1);
+
+    const remaining = await knex("es_sync_outbox")
+      .whereIn("id", [oldDoneId, recentDoneId, recentDeadId, oldDeadId])
+      .select("id");
+    const remainingIds = remaining.map((r) => r.id);
+    expect(remainingIds).not.toContain(oldDoneId);
+    expect(remainingIds).toContain(recentDoneId);
+    expect(remainingIds).toContain(recentDeadId);
+    expect(remainingIds).not.toContain(oldDeadId);
+
+    await knex("es_sync_outbox").whereIn("id", [recentDoneId, recentDeadId]).delete();
   });
 });

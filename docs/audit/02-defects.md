@@ -706,7 +706,7 @@
 - **Kỳ vọng:** Hàng đợi retry ưu tiên phải bền vững qua restart (Redis list/stream hoặc bảng outbox PostgreSQL + worker đọc định kỳ).
 - **Đề xuất:** Chuyển `priorityRetryQueue` sang bảng outbox PostgreSQL hoặc Redis Stream kèm background worker retry định kỳ; tạm thời vận hành theo runbook chạy `make reindex` sau mỗi lần restart hậu sự cố ES.
 - **Công:** M
-- **Trạng thái:** Chưa đóng (ghi nhận theo yêu cầu, chưa sửa ở sprint này)
+- **Trạng thái:** Đã sửa – commit `a7e174b` (PostgreSQL transactional outbox `es_sync_outbox` ghi cùng transaction với specimen, worker nền `SELECT ... FOR UPDATE SKIP LOCKED` + coalesce + exponential backoff + `dead` + `logger.error`, `ADR-006`, `/api/health` + `/api/search/outbox/*`, 5/5 test tích hợp `esOutbox.sprintc.test.js` PASS)
 
 ### DEF-113 · High · Functional
 - **Vi phạm:** F-SR-04, SCR-16 (Advanced Search – Query Builder hỗ trợ AND/OR/NOT, lưu/tải bộ lọc preset, mở cho Admin + User theo C-04, tab SQL chỉ dành cho Admin).
@@ -738,29 +738,6 @@
 - **Đề xuất:** Thêm trigger/job `REFRESH MATERIALIZED VIEW CONCURRENTLY mv_taxon_dwc_flat` ở sprint kế tiếp.
 - **Công:** S
 - **Trạng thái:** Đã sửa (debounced `REFRESH MATERIALIZED VIEW CONCURRENTLY` + `make refresh-views`) – commit `0934015`
-
-### DEF-111 · Low · Security
-- **Vi phạm:** §5.2 (chống user enumeration ở endpoint đăng nhập).
-- **Hiện trạng:** `backend/src/modules/auth/auth.service.js:24-26` trả `423 AUTH.ACCOUNT_LOCKED` cho tài khoản tồn tại đang bị khóa, khác với `401 AUTH.INVALID_CREDENTIALS` cho tài khoản không tồn tại, cho phép kẻ tấn công dò username tồn tại sau 5 lần thử.
-- **Kỳ vọng:** Cân nhắc thống nhất phản hồi hoặc áp dụng CAPTCHA/rate-limit bổ sung nếu yêu cầu chống enumeration nghiêm ngặt.
-- **Đề xuất:** Trả cùng mã lỗi chung hoặc thông báo trung tính khi cần siết chống user enumeration.
-- **Công:** S
-- **Trạng thái:** Chưa đóng (ghi nhận theo yêu cầu, chưa sửa ở sprint này)
-
-### DEF-112 · High · Reliability
-- **Vi phạm:** §2.3 & §5.3 (độ tin cậy đồng bộ trạng thái Private/Public sang Elasticsearch).
-- **Hiện trạng:** `backend/src/modules/search/elasticsearch.service.js:17-18` lưu `priorityRetryQueue` (`Set`) và cờ `needsReindex` trong bộ nhớ tiến trình Node.js; nếu backend restart sau sự cố ES thì hàng đợi bị mất, có nguy cơ để lộ mẫu Private trong ES nếu cập nhật `is_public` trước đó chưa tới được ES.
-- **Kỳ vọng:** Hàng đợi retry ưu tiên phải bền vững qua restart (Redis list/stream hoặc bảng outbox PostgreSQL + worker đọc định kỳ).
-- **Đề xuất:** Chuyển `priorityRetryQueue` sang bảng outbox PostgreSQL hoặc Redis Stream kèm background worker retry định kỳ; tạm thời vận hành theo runbook chạy `make reindex` sau mỗi lần restart hậu sự cố ES.
-- **Công:** M
-- **Trạng thái:** Chưa đóng (ghi nhận theo yêu cầu, chưa sửa ở sprint này)
-
-### DEF-113 · High · Functional
-- **Vi phạm:** F-SR-04, SCR-16 (Advanced Search – Query Builder hỗ trợ AND/OR/NOT, lưu/tải bộ lọc preset, mở cho Admin + User theo C-04, tab SQL chỉ dành cho Admin).
-- **Hiện trạng:** Sau khi chuẩn hóa SCR-15 (Facet Search Workbench) tại `/search` và `/admin/search`, màn hình SCR-16 Query Builder đầy đủ (AND/OR/NOT + presets + tab SQL chỉ Admin) chưa được triển khai.
-- **Kỳ vọng:** Triển khai màn hình SCR-16 riêng đáp ứng đầy đủ F-SR-04 và C-04.
-- **Công:** M
-- **Trạng thái:** Chưa đóng (ghi nhận ở Sprint C – Nhóm 2, chưa triển khai)
 
 ---
 

@@ -249,6 +249,35 @@ async function retryDeadOutbox(limit = 100) {
   return (res.rows || []).length;
 }
 
+/**
+ * Dọn dẹp bảng outbox:
+ * - Xóa dòng status = 'done' quá doneRetentionDays ngày (mặc định 7 ngày)
+ * - Xóa dòng status = 'dead' quá deadRetentionDays ngày (mặc định 90 ngày, giữ lại 90 ngày để điều tra)
+ */
+async function cleanupOutbox({ doneRetentionDays = 7, deadRetentionDays = 90 } = {}) {
+  const deletedDone = await knex("es_sync_outbox")
+    .where("status", "done")
+    .whereRaw(`COALESCE(processed_at, created_at) < NOW() - (? * INTERVAL '1 day')`, [
+      Number(doneRetentionDays),
+    ])
+    .delete();
+
+  const deletedDead = await knex("es_sync_outbox")
+    .where("status", "dead")
+    .whereRaw(`created_at < NOW() - (? * INTERVAL '1 day')`, [Number(deadRetentionDays)])
+    .delete();
+
+  if (deletedDone > 0 || deletedDead > 0) {
+    logger.info(
+      `[ES OUTBOX CLEANUP] deletedDone=${deletedDone} (> ${doneRetentionDays}d), deletedDead=${deletedDead} (> ${deadRetentionDays}d)`,
+    );
+  }
+  return { deletedDone: Number(deletedDone || 0), deletedDead: Number(deletedDead || 0) };
+}
+
+let lastCleanupAt = 0;
+const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 giờ/lần
+
 function startOutboxWorker({ intervalMs = 5000 } = {}) {
   if (workerTimer) return;
   workerTimer = setInterval(async () => {
@@ -256,6 +285,10 @@ function startOutboxWorker({ intervalMs = 5000 } = {}) {
     workerRunning = true;
     try {
       await processOutboxBatch();
+      if (Date.now() - lastCleanupAt >= CLEANUP_INTERVAL_MS) {
+        lastCleanupAt = Date.now();
+        await cleanupOutbox();
+      }
     } catch (err) {
       logger.error(`[ES OUTBOX WORKER] ${err?.message}`);
     } finally {
@@ -283,6 +316,7 @@ module.exports = {
   processOutboxBatch,
   getOutboxStats,
   retryDeadOutbox,
+  cleanupOutbox,
   startOutboxWorker,
   stopOutboxWorker,
 };
