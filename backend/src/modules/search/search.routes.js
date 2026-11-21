@@ -138,10 +138,17 @@ router.post("/filters", requireAdmin, async (req, res, next) => {
 
 router.delete("/filters/:id", requireAdmin, async (req, res, next) => {
   try {
-    await advancedSearch.deleteSavedFilter(req.admin.adminId, req.params.id);
-    res.status(204).send();
+    const deleted = await advancedSearch.deleteSavedFilter(req.admin.adminId, req.params.id);
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        code: "FILTER.NOT_FOUND",
+        message: "Không tìm thấy bộ lọc hoặc bạn không có quyền xóa",
+      });
+    }
+    return res.status(204).send();
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 

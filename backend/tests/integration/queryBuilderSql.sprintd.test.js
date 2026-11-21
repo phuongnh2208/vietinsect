@@ -218,4 +218,100 @@ describe("Sprint D Group 3 – SCR-16 Query Builder (AND/OR/NOT) & Admin Read-On
       .set("Authorization", `Bearer ${adminToken}`);
     expect(delRes.status).toBe(204);
   });
+
+  it("5. Query Builder hardening: enforces max 20 conditions, max nesting depth 3, max value length 200, blocks SQL injection via field/operator/value, and prevents IDOR on saved_filters", async () => {
+    // (a) SQL injection via field name -> 400
+    const sqliFieldRes = await request(app)
+      .post("/api/search/advanced")
+      .send({
+        rules: [{ logic: "AND", field: "scientificName; DROP TABLE specimens--", operator: "eq", value: "x" }],
+      });
+    expect(sqliFieldRes.status).toBe(400);
+
+    // (b) SQL injection via operator -> 400
+    const sqliOpRes = await request(app)
+      .post("/api/search/advanced")
+      .send({
+        rules: [{ logic: "AND", field: "scientificName", operator: "eq OR 1=1", value: "x" }],
+      });
+    expect(sqliOpRes.status).toBe(400);
+
+    // (c) SQL injection via value -> safely parameterized, does NOT bypass filter
+    const sqliValRes = await request(app)
+      .post("/api/search/advanced")
+      .send({
+        rules: [{ logic: "AND", field: "specimenCode", operator: "eq", value: "' OR '1'='1" }],
+      });
+    expect(sqliValRes.status).toBe(200);
+    expect(sqliValRes.body.data).toHaveLength(0);
+
+    // (d) > 20 conditions -> 400
+    const tooManyRules = Array.from({ length: 21 }, () => ({
+      logic: "AND",
+      field: "scientificName",
+      operator: "contains",
+      value: "Papilio",
+    }));
+    const maxRulesRes = await request(app).post("/api/search/advanced").send({ rules: tooManyRules });
+    expect(maxRulesRes.status).toBe(400);
+
+    // (e) Nesting depth > 3 -> 400
+    const deepNested = [
+      {
+        logic: "AND",
+        rules: [
+          {
+            logic: "AND",
+            rules: [
+              {
+                logic: "AND",
+                rules: [{ logic: "AND", field: "scientificName", operator: "eq", value: "Papilio" }],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    const depthRes = await request(app).post("/api/search/advanced").send({ rules: deepNested });
+    expect(depthRes.status).toBe(400);
+
+    // (f) Value length > 200 -> 400
+    const longValRes = await request(app)
+      .post("/api/search/advanced")
+      .send({
+        rules: [{ logic: "AND", field: "scientificName", operator: "contains", value: "A".repeat(201) }],
+      });
+    expect(longValRes.status).toBe(400);
+
+    // (g) IDOR on saved_filters: Admin B cannot list or delete Admin A's preset
+    const adminAPreset = await request(app)
+      .post("/api/search/filters")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ name: `AdminA Private Preset ${suffix}`, filterJson: { rules: [] } });
+    expect(adminAPreset.status).toBe(201);
+    const presetId = adminAPreset.body.data.id;
+
+    const adminBToken = jwt.sign(
+      { adminId: 999999, username: "other_admin_b", role: "admin" },
+      JWT_SECRET,
+      { expiresIn: "1h" },
+    );
+
+    const adminBList = await request(app)
+      .get("/api/search/filters")
+      .set("Authorization", `Bearer ${adminBToken}`);
+    expect(adminBList.status).toBe(200);
+    expect(adminBList.body.data.map((f) => String(f.id))).not.toContain(String(presetId));
+
+    const adminBDel = await request(app)
+      .delete(`/api/search/filters/${presetId}`)
+      .set("Authorization", `Bearer ${adminBToken}`);
+    expect(adminBDel.status).toBe(404);
+
+    // Cleanup by owner Admin A succeeds
+    const ownerDel = await request(app)
+      .delete(`/api/search/filters/${presetId}`)
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(ownerDel.status).toBe(204);
+  });
 });

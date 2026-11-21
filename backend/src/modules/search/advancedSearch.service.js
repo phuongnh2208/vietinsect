@@ -7,6 +7,9 @@ const { insertAuditLog } = require("../system/system.repository");
 const sqlParser = new Parser();
 const MAX_SQL_ROWS = 500;
 const SQL_TIMEOUT_MS = 3000;
+const MAX_QB_RULES = 20;
+const MAX_QB_DEPTH = 3;
+const MAX_QB_VALUE_LEN = 200;
 
 const ALLOWED_SQL_FUNCTIONS = new Set([
   // Aggregates & math
@@ -126,7 +129,7 @@ function createSqlError(message, code = "SQL.FORBIDDEN_QUERY", statusCode = 400)
 }
 
 /**
- * Loại bỏ comment lồng nhau /* ... /* ... */ ... */ và comment dòng --
+ * Loại bỏ comment khối lồng nhau và comment dòng --
  */
 function stripSqlCommentsAndLiterals(rawSql) {
   let s = rawSql;
@@ -235,15 +238,24 @@ function validateReadOnlySelectSql(rawSql) {
 }
 
 function buildRuleSqlCondition(rule) {
-  const fieldDef = FIELD_MAP[rule?.field];
-  if (!fieldDef) {
-    throw createSqlError(`Trường tìm kiếm không hợp lệ: ${rule?.field}`, "VALIDATION_ERROR", 400);
+  const fieldKey = String(rule?.field || "");
+  if (!Object.prototype.hasOwnProperty.call(FIELD_MAP, fieldKey)) {
+    throw createSqlError(`Trường tìm kiếm không hợp lệ: ${fieldKey}`, "VALIDATION_ERROR", 400);
   }
+  const fieldDef = FIELD_MAP[fieldKey];
 
   const op = String(rule.operator || "eq").toLowerCase();
   const col = fieldDef.col;
   const val = rule.value;
   const valTo = rule.valueTo;
+
+  if (String(val ?? "").length > MAX_QB_VALUE_LEN || String(valTo ?? "").length > MAX_QB_VALUE_LEN) {
+    throw createSqlError(
+      `Giá trị điều kiện vượt quá độ dài tối đa ${MAX_QB_VALUE_LEN} ký tự`,
+      "VALIDATION_ERROR",
+      400,
+    );
+  }
 
   const castValue = (v) => {
     if (fieldDef.type === "number") {
@@ -289,91 +301,142 @@ function buildRuleSqlCondition(rule) {
 }
 
 /**
- * Đánh giá truy vấn Visual Query Builder (AND / OR / NOT) trên PostgreSQL.
- * User (!isAdmin) luôn bị ép s.is_public = true ở tầng ngoài cùng.
+ * Biên dịch đệ quy nhóm điều kiện (hỗ trợ lồng tối đa MAX_QB_DEPTH = 3 và tổng tối đa MAX_QB_RULES = 20).
  */
-async function executeQueryBuilder(payload = {}, { isAdmin = false } = {}) {
+function compileRuleGroup(rules, depth = 1, counter = { count: 0 }) {
+  if (depth > MAX_QB_DEPTH) {
+    throw createSqlError(
+      `Độ sâu lồng điều kiện vượt quá giới hạn tối đa (${MAX_QB_DEPTH})`,
+      "VALIDATION_ERROR",
+      400,
+    );
+  }
+  if (!Array.isArray(rules)) {
+    throw createSqlError("Danh sách điều kiện (rules) không hợp lệ", "VALIDATION_ERROR", 400);
+  }
+
+  const parts = [];
+  const bindings = [];
+
+  rules.forEach((rule) => {
+    if (!rule || typeof rule !== "object") return;
+    const logic = String(rule.logic || "AND").toUpperCase();
+    if (!["AND", "OR", "NOT"].includes(logic)) {
+      throw createSqlError(`Toán tử logic không hợp lệ: ${rule.logic}`, "VALIDATION_ERROR", 400);
+    }
+
+    let cond = null;
+    if (Array.isArray(rule.rules)) {
+      cond = compileRuleGroup(rule.rules, depth + 1, counter);
+    } else {
+      const hasField = rule.field !== undefined && rule.field !== null && String(rule.field).trim() !== "";
+      const hasVal = rule.value !== undefined && rule.value !== null && String(rule.value).trim() !== "";
+      if (!hasField && !hasVal) return;
+      counter.count += 1;
+      if (counter.count > MAX_QB_RULES) {
+        throw createSqlError(
+          `Số lượng điều kiện vượt quá giới hạn tối đa (${MAX_QB_RULES})`,
+          "VALIDATION_ERROR",
+          400,
+        );
+      }
+      cond = buildRuleSqlCondition(rule);
+    }
+
+    if (!cond || !cond.sql) return;
+
+    if (parts.length === 0) {
+      parts.push(logic === "NOT" ? `NOT ${cond.sql}` : cond.sql);
+    } else if (logic === "OR") {
+      parts.push(`OR ${cond.sql}`);
+    } else if (logic === "NOT") {
+      parts.push(`AND NOT ${cond.sql}`);
+    } else {
+      parts.push(`AND ${cond.sql}`);
+    }
+    bindings.push(...cond.bindings);
+  });
+
+  if (parts.length === 0) return null;
+  return { sql: `(${parts.join(" ")})`, bindings };
+}
+
+/**
+ * Đánh giá truy vấn Visual Query Builder (AND / OR / NOT) trên PostgreSQL.
+ * - Giới hạn tối đa 20 điều kiện, độ sâu lồng 3, độ dài giá trị 200
+ * - Áp dụng statement_timeout cho cả User và Admin
+ * - User (!isAdmin) luôn bị ép s.is_public = true ở tầng ngoài cùng.
+ */
+async function executeQueryBuilder(payload = {}, { isAdmin = false, timeoutMs = SQL_TIMEOUT_MS } = {}) {
   const rules = Array.isArray(payload.rules) ? payload.rules : [];
+  if (rules.length > MAX_QB_RULES) {
+    throw createSqlError(
+      `Số lượng điều kiện vượt quá giới hạn tối đa (${MAX_QB_RULES})`,
+      "VALIDATION_ERROR",
+      400,
+    );
+  }
   const page = Math.max(1, Number(payload.page) || 1);
   const limit = Math.min(100, Math.max(1, Number(payload.limit) || 25));
   const offset = (page - 1) * limit;
 
-  const baseQb = knex({ s: "specimens" })
-    .join({ sr: "specimen_registry" }, "s.specimen_id", "sr.specimen_id")
-    .join({ t1: "taxa" }, "s.taxon_id", "t1.taxon_id")
-    .leftJoin({ t2: "taxa" }, "t1.parent_id", "t2.taxon_id")
-    .leftJoin({ t3: "taxa" }, "t2.parent_id", "t3.taxon_id")
-    .leftJoin({ t4: "taxa" }, "t3.parent_id", "t4.taxon_id")
-    .leftJoin({ p: "provinces" }, "s.province_id", "p.province_id")
-    .whereNull("s.deleted_at");
+  const compiled = compileRuleGroup(rules, 1, { count: 0 });
 
-  // Ép cứng is_public = true ở tầng ngoài cùng đối với User
-  if (!isAdmin) {
-    baseQb.where("s.is_public", true);
-  }
+  return knex.transaction(async (trx) => {
+    await trx.raw("SET LOCAL TRANSACTION READ ONLY");
+    await trx.raw(`SET LOCAL statement_timeout = '${Number(timeoutMs) || SQL_TIMEOUT_MS}ms'`);
 
-  const activeRules = rules.filter(
-    (r) => r && r.field && r.value !== undefined && r.value !== null && String(r.value).trim() !== "",
-  );
+    const baseQb = trx({ s: "specimens" })
+      .join({ sr: "specimen_registry" }, "s.specimen_id", "sr.specimen_id")
+      .join({ t1: "taxa" }, "s.taxon_id", "t1.taxon_id")
+      .leftJoin({ t2: "taxa" }, "t1.parent_id", "t2.taxon_id")
+      .leftJoin({ t3: "taxa" }, "t2.parent_id", "t3.taxon_id")
+      .leftJoin({ t4: "taxa" }, "t3.parent_id", "t4.taxon_id")
+      .leftJoin({ p: "provinces" }, "s.province_id", "p.province_id")
+      .whereNull("s.deleted_at");
 
-  if (activeRules.length > 0) {
-    const parts = [];
-    const bindings = [];
+    // Ép cứng is_public = true ở tầng ngoài cùng đối với User
+    if (!isAdmin) {
+      baseQb.where("s.is_public", true);
+    }
 
-    activeRules.forEach((rule, idx) => {
-      const logic = String(rule.logic || "AND").toUpperCase();
-      const cond = buildRuleSqlCondition(rule);
-      if (idx === 0) {
-        if (logic === "NOT") {
-          parts.push(`NOT ${cond.sql}`);
-        } else {
-          parts.push(cond.sql);
-        }
-      } else if (logic === "OR") {
-        parts.push(`OR ${cond.sql}`);
-      } else if (logic === "NOT") {
-        parts.push(`AND NOT ${cond.sql}`);
-      } else {
-        parts.push(`AND ${cond.sql}`);
-      }
-      bindings.push(...cond.bindings);
-    });
+    if (compiled && compiled.sql) {
+      baseQb.whereRaw(compiled.sql, compiled.bindings);
+    }
 
-    baseQb.whereRaw(`(${parts.join(" ")})`, bindings);
-  }
+    const [{ total }] = await baseQb.clone().count("* as total");
+    const totalInt = parseInt(total, 10) || 0;
 
-  const [{ total }] = await baseQb.clone().count("* as total");
-  const totalInt = parseInt(total, 10) || 0;
+    const rows = await baseQb
+      .clone()
+      .select(
+        "s.specimen_id as id",
+        "sr.specimen_code as specimenCode",
+        "t1.scientific_name as scientificName",
+        "s.common_name_vn as commonNameVn",
+        "t1.iucn_status as iucnStatus",
+        "p.province_name_vn as provinceNameVn",
+        "s.locality_detail as localityDetail",
+        "s.elevation_m as elevationM",
+        "s.gps_accuracy_m as gpsAccuracyM",
+        "s.collection_date as collectionDate",
+        "sr.recorded_by as recordedBy",
+        "s.is_public as isPublic",
+      )
+      .orderBy("s.specimen_id", "desc")
+      .limit(limit)
+      .offset(offset);
 
-  const rows = await baseQb
-    .clone()
-    .select(
-      "s.specimen_id as id",
-      "sr.specimen_code as specimenCode",
-      "t1.scientific_name as scientificName",
-      "s.common_name_vn as commonNameVn",
-      "t1.iucn_status as iucnStatus",
-      "p.province_name_vn as provinceNameVn",
-      "s.locality_detail as localityDetail",
-      "s.elevation_m as elevationM",
-      "s.gps_accuracy_m as gpsAccuracyM",
-      "s.collection_date as collectionDate",
-      "sr.recorded_by as recordedBy",
-      "s.is_public as isPublic",
-    )
-    .orderBy("s.specimen_id", "desc")
-    .limit(limit)
-    .offset(offset);
-
-  return {
-    items: rows,
-    pagination: {
-      total: totalInt,
-      page,
-      limit,
-      totalPages: Math.ceil(totalInt / limit),
-    },
-  };
+    return {
+      items: rows,
+      pagination: {
+        total: totalInt,
+        page,
+        limit,
+        totalPages: Math.ceil(totalInt / limit),
+      },
+    };
+  });
 }
 
 /**
