@@ -3,6 +3,7 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const express = require("express");
+const rateLimit = require("express-rate-limit");
 const router = express.Router();
 const { optionalAdmin } = require("../../middleware/auth.middleware");
 const reportsService = require("./reports.service");
@@ -10,6 +11,25 @@ const labelService = require("../specimen/label.service");
 const { createExportJob, getExportJob } = require("./pdfGenerator.service");
 
 const LARGE_LABEL_THRESHOLD = 50;
+const MAX_LABELS_PER_REQUEST = 500;
+
+// Rate limit riêng cho /api/reports đối với User (non-Admin)
+const reportsUserRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: Number(process.env.REPORTS_USER_RATE_LIMIT) || 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => Boolean(req.admin),
+  handler: (_req, res) => {
+    res.status(429).json({
+      success: false,
+      code: "RATE_LIMIT_EXCEEDED",
+      message: "Bạn đã vượt quá giới hạn xuất báo cáo. Vui lòng thử lại sau 1 phút.",
+    });
+  },
+});
+
+router.use(optionalAdmin, reportsUserRateLimiter);
 
 function resolveJobOwnerKey(req) {
   if (req.admin && req.admin.adminId) {
@@ -142,6 +162,13 @@ router.post("/labels/pdf", optionalAdmin, async (req, res, next) => {
         success: false,
         code: "VALIDATION_ERROR",
         message: "Vui lòng chọn ít nhất 1 mẫu vật để in nhãn",
+      });
+    }
+    if (specimenIds.length > MAX_LABELS_PER_REQUEST) {
+      return res.status(400).json({
+        success: false,
+        code: "VALIDATION_ERROR",
+        message: `Tối đa ${MAX_LABELS_PER_REQUEST} nhãn mỗi lần xuất`,
       });
     }
 

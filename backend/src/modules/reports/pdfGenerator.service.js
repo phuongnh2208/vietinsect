@@ -9,6 +9,7 @@ const logger = require("../../config/logger");
 const systemRepository = require("../system/system.repository");
 
 const MAX_CONCURRENT_RENDERS = Math.max(1, Number(process.env.PDF_MAX_CONCURRENCY) || 2);
+const MAX_QUEUED_RENDERS = Math.max(1, Number(process.env.PDF_MAX_QUEUE) || 10);
 const DEFAULT_TIMEOUT_MS = Math.max(5000, Number(process.env.PDF_TIMEOUT_MS) || 30000);
 
 const DEFAULT_ORG_CONFIG = {
@@ -86,10 +87,16 @@ function resetBlockedRequestCount() {
   blockedRequestCount = 0;
 }
 
-async function acquireSlot() {
+async function acquireSlot(maxQueue = MAX_QUEUED_RENDERS) {
   if (activeRenders < MAX_CONCURRENT_RENDERS) {
     activeRenders += 1;
     return;
+  }
+  if (waitQueue.length >= maxQueue) {
+    const err = new Error("Hàng đợi sinh PDF đang quá tải, vui lòng thử lại sau");
+    err.statusCode = 503;
+    err.code = "PDF.QUEUE_OVERFLOW";
+    throw err;
   }
   await new Promise((resolve) => waitQueue.push(resolve));
   activeRenders += 1;
@@ -426,5 +433,8 @@ module.exports = {
   createExportJob,
   getExportJob,
   cleanupExpiredJobs,
+  MAX_QUEUED_RENDERS,
+  acquireSlot,
+  releaseSlot,
   getQueueStats,
 };

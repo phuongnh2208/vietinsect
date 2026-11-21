@@ -95,4 +95,26 @@ describe("Sprint D Group 1 Security Hardening", () => {
     expect(fs.existsSync(job.filePath)).toBe(false);
     expect(pdfGenerator.getExportJob(created.jobId)).toBeNull();
   });
+
+  it("4. Limits: rejects > 500 labels (400) and rejects Puppeteer queue overflow (503)", async () => {
+    const tooManyIds = Array.from({ length: 501 }, (_, i) => i + 1);
+    const res = await request(app)
+      .post("/api/reports/labels/pdf")
+      .send({ specimenIds: tooManyIds });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("VALIDATION_ERROR");
+
+    // Simulate queue saturation -> 503 PDF.QUEUE_OVERFLOW
+    await pdfGenerator.acquireSlot(0);
+    await pdfGenerator.acquireSlot(0);
+    try {
+      await expect(pdfGenerator.acquireSlot(0)).rejects.toMatchObject({
+        statusCode: 503,
+        code: "PDF.QUEUE_OVERFLOW",
+      });
+    } finally {
+      pdfGenerator.releaseSlot();
+      pdfGenerator.releaseSlot();
+    }
+  });
 });
