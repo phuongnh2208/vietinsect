@@ -20,6 +20,7 @@ const DEFAULT_ORG_CONFIG = {
 
 let browserPromise = null;
 let activeRenders = 0;
+let blockedRequestCount = 0;
 const waitQueue = [];
 
 // Background export job store (in-memory with TTL cleanup)
@@ -61,17 +62,24 @@ async function getOrgReportConfig() {
   return { ...DEFAULT_ORG_CONFIG };
 }
 
+/**
+ * Chỉ cho phép about:blank và data:image/* (QR/logo nhúng).
+ * CHẶN toàn bộ http/https/file/localhost/127.0.0.1/::1/mạng nội bộ và redirect.
+ */
 function isAllowedInternalUrl(url) {
   if (!url) return false;
-  if (url === "about:blank" || url.startsWith("data:") || url.startsWith("blob:")) {
-    return true;
-  }
-  try {
-    const u = new URL(url);
-    return u.hostname === "localhost" || u.hostname === "127.0.0.1" || u.hostname === "::1";
-  } catch (_) {
-    return false;
-  }
+  const normalized = String(url).trim().toLowerCase();
+  if (normalized === "about:blank") return true;
+  if (normalized.startsWith("data:image/")) return true;
+  return false;
+}
+
+function getBlockedRequestCount() {
+  return blockedRequestCount;
+}
+
+function resetBlockedRequestCount() {
+  blockedRequestCount = 0;
 }
 
 async function acquireSlot() {
@@ -263,13 +271,19 @@ async function renderHtmlToPdf(
     page.setDefaultTimeout(timeoutMs);
     page.setDefaultNavigationTimeout(timeoutMs);
 
-    // Chặn tuyệt đối Puppeteer gọi ra internet (dữ liệu chủ quyền)
+    // Tắt JavaScript trong trang render (không cần JS để tạo PDF tĩnh)
+    await page.setJavaScriptEnabled(false);
+
+    // Chặn tuyệt đối Puppeteer gọi ra internet, localhost, 127.0.0.1, IPv6 nội bộ & redirect
     await page.setRequestInterception(true);
     page.on("request", (req) => {
-      if (isAllowedInternalUrl(req.url())) {
+      const reqUrl = req.url();
+      const isRedirect = Array.isArray(req.redirectChain?.()) && req.redirectChain().length > 0;
+      if (!isRedirect && isAllowedInternalUrl(reqUrl)) {
         req.continue();
       } else {
-        logger.warn(`[PDF BLOCKED EXTERNAL] ${req.url()}`);
+        blockedRequestCount += 1;
+        logger.warn(`[PDF BLOCKED REQUEST] ${reqUrl}`);
         req.abort("blockedbyclient");
       }
     });
@@ -366,6 +380,8 @@ module.exports = {
   escapeHtml,
   formatUtcPlus7,
   isAllowedInternalUrl,
+  getBlockedRequestCount,
+  resetBlockedRequestCount,
   getOrgReportConfig,
   renderHtmlToPdf,
   closeBrowser,

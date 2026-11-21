@@ -124,10 +124,12 @@ describe("Sprint D Group 1 – Specimen Labels PDF (QR) & Scientific Reports PDF
     expect(decoded).toBe(publicCode);
   });
 
-  it("2. Puppeteer blocks external internet URLs (data sovereignty)", () => {
+  it("2. Puppeteer blocks external internet AND localhost/127.0.0.1/IPv6 URLs (SSRF & data sovereignty)", () => {
     expect(pdfGenerator.isAllowedInternalUrl("about:blank")).toBe(true);
     expect(pdfGenerator.isAllowedInternalUrl("data:image/png;base64,abc")).toBe(true);
-    expect(pdfGenerator.isAllowedInternalUrl("http://127.0.0.1:5000/api/media/1/file")).toBe(true);
+    expect(pdfGenerator.isAllowedInternalUrl("http://127.0.0.1:9200/")).toBe(false);
+    expect(pdfGenerator.isAllowedInternalUrl("http://localhost:5000/api/health")).toBe(false);
+    expect(pdfGenerator.isAllowedInternalUrl("http://[::1]:9200/")).toBe(false);
     expect(pdfGenerator.isAllowedInternalUrl("https://fonts.googleapis.com/css")).toBe(false);
     expect(pdfGenerator.isAllowedInternalUrl("https://evil.example.com/steal")).toBe(false);
   });
