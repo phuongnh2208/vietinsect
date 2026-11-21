@@ -308,7 +308,7 @@ function resolveGridSizeDeg(filters = {}) {
   if (zoom >= 11) return 0.025; // ~2.8 km
   if (zoom >= 9) return 0.05;   // ~5.5 km
   if (zoom >= 7) return 0.125;  // ~13.8 km
-  return 0.2;                   // ~22.2 km ở tỷ lệ toàn quốc (zoom <= 6)
+  return 0.25;                  // ~27.8 km ở tỷ lệ toàn quốc (zoom <= 6) giúp các ô lưới tách bạch rõ ràng
 }
 
 /**

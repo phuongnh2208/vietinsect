@@ -2,17 +2,18 @@ import L from "leaflet";
 
 /**
  * DEFAULT_SCIENTIFIC_GRADIENT
- * Phổ màu mật độ điểm ghi nhận (Occurrence Record Density):
- * - Thấp (Low): Xanh cốm nhạt / Vàng chanh (#84CC16 -> #FACC15)
- * - Trung bình (Medium): Cam hổ phách (#F59E0B -> #EA580C)
- * - Cao (High): Đỏ tươi -> Đỏ sẫm (#DC2626 -> #7F1D1D)
+ * Phổ màu khoa học rõ nét, độ trong suốt hợp lý để luôn đọc rõ bản đồ địa lý bên dưới:
+ * - Thấp (Low): Xanh lục nhạt -> Vàng chanh (#22C55E -> #EAB308)
+ * - Trung bình (Medium): Cam sáng (#F97316)
+ * - Cao / Điểm nóng (High): Đỏ tươi -> Đỏ đậm (#DC2626 -> #991B1B)
  */
 export const DEFAULT_SCIENTIFIC_GRADIENT = {
-  0.15: "#84CC16",
-  0.38: "#FACC15",
-  0.62: "#F97316",
-  0.84: "#DC2626",
-  1.0: "#7F1D1D",
+  0.08: "#22C55E",
+  0.32: "#84CC16",
+  0.55: "#FACC15",
+  0.76: "#F97316",
+  0.92: "#DC2626",
+  1.0: "#991B1B",
 };
 
 function buildColorPaletteLut(gradientConfig = DEFAULT_SCIENTIFIC_GRADIENT) {
@@ -38,20 +39,21 @@ function buildColorPaletteLut(gradientConfig = DEFAULT_SCIENTIFIC_GRADIENT) {
 }
 
 /**
- * LeafletHeatLayer — Lớp bản đồ nhiệt mật độ không gian liên tục (tương thích chuẩn L.heatLayer / leaflet.heat).
- * Thuật toán:
- * 1. Tích lũy cường độ hạt nhân Gaussian (Radial Alpha Stamp) của từng ô lưới/điểm lên kênh Alpha của Canvas 2D.
- * 2. Ánh xạ mảng Alpha (0..255) qua bảng tra màu 256 mức (Color LUT) với độ trong suốt thích ứng để giữ rõ bản đồ nền.
- * 3. Các vùng không có bản ghi (alpha = 0) giữ nguyên độ trong suốt 100%, không bao giờ sinh điểm nóng giả.
+ * LeafletHeatLayer — Bản đồ nhiệt mật độ không gian chuẩn hóa tự động (Normalized Float32 Kernel Density).
+ * Khắc phục triệt để hiện tượng "bão hòa đỏ toàn quốc" khi có hàng chục nghìn bản ghi:
+ * 1. Tích lũy hàm hạt nhân Gaussian của từng ô lưới PostGIS vào bộ đệm số thực Float32Array.
+ * 2. Chuẩn hóa theo giá trị cực đại thực tế trên màn hình (maxAccumulated) kết hợp hàm gamma (0.72),
+ *    đảm bảo chỉ những vùng tập trung cao nhất mới có màu đỏ/cam, vùng trung bình màu vàng, vùng thấp màu xanh lá nhạt.
+ * 3. Giới hạn độ đục (alpha <= 0.72 ở tâm, 0.18..0.48 ở vùng thấp/trung bình) để bản đồ nền, tên tỉnh/thành luôn rõ nét.
  */
 const LeafletHeatLayer = L.Layer.extend({
   options: {
-    radius: 20,
-    blur: 15,
+    radius: 14,
+    blur: 10,
     maxZoom: 18,
-    minOpacity: 0.22,
-    maxOpacity: 0.86,
-    max: 1.0,
+    minOpacity: 0.14,
+    maxOpacity: 0.74,
+    gamma: 0.72,
     gradient: DEFAULT_SCIENTIFIC_GRADIENT,
   },
 
@@ -145,19 +147,24 @@ const LeafletHeatLayer = L.Layer.extend({
       return;
     }
 
-    const r = Math.max(6, Number(this.options.radius) || 20);
-    const blur = Math.max(4, Number(this.options.blur) || 15);
-    const totalRadius = r + blur;
-    const maxVal = Math.max(0.0001, Number(this.options.max) || 1.0);
-    const minOpacity = Number(this.options.minOpacity ?? 0.22);
-    const maxOpacity = Number(this.options.maxOpacity ?? 0.86);
+    const r = Math.max(5, Number(this.options.radius) || 14);
+    const blur = Math.max(3, Number(this.options.blur) || 10);
+    const kernelRadius = Math.round(r + blur);
+    const rSq = kernelRadius * kernelRadius;
+    const sigmaSq2 = 2 * Math.pow(kernelRadius * 0.44, 2);
+    const minOpacity = Number(this.options.minOpacity ?? 0.14);
+    const maxOpacity = Number(this.options.maxOpacity ?? 0.74);
+    const gamma = Number(this.options.gamma ?? 0.72);
 
-    // 1. Vẽ hạt nhân Gaussian lên kênh Alpha cho từng điểm/ô lưới trong khung nhìn
+    // Bộ đệm Float32Array lưu cường độ thực tại từng điểm ảnh, chống tràn bão hòa kênh Alpha 8-bit
+    const field = new Float32Array(width * height);
+    let maxFieldVal = 0;
+
     for (let i = 0; i < this._latlngs.length; i += 1) {
       const entry = this._latlngs[i];
       const lat = Array.isArray(entry) ? Number(entry[0]) : Number(entry?.lat);
       const lon = Array.isArray(entry) ? Number(entry[1]) : Number(entry?.lon ?? entry?.lng);
-      const rawWeight = Array.isArray(entry) ? Number(entry[2] ?? 1) : Number(entry?.weight ?? 1);
+      const weight = Array.isArray(entry) ? Number(entry[2] ?? 1) : Number(entry?.weight ?? 1);
 
       if (
         Number.isNaN(lat) ||
@@ -165,38 +172,54 @@ const LeafletHeatLayer = L.Layer.extend({
         lat < -90 ||
         lat > 90 ||
         lon < -180 ||
-        lon > 180
+        lon > 180 ||
+        weight <= 0
       ) {
         continue;
       }
 
       const pt = this._map.latLngToContainerPoint([lat, lon]);
+      const cx = Math.round(pt.x);
+      const cy = Math.round(pt.y);
+
       if (
-        pt.x < -totalRadius ||
-        pt.y < -totalRadius ||
-        pt.x > width + totalRadius ||
-        pt.y > height + totalRadius
+        cx < -kernelRadius ||
+        cy < -kernelRadius ||
+        cx >= width + kernelRadius ||
+        cy >= height + kernelRadius
       ) {
         continue;
       }
 
-      const alpha = Math.min(1, Math.max(minOpacity, rawWeight / maxVal));
+      const yStart = Math.max(0, cy - kernelRadius);
+      const yEnd = Math.min(height - 1, cy + kernelRadius);
+      const xStart = Math.max(0, cx - kernelRadius);
+      const xEnd = Math.min(width - 1, cx + kernelRadius);
 
-      if (typeof ctx.createRadialGradient === "function") {
-        const radGrad = ctx.createRadialGradient(pt.x, pt.y, r * 0.12, pt.x, pt.y, totalRadius);
-        if (typeof radGrad.addColorStop === "function") {
-          radGrad.addColorStop(0, `rgba(0,0,0,${alpha})`);
-          radGrad.addColorStop(0.55, `rgba(0,0,0,${alpha * 0.55})`);
-          radGrad.addColorStop(1, "rgba(0,0,0,0)");
-          ctx.fillStyle = radGrad;
-          ctx.beginPath();
-          ctx.arc(pt.x, pt.y, totalRadius, 0, Math.PI * 2);
-          ctx.fill();
+      for (let y = yStart; y <= yEnd; y += 1) {
+        const dy = y - cy;
+        const dySq = dy * dy;
+        const rowOffset = y * width;
+        for (let x = xStart; x <= xEnd; x += 1) {
+          const dx = x - cx;
+          const distSq = dx * dx + dySq;
+          if (distSq <= rSq) {
+            // Hàm hạt nhân Gaussian có biên rơi mềm về 0 tại dist = kernelRadius
+            const edgeTaper = 1 - distSq / rSq;
+            const kVal = weight * Math.exp(-distSq / sigmaSq2) * edgeTaper;
+            const idx = rowOffset + x;
+            const nextVal = field[idx] + kVal;
+            field[idx] = nextVal;
+            if (nextVal > maxFieldVal) {
+              maxFieldVal = nextVal;
+            }
+          }
         }
       }
     }
 
-    // 2. Ánh xạ kênh Alpha (0..255) sang phổ màu liên tục (256-color LUT)
+    if (maxFieldVal <= 0) return;
+
     if (
       typeof ctx.getImageData === "function" &&
       typeof ctx.putImageData === "function" &&
@@ -207,21 +230,23 @@ const LeafletHeatLayer = L.Layer.extend({
       if (img && img.data) {
         const pixels = img.data;
         const pal = this._palette;
-        for (let idx = 0; idx < pixels.length; idx += 4) {
-          const a = pixels[idx + 3];
-          if (a > 4) {
-            const lutOffset = a * 4;
-            pixels[idx] = pal[lutOffset];
-            pixels[idx + 1] = pal[lutOffset + 1];
-            pixels[idx + 2] = pal[lutOffset + 2];
-            // Giới hạn độ đục tối đa để bản đồ địa lý bên dưới luôn nhìn rõ
-            const scaledAlpha = Math.min(
-              Math.round(maxOpacity * 255),
-              Math.max(Math.round(minOpacity * 180), a),
-            );
-            pixels[idx + 3] = scaledAlpha;
-          } else {
-            pixels[idx + 3] = 0;
+        const cutoff = 0.035; // Loại bỏ rìa nhiễu quá mờ để nền bản đồ sạch và sắc nét
+
+        for (let i = 0; i < field.length; i += 1) {
+          const rawRatio = field[i] / maxFieldVal;
+          if (rawRatio > cutoff) {
+            const norm = Math.min(1, Math.pow((rawRatio - cutoff) / (1 - cutoff), gamma));
+            const colorIdx = Math.min(255, Math.max(1, Math.round(norm * 255)));
+            const lutOffset = colorIdx * 4;
+            const pOffset = i * 4;
+
+            pixels[pOffset] = pal[lutOffset];
+            pixels[pOffset + 1] = pal[lutOffset + 1];
+            pixels[pOffset + 2] = pal[lutOffset + 2];
+
+            // Độ đục tỷ lệ thuận với mật độ nhưng tối đa chỉ ~74% ở tâm để luôn nhìn xuyên thấy chữ & đường biên bản đồ
+            const alphaNorm = minOpacity + norm * (maxOpacity - minOpacity);
+            pixels[pOffset + 3] = Math.round(alphaNorm * 255);
           }
         }
         ctx.putImageData(img, 0, 0);

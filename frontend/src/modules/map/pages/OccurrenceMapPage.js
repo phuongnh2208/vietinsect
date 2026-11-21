@@ -998,37 +998,36 @@ export default function OccurrenceMapPage() {
       }).addTo(layerGroup);
     }
 
-    // 3. Genuine Spatial Density Heatmap Mode (PostGIS Scale-Adaptive Spatial Grid + Leaflet 2D Canvas Kernel Density)
+    // 3. Genuine Spatial Density Heatmap Mode (PostGIS Scale-Adaptive Spatial Grid + Normalized Float32 Kernel Density)
     if (viewMode === "heatmap") {
       const heatCells = mapData.heatGrid || [];
       if (heatCells.length === 0) return;
 
       const maxGrid = heatCells.reduce((m, g) => Math.max(m, Number(g.count || 0)), 1);
-      const gridDeg = Number(mapData.densityMeta?.gridSizeDeg) || 0.2;
+      const gridDeg = Number(mapData.densityMeta?.gridSizeDeg) || 0.25;
       const halfDeg = gridDeg / 2;
       const gridKm = Number(mapData.densityMeta?.gridSizeKm) || Number((gridDeg * 111.32).toFixed(1));
 
-      // Tính bán kính hạt nhân (kernel radius & blur) thích ứng theo mức thu phóng để không biến toàn quốc thành 1 vùng đỏ đồng nhất
+      // Bán kính hạt nhân gọn và sắc nét theo mức zoom để phân tách rõ từng cụm mật độ, không bị nhòe đỏ toàn quốc
       const heatRadius =
-        mapZoom <= 5 ? 15 : mapZoom === 6 ? 19 : mapZoom <= 8 ? 24 : mapZoom <= 10 ? 28 : 34;
+        mapZoom <= 5 ? 9 : mapZoom === 6 ? 12 : mapZoom <= 8 ? 16 : mapZoom <= 10 ? 22 : 28;
       const heatBlur =
-        mapZoom <= 5 ? 12 : mapZoom === 6 ? 15 : mapZoom <= 8 ? 18 : mapZoom <= 10 ? 20 : 24;
+        mapZoom <= 5 ? 6 : mapZoom === 6 ? 8 : mapZoom <= 8 ? 11 : mapZoom <= 10 ? 15 : 18;
 
-      // Dựng mảng [lat, lon, normalizedWeight] từ trọng tâm tọa độ thực của từng ô lưới PostGIS
+      // Trọng số tỷ lệ log-tuyến tính theo số bản ghi thực của từng ô lưới PostGIS (không đặt sàn cao tránh bão hòa vùng thưa)
       const heatPoints = heatCells.map((cell) => {
-        const weight = Math.min(
-          1,
-          Math.max(0.16, Math.pow(Number(cell.count || 1) / maxGrid, 0.48)),
-        );
+        const cnt = Math.max(1, Number(cell.count || 1));
+        const ratio = cnt / maxGrid;
+        const weight = Math.max(0.03, Math.pow(ratio, 0.58));
         return [Number(cell.lat), Number(cell.lon), weight];
       });
 
       const heatLayer = createLeafletHeatLayer(heatPoints, {
         radius: heatRadius,
         blur: heatBlur,
-        max: 1.0,
-        minOpacity: 0.24,
-        maxOpacity: 0.86,
+        minOpacity: 0.16,
+        maxOpacity: 0.74,
+        gamma: 0.75,
       });
       heatLayer.addTo(map);
       heatLayerRef.current = heatLayer;
@@ -2436,18 +2435,17 @@ export default function OccurrenceMapPage() {
                         <span className="vi-scale-mid">
                           {mapData.densityMeta?.maxCellCount > 0
                             ? `${isEn ? "Medium" : "Trung bình"} (~${(
-                                mapData.densityMeta.medianCellCount ||
-                                Math.max(1, Math.round(mapData.densityMeta.maxCellCount * 0.25))
-                              ).toLocaleString()})`
+                              mapData.densityMeta.medianCellCount ||
+                              Math.max(1, Math.round(mapData.densityMeta.maxCellCount * 0.25))
+                            ).toLocaleString()})`
                             : isEn
                               ? "Medium"
                               : "Trung bình"}
                         </span>
                         <span className="vi-scale-end is-high">
                           {mapData.densityMeta?.maxCellCount > 0
-                            ? `${isEn ? "High" : "Cao"} (${mapData.densityMeta.maxCellCount.toLocaleString()} ${
-                                isEn ? "records/cell" : "bản ghi/ô"
-                              } ~${mapData.densityMeta.gridSizeKm || 22.3}km)`
+                            ? `${isEn ? "High" : "Cao"} (${mapData.densityMeta.maxCellCount.toLocaleString()} ${isEn ? "records/cell" : "bản ghi/ô"
+                            } ~${mapData.densityMeta.gridSizeKm || 22.3}km)`
                             : isEn
                               ? "High"
                               : "Cao"}
