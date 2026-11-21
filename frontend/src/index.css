@@ -5078,3 +5078,853 @@ a.taxonomy-node-name:hover {
     gap: 2px;
   }
 }
+
+/* ==========================================================================
+   WEBGIS SCIENTIFIC BIODIVERSITY REDESIGN (SCR-18 /map & /admin/map)
+   ========================================================================== */
+
+.vi-gis-page-root {
+  padding-top: 12px !important;
+  padding-bottom: 24px !important;
+}
+
+.vi-gis-print-sheet {
+  display: none;
+}
+
+/* 1. Compact Header (Section 3) */
+.vi-gis-compact-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  background: #FFFFFF;
+  border: 1px solid #171717;
+}
+
+.vi-gis-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 280px;
+  flex: 1;
+}
+
+.vi-gis-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #237A35;
+}
+
+.vi-gis-title-line h1 {
+  margin: 0;
+  font-family: "Manrope", "Inter", sans-serif;
+  font-size: clamp(18px, 1.8vw, 22px);
+  font-weight: 800;
+  color: #171717;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.vi-gis-subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748B;
+  line-height: 1.35;
+}
+
+.vi-gis-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.vi-gis-stat-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.vi-gis-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #F8FAF9;
+  border: 1px solid #DCE3E8;
+  font-size: 11px;
+  color: #64748B;
+}
+
+.vi-gis-stat-pill strong {
+  font-family: "Manrope", monospace;
+  font-size: 12px;
+  font-weight: 800;
+  color: #171717;
+}
+
+.vi-gis-stat-pill.is-accent {
+  background: #EEF6EE;
+  border-color: #237A35;
+  color: #103B25;
+}
+
+.vi-gis-stat-pill.is-accent strong {
+  color: #103B25;
+}
+
+.vi-gis-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.vi-gis-mode-segmented button {
+  min-height: 30px !important;
+  padding: 0 11px !important;
+  font-size: 11px !important;
+}
+
+.vi-gis-mobile-filter-toggle {
+  display: none !important;
+}
+
+/* 2. Two-Column Main Layout (Section 4) */
+.vi-gis-workbench {
+  display: grid;
+  grid-template-columns: 350px minmax(0, 1fr) !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+}
+
+.vi-gis-sidebar {
+  display: flex;
+  flex-direction: column;
+  padding: 0 !important;
+  height: 710px;
+  max-height: 710px !important;
+  overflow: hidden !important;
+  border: 1px solid #171717 !important;
+  background: #FFFFFF;
+}
+
+.vi-gis-sidebar-sticky-head {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: 10px 12px;
+  background: #F8FAF9;
+  border-bottom: 1px solid #DCE3E8;
+}
+
+.vi-gis-sidebar-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.vi-gis-sidebar-title-row h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #171717;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.vi-gis-filter-sub {
+  display: block;
+  font-size: 11px;
+  color: #237A35;
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+.vi-gis-sidebar-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vi-gis-sidebar-head-actions .button-sm {
+  min-height: 26px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+.vi-gis-active-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.vi-gis-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  background: #EEF6EE;
+  border: 1px solid #237A35;
+  color: #103B25;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.vi-gis-filter-chip button {
+  border: none;
+  background: transparent;
+  color: #103B25;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.vi-gis-sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px 14px;
+}
+
+/* 3. Spatial Filter Groups (Section 5) */
+.vi-gis-filter-group {
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #DCE3E8;
+}
+
+.vi-gis-group-heading {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #103B25;
+}
+
+.vi-gis-group-head-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.vi-gis-quick-dates {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.vi-gis-quick-dates button {
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 800;
+  border: 1px solid #DCE3E8;
+  background: #F8FAF9;
+  color: #171717;
+  cursor: pointer;
+}
+
+.vi-gis-quick-dates button:hover {
+  border-color: #237A35;
+  background: #EEF6EE;
+}
+
+.vi-gis-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 7px;
+}
+
+.vi-gis-field:last-child {
+  margin-bottom: 0;
+}
+
+.vi-gis-field label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.vi-gis-field input,
+.vi-gis-field select {
+  height: 30px;
+  padding: 3px 8px;
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+  color: #171717;
+  font-size: 12px;
+  border-radius: 0 !important;
+  outline: none;
+}
+
+.vi-gis-field input:focus,
+.vi-gis-field select:focus {
+  border-color: #237A35;
+  box-shadow: 0 0 0 1px rgba(35, 122, 53, 0.2);
+}
+
+.vi-gis-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.vi-gis-check-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #171717;
+  margin-top: 5px;
+  cursor: pointer;
+}
+
+.vi-gis-accordion-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  background: #F8FAF9;
+  border: 1px solid #DCE3E8;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #103B25;
+  cursor: pointer;
+}
+
+.vi-gis-accordion-body {
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vi-gis-subbox {
+  padding: 8px 9px;
+  background: #F8FAF9;
+  border: 1px solid #DCE3E8;
+}
+
+.vi-gis-subbox-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 11px;
+  color: #171717;
+}
+
+.vi-gis-link-btn {
+  border: none;
+  background: transparent;
+  color: #237A35;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.vi-gis-preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.vi-gis-preset-chips button {
+  padding: 2px 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  color: #171717;
+  cursor: pointer;
+}
+
+.vi-gis-preset-chips button:hover {
+  border-color: #237A35;
+  background: #EEF6EE;
+}
+
+/* 4. Map Stage, Top Overlay & Ecological Layers Panel (Sections 6, 7, 8) */
+.vi-gis-stage {
+  height: 710px !important;
+  border: 1px solid #171717 !important;
+}
+
+.vi-map-toolbar-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.vi-map-basemap-group button {
+  min-height: 28px !important;
+  padding: 0 10px !important;
+  font-size: 11px !important;
+}
+
+.vi-map-opacity-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 8px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #171717;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.vi-map-opacity-pill input[type="range"] {
+  width: 54px;
+  cursor: pointer;
+}
+
+.vi-map-btn.is-active {
+  background: #103B25;
+  color: #FFFFFF;
+  border-color: #103B25;
+}
+
+.vi-gis-layers-popover {
+  position: absolute;
+  top: 52px;
+  left: 14px;
+  z-index: 650;
+  width: 340px;
+  max-width: calc(100% - 28px);
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid #171717;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+
+.vi-gis-layers-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #103B25;
+  color: #FFFFFF;
+  font-size: 12px;
+}
+
+.vi-gis-layers-popover-head button {
+  border: none;
+  background: transparent;
+  color: #FFFFFF;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.vi-gis-layers-section {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.vi-gis-layers-subhead {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+  margin-bottom: 2px;
+}
+
+.vi-gis-layer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border: 1px solid #E2E8F0;
+  background: #F8FAF9;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.vi-gis-layer-row.is-unavailable {
+  background: #F1F5F9;
+  color: #64748B;
+  cursor: not-allowed;
+}
+
+.vi-layer-swatch {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  border: 1px solid #171717;
+}
+
+.vi-layer-swatch.is-circle {
+  border-radius: 50%;
+}
+
+.vi-layer-name {
+  flex: 1;
+  font-weight: 700;
+  color: #171717;
+}
+
+.vi-gis-layer-row.is-unavailable .vi-layer-name {
+  color: #64748B;
+}
+
+.vi-layer-unavail-note {
+  font-size: 10px;
+  color: #64748B;
+  margin-top: 1px;
+}
+
+.vi-layer-badge {
+  padding: 1px 6px;
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: #E2E8F0;
+  color: #334155;
+}
+
+.vi-layer-badge.is-live {
+  background: #DCFCE7;
+  color: #103B25;
+  border: 1px solid #86EFAC;
+}
+
+.vi-layer-badge.is-unavail {
+  background: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #FCA5A5;
+}
+
+/* Protected area & Canvas Cluster Pins */
+.vi-park-pin {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #15803D;
+  border: 2px solid #FFFFFF;
+  color: #FFFFFF;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.vi-point-cluster-badge {
+  border-radius: 50%;
+  background: rgba(16, 59, 37, 0.9);
+  border: 2px solid #FFFFFF;
+  color: #FFFFFF;
+  display: grid;
+  place-items: center;
+  font: 800 11px "Manrope", sans-serif;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+}
+
+/* 5. Scientific Specimen Occurrence Popup (Section 9) */
+.leaflet-popup-content {
+  margin: 10px 12px !important;
+}
+
+.vi-gis-specimen-popup {
+  font-family: "Inter", sans-serif;
+  color: #171717;
+  line-height: 1.4;
+}
+
+.vi-gis-popup-header {
+  border-bottom: 1px solid #DCE3E8;
+  padding-bottom: 7px;
+  margin-bottom: 7px;
+}
+
+.vi-gis-popup-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.vi-gis-popup-rank {
+  padding: 1px 6px;
+  background: #103B25;
+  color: #FFFFFF;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.vi-gis-popup-order {
+  padding: 1px 6px;
+  background: #F8FAF9;
+  border: 1px solid #237A35;
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.vi-gis-popup-code {
+  margin-left: auto;
+  padding: 1px 6px;
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  font-family: monospace;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.vi-gis-popup-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #103B25;
+  line-height: 1.25;
+}
+
+.vi-gis-popup-lineage {
+  font-size: 10.5px;
+  color: #64748B;
+  margin-top: 2px;
+}
+
+.vi-gis-popup-dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vi-gis-popup-dl > div {
+  display: grid;
+  grid-template-columns: 98px minmax(0, 1fr);
+  gap: 6px;
+  font-size: 11.5px;
+  align-items: baseline;
+}
+
+.vi-gis-popup-dl dt {
+  color: #64748B;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.vi-gis-popup-dl dd {
+  margin: 0;
+  color: #171717;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.vi-gis-popup-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 9px;
+  padding-top: 7px;
+  border-top: 1px solid #DCE3E8;
+}
+
+.vi-gis-popup-btn-primary {
+  flex: 1;
+  padding: 6px 10px;
+  background: #103B25;
+  color: #FFFFFF;
+  border: 1px solid #103B25;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.vi-gis-popup-btn-primary:hover {
+  background: #237A35;
+  border-color: #237A35;
+}
+
+.vi-gis-popup-btn-close {
+  padding: 6px 10px;
+  background: #F8FAF9;
+  color: #171717;
+  border: 1px solid #CBD5E1;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 6. Collapsible Map Legend & Spatial Statistics Panel (Section 10) */
+.vi-gis-legend-panel {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 500;
+  max-width: calc(100% - 80px);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #171717;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+.vi-gis-legend-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 12px;
+  background: #F8FAF9;
+  border: none;
+  border-bottom: 1px solid #DCE3E8;
+  font-size: 11px;
+  color: #103B25;
+  cursor: pointer;
+}
+
+.vi-gis-legend-panel.is-collapsed .vi-gis-legend-toggle {
+  border-bottom: none;
+}
+
+.vi-gis-legend-body {
+  padding: 7px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.vi-gis-legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #171717;
+}
+
+.vi-gis-legend-row.is-secondary {
+  padding-top: 4px;
+  border-top: 1px dashed #DCE3E8;
+  font-size: 10.5px;
+  color: #334155;
+}
+
+.vi-gis-legend-label {
+  color: #103B25;
+  font-weight: 800;
+}
+
+.vi-gis-legend-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vi-gis-legend-row i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1px solid #171717;
+}
+
+.vi-gis-legend-row i.is-round {
+  border-radius: 50%;
+}
+
+.vi-gis-legend-stat-summary {
+  margin-left: auto;
+  padding-left: 8px;
+  color: #103B25;
+}
+
+/* 7. Responsive Drawer & Print Media Rules (Sections 4 & 11) */
+@media (max-width: 1024px) {
+  .vi-gis-header-right {
+    align-items: flex-start;
+    width: 100%;
+  }
+  .vi-gis-mobile-filter-toggle {
+    display: inline-flex !important;
+  }
+  .vi-gis-workbench {
+    grid-template-columns: 1fr !important;
+  }
+  .vi-gis-sidebar {
+    display: none;
+    height: auto;
+    max-height: 520px !important;
+  }
+  .vi-gis-sidebar.is-mobile-open {
+    display: flex;
+  }
+  .vi-gis-stage {
+    height: 620px !important;
+  }
+}
+
+@media print {
+  .vi-gis-compact-header,
+  .vi-gis-sidebar,
+  .vi-map-overlay-top,
+  .vi-gis-layers-popover,
+  .leaflet-control-zoom {
+    display: none !important;
+  }
+  .vi-gis-print-sheet {
+    display: block !important;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    border: 1px solid #171717;
+    background: #FFFFFF;
+  }
+  .vi-gis-print-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid #DCE3E8;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+  }
+  .vi-gis-print-head h2 {
+    margin: 2px 0 0;
+    font-size: 18px;
+  }
+  .vi-gis-print-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 11px;
+  }
+  .vi-gis-workbench {
+    display: block !important;
+  }
+  .vi-gis-stage {
+    height: 620px !important;
+    page-break-inside: avoid;
+  }
+}

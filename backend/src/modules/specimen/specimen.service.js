@@ -182,29 +182,81 @@ async function listSpecimens(filters, { isAdmin = false } = {}) {
 
 async function getMapOccurrences(filters, { isAdmin = false } = {}) {
   const result = await specimenRepository.findMapData(filters, { includePrivate: isAdmin });
+  const provinceClusters = result.provinceClusters.map((c) => ({
+    provinceId: c.province_id != null ? Number(c.province_id) : null,
+    provinceNameVn: c.province_name_vn,
+    provinceNameEn: c.province_name_en || null,
+    region: c.region || null,
+    count: Number(c.count),
+    speciesCount: Number(c.species_count || 0),
+    lat: Number(c.lat),
+    lon: Number(c.lon),
+  }));
+
+  // Tổng hợp theo Vùng sinh thái / Địa lý tự nhiên (Ecological Regions) từ cụm tỉnh PostGIS
+  const regionMap = new Map();
+  provinceClusters.forEach((c) => {
+    const regName = c.region || "Vùng khác";
+    if (c.lat == null || c.lon == null || Number.isNaN(c.lat) || Number.isNaN(c.lon)) return;
+    const prev = regionMap.get(regName) || {
+      region: regName,
+      count: 0,
+      speciesCount: 0,
+      provinceCount: 0,
+      latWeightSum: 0,
+      lonWeightSum: 0,
+    };
+    const w = Math.max(1, c.count);
+    prev.count += c.count;
+    prev.speciesCount += c.speciesCount;
+    prev.provinceCount += 1;
+    prev.latWeightSum += c.lat * w;
+    prev.lonWeightSum += c.lon * w;
+    regionMap.set(regName, prev);
+  });
+
+  const regionClusters = Array.from(regionMap.values()).map((r) => ({
+    region: r.region,
+    count: r.count,
+    speciesCount: r.speciesCount,
+    provinceCount: r.provinceCount,
+    lat: Number((r.latWeightSum / Math.max(1, r.count)).toFixed(4)),
+    lon: Number((r.lonWeightSum / Math.max(1, r.count)).toFixed(4)),
+  }));
+
   return {
     totalMatching: result.totalMatching,
     returnedPoints: result.returnedPoints,
+    summary: result.summary || {
+      totalOccurrences: result.totalMatching,
+      distinctSpeciesCount: 0,
+      provincesCount: provinceClusters.length,
+    },
     points: result.points.map((pt) => ({
       id: Number(pt.specimen_id),
       code: pt.specimen_code,
       scientificName: pt.gbif_scientific_name || pt.taxon_name || "Insecta sp.",
+      taxonRank: pt.taxon_rank || "Species",
+      taxonSlug: pt.taxon_slug || null,
       orderName: pt.order_name || null,
+      familyName: pt.family_name || null,
+      genusName: pt.genus_name || null,
       provinceNameVn: pt.province_name_vn || null,
+      region: pt.region || null,
+      district: pt.district || null,
+      localityDetail: pt.locality_detail || null,
+      elevationM: pt.elevation_m != null ? Number(pt.elevation_m) : null,
       basisOfRecord: pt.basis_of_record || null,
+      institutionCode: pt.institution_code || null,
+      recordedBy: pt.recorded_by || null,
       collectionDate: formatDateOnly(pt.collection_date),
       individualCount: Number(pt.individual_count || 1),
+      distanceKm: pt.distance_km != null ? Number(pt.distance_km) : undefined,
       lat: Number(pt.lat),
       lon: Number(pt.lon),
     })),
-    provinceClusters: result.provinceClusters.map((c) => ({
-      provinceId: c.province_id != null ? Number(c.province_id) : null,
-      provinceNameVn: c.province_name_vn,
-      provinceNameEn: c.province_name_en || null,
-      count: Number(c.count),
-      lat: Number(c.lat),
-      lon: Number(c.lon),
-    })),
+    provinceClusters,
+    regionClusters,
     heatGrid: result.heatGrid.map((g) => ({
       lat: Number(g.lat),
       lon: Number(g.lon),

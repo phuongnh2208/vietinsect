@@ -25,6 +25,15 @@ function applyFilters(qb, filters, { includePrivate = false, needRegistryJoin = 
   if (filters.provinceId) {
     qb.where("s.province_id", filters.provinceId);
   }
+  if (filters.district && String(filters.district).trim()) {
+    const safeDist = `%${escapeLike(String(filters.district).trim())}%`;
+    qb.whereRaw("s.district ILIKE ? ESCAPE '\\'", [safeDist]);
+  }
+  if (filters.region && String(filters.region).trim()) {
+    qb.whereIn("s.province_id", function () {
+      this.select("province_id").from("provinces").where("region", String(filters.region).trim());
+    });
+  }
   if (filters.habitatId) {
     qb.where("s.habitat_id", filters.habitatId);
   }
@@ -43,6 +52,12 @@ function applyFilters(qb, filters, { includePrivate = false, needRegistryJoin = 
   if (filters.dateTo) {
     qb.where("s.collection_date", "<=", filters.dateTo);
   }
+  if (filters.minElevation != null && filters.minElevation !== "") {
+    qb.where("s.elevation_m", ">=", Number(filters.minElevation));
+  }
+  if (filters.maxElevation != null && filters.maxElevation !== "") {
+    qb.where("s.elevation_m", "<=", Number(filters.maxElevation));
+  }
   if (filters.hasCoordinates === true) {
     qb.whereNotNull("s.collection_point");
   } else if (filters.hasCoordinates === false) {
@@ -52,8 +67,11 @@ function applyFilters(qb, filters, { includePrivate = false, needRegistryJoin = 
   if (filters.basisOfRecord && needRegistryJoin) {
     qb.where("sr.basis_of_record", filters.basisOfRecord);
   }
+  if (filters.institutionCode && String(filters.institutionCode).trim() && needRegistryJoin) {
+    qb.where("sr.institution_code", String(filters.institutionCode).trim());
+  }
 
-  // Lọc theo taxonId (bao gồm toàn bộ nhánh con bằng CTE đệ quy)
+  // Lọc theo taxonId hoặc theo bậc phân loại (Species -> Genus -> Family -> Order) bằng CTE đệ quy
   if (filters.taxonId) {
     qb.whereRaw(
       `s.taxon_id IN (
@@ -65,6 +83,42 @@ function applyFilters(qb, filters, { includePrivate = false, needRegistryJoin = 
         SELECT taxon_id FROM sub_taxa
       )`,
       [filters.taxonId],
+    );
+  } else if (filters.species && String(filters.species).trim()) {
+    qb.whereRaw(
+      `s.taxon_id IN (
+        WITH RECURSIVE sub_taxa AS (
+          SELECT taxon_id FROM taxa WHERE lower(scientific_name) = lower(?) AND taxon_rank = 'Species'
+          UNION ALL
+          SELECT c.taxon_id FROM taxa c JOIN sub_taxa st ON c.parent_id = st.taxon_id
+        )
+        SELECT taxon_id FROM sub_taxa
+      )`,
+      [String(filters.species).trim()],
+    );
+  } else if (filters.genus && String(filters.genus).trim()) {
+    qb.whereRaw(
+      `s.taxon_id IN (
+        WITH RECURSIVE sub_taxa AS (
+          SELECT taxon_id FROM taxa WHERE lower(scientific_name) = lower(?) AND taxon_rank = 'Genus'
+          UNION ALL
+          SELECT c.taxon_id FROM taxa c JOIN sub_taxa st ON c.parent_id = st.taxon_id
+        )
+        SELECT taxon_id FROM sub_taxa
+      )`,
+      [String(filters.genus).trim()],
+    );
+  } else if (filters.family && String(filters.family).trim()) {
+    qb.whereRaw(
+      `s.taxon_id IN (
+        WITH RECURSIVE sub_taxa AS (
+          SELECT taxon_id FROM taxa WHERE lower(scientific_name) = lower(?) AND taxon_rank = 'Family'
+          UNION ALL
+          SELECT c.taxon_id FROM taxa c JOIN sub_taxa st ON c.parent_id = st.taxon_id
+        )
+        SELECT taxon_id FROM sub_taxa
+      )`,
+      [String(filters.family).trim()],
     );
   } else if (filters.order) {
     qb.whereRaw(
@@ -244,10 +298,16 @@ async function findMany(filters, { includePrivate = false } = {}) {
  */
 async function findMapData(filters, { includePrivate = false } = {}) {
   const limit = Number(filters.limit) || 3000;
-  const needRegistryJoin = Boolean(filters.basisOfRecord || (filters.q && filters.q.trim()));
+  const needRegistryJoin = Boolean(
+    filters.basisOfRecord ||
+      (filters.institutionCode && String(filters.institutionCode).trim()) ||
+      (filters.q && filters.q.trim()),
+  );
 
-  // 1. Đếm tổng & gom cụm theo Tỉnh/thành
-  const clusterQb = knex({ s: "specimens" }).leftJoin({ p: "provinces" }, "s.province_id", "p.province_id");
+  // 1. Đếm tổng & gom cụm theo Tỉnh/thành (bao gồm Độ giàu loài Species Richness & Vùng sinh thái)
+  const clusterQb = knex({ s: "specimens" })
+    .leftJoin({ p: "provinces" }, "s.province_id", "p.province_id")
+    .leftJoin({ t1: "taxa" }, "s.taxon_id", "t1.taxon_id");
   if (needRegistryJoin) {
     clusterQb.join({ sr: "specimen_registry" }, "s.specimen_id", "sr.specimen_id");
   }
@@ -256,16 +316,33 @@ async function findMapData(filters, { includePrivate = false } = {}) {
 
   const clusterPromise = clusterQb
     .clone()
-    .groupBy("p.province_id", "p.province_name_vn", "p.province_name_en")
+    .groupBy("p.province_id", "p.province_name_vn", "p.province_name_en", "p.region")
     .select(
       "p.province_id",
       knex.raw("COALESCE(p.province_name_vn, 'Chưa rõ tỉnh/thành') AS province_name_vn"),
       "p.province_name_en",
+      "p.region",
       knex.raw("COUNT(*)::int AS count"),
+      knex.raw("COUNT(DISTINCT s.taxon_id) FILTER (WHERE t1.taxon_rank = 'Species')::int AS species_count"),
       knex.raw("ROUND(AVG(ST_Y(s.collection_point::geometry))::numeric, 5)::float AS lat"),
       knex.raw("ROUND(AVG(ST_X(s.collection_point::geometry))::numeric, 5)::float AS lon"),
     )
     .orderBy("count", "desc");
+
+  // 1b. Tổng hợp thống kê không gian toàn tập lọc từ PostGIS
+  const summaryQb = knex({ s: "specimens" }).leftJoin({ t1: "taxa" }, "s.taxon_id", "t1.taxon_id");
+  if (needRegistryJoin) {
+    summaryQb.join({ sr: "specimen_registry" }, "s.specimen_id", "sr.specimen_id");
+  }
+  summaryQb.whereNotNull("s.collection_point");
+  applyFilters(summaryQb, filters, { includePrivate, needRegistryJoin });
+  const summaryPromise = summaryQb
+    .select(
+      knex.raw("COUNT(*)::int AS total_occurrences"),
+      knex.raw("COUNT(DISTINCT s.taxon_id) FILTER (WHERE t1.taxon_rank = 'Species')::int AS distinct_species_count"),
+      knex.raw("COUNT(DISTINCT s.province_id) FILTER (WHERE s.province_id IS NOT NULL)::int AS provinces_count"),
+    )
+    .first();
 
   // 2. Lưới mật độ không gian (Grid 0.25 độ) để vẽ Heatmap chuẩn xác cho cả 100k+ điểm
   const gridQb = knex({ s: "specimens" });
@@ -298,35 +375,70 @@ async function findMapData(filters, { includePrivate = false } = {}) {
       "s.specimen_id",
       "sr.specimen_code",
       "sr.basis_of_record",
+      "sr.institution_code",
+      "sr.recorded_by",
       "s.gbif_scientific_name",
       "t1.scientific_name as taxon_name",
+      "t1.taxon_rank as taxon_rank",
+      "t1.slug as taxon_slug",
       knex.raw(`COALESCE(
         CASE WHEN t1.taxon_rank = 'Order' THEN t1.scientific_name END,
         CASE WHEN t2.taxon_rank = 'Order' THEN t2.scientific_name END,
         CASE WHEN t3.taxon_rank = 'Order' THEN t3.scientific_name END,
         CASE WHEN t4.taxon_rank = 'Order' THEN t4.scientific_name END
       ) AS order_name`),
+      knex.raw(`COALESCE(
+        CASE WHEN t1.taxon_rank = 'Family' THEN t1.scientific_name END,
+        CASE WHEN t2.taxon_rank = 'Family' THEN t2.scientific_name END,
+        CASE WHEN t3.taxon_rank = 'Family' THEN t3.scientific_name END
+      ) AS family_name`),
+      knex.raw(`COALESCE(
+        CASE WHEN t1.taxon_rank = 'Genus' THEN t1.scientific_name END,
+        CASE WHEN t2.taxon_rank = 'Genus' THEN t2.scientific_name END
+      ) AS genus_name`),
       "p.province_name_vn",
+      "p.region",
+      "s.district",
+      "s.locality_detail",
+      "s.elevation_m",
       "s.collection_date",
       "s.individual_count",
       knex.raw("ROUND(ST_Y(s.collection_point::geometry)::numeric, 5)::float AS lat"),
       knex.raw("ROUND(ST_X(s.collection_point::geometry)::numeric, 5)::float AS lon"),
     );
 
+  if (filters.lat != null && filters.lon != null && filters.radiusKm != null) {
+    pointsQb.select(
+      knex.raw(
+        "ROUND((ST_Distance(s.collection_point, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography) / 1000.0)::numeric, 2)::float AS distance_km",
+        [filters.lon, filters.lat],
+      ),
+    );
+  }
+
   applyFilters(pointsQb, filters, { includePrivate, needRegistryJoin: true });
   pointsQb.orderBy("s.collection_date", "desc").limit(limit);
 
-  const [provinceClusters, heatGrid, points] = await Promise.all([
+  const [provinceClusters, summaryRow, heatGrid, points] = await Promise.all([
     clusterPromise,
+    summaryPromise,
     gridPromise,
     pointsQb,
   ]);
 
-  const totalMatching = provinceClusters.reduce((acc, row) => acc + Number(row.count || 0), 0);
+  const totalMatching =
+    summaryRow?.total_occurrences != null
+      ? Number(summaryRow.total_occurrences)
+      : provinceClusters.reduce((acc, row) => acc + Number(row.count || 0), 0);
 
   return {
     totalMatching,
     returnedPoints: points.length,
+    summary: {
+      totalOccurrences: totalMatching,
+      distinctSpeciesCount: Number(summaryRow?.distinct_species_count || 0),
+      provincesCount: Number(summaryRow?.provinces_count || provinceClusters.filter((c) => c.province_id != null).length),
+    },
     points,
     provinceClusters,
     heatGrid,
@@ -843,11 +955,21 @@ async function restore(specimenId, adminId) {
 }
 
 async function findLookups() {
-  const [orders, provinces, habitats, lifeStages, statuses] = await Promise.all([
+  const [orders, families, provinces, habitats, lifeStages, statuses, institutionsRows] = await Promise.all([
     knex("taxa")
       .select("taxon_id as id", "scientific_name as scientificName", "vernacular_name_vn as vernacularNameVn")
       .where("taxon_rank", "Order")
       .orderBy("scientific_name", "asc"),
+    knex({ f: "taxa" })
+      .leftJoin({ o: "taxa" }, "f.parent_id", "o.taxon_id")
+      .select(
+        "f.taxon_id as id",
+        "f.scientific_name as scientificName",
+        "f.vernacular_name_vn as vernacularNameVn",
+        "o.scientific_name as orderName",
+      )
+      .where("f.taxon_rank", "Family")
+      .orderBy("f.scientific_name", "asc"),
     knex("provinces")
       .select(
         "province_id as id",
@@ -869,9 +991,20 @@ async function findLookups() {
       .select("status_id as id", "code", "label_vn as labelVn", "label_en as labelEn")
       .where("is_active", true)
       .orderBy("sort_order", "asc"),
+    knex("specimen_registry")
+      .distinct("institution_code")
+      .whereNotNull("institution_code")
+      .andWhere("institution_code", "<>", "")
+      .orderBy("institution_code", "asc")
+      .limit(50),
   ]);
 
-  return { orders, provinces, habitats, lifeStages, statuses };
+  const regions = Array.from(
+    new Set((provinces || []).map((p) => p.region).filter(Boolean)),
+  ).sort();
+  const institutions = (institutionsRows || []).map((r) => r.institution_code).filter(Boolean);
+
+  return { orders, families, provinces, regions, institutions, habitats, lifeStages, statuses };
 }
 
 async function getStats({ includePrivate = false } = {}) {
