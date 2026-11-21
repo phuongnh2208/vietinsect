@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const specimenController = require("./specimen.controller");
+const bulkImportJob = require("./bulkImportJob.service");
 const { requireAdmin, optionalAdmin } = require("../../middleware/auth.middleware");
 const {
   validateListSpecimens,
@@ -36,6 +37,43 @@ router.get("/:id", optionalAdmin, specimenController.getById);
 
 // Quản trị: tạo mới, nhập hàng loạt, chỉnh sửa hàng loạt, cập nhật, đổi trạng thái công khai đơn lẻ / hàng loạt, xóa mềm
 router.post("/", requireAdmin, validateCreateSpecimen, specimenController.create);
+router.post(
+  "/bulk-import/preview",
+  requireAdmin,
+  express.json({ limit: "10mb" }),
+  (req, res, next) => {
+    try {
+      const result = bulkImportJob.previewImportRows(req.body?.rows || []);
+      res.json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+router.post(
+  "/bulk-import/async",
+  requireAdmin,
+  express.json({ limit: "10mb" }),
+  (req, res, next) => {
+    try {
+      const job = bulkImportJob.startBulkImportJob({
+        rows: req.body?.rows || [],
+        adminId: req.admin.adminId,
+        ipAddress: req.ip || req.socket?.remoteAddress,
+      });
+      res.status(202).json({ success: true, data: job });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+router.get("/bulk-import/jobs/:jobId", requireAdmin, (req, res) => {
+  const job = bulkImportJob.getImportJob(req.params.jobId);
+  if (!job || job.adminId !== Number(req.admin.adminId)) {
+    return res.status(404).json({ success: false, code: "JOB_NOT_FOUND", message: "Không tìm thấy tiến trình import" });
+  }
+  return res.json({ success: true, data: job });
+});
 router.post(
   "/bulk-import",
   requireAdmin,

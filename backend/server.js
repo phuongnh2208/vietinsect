@@ -3,6 +3,7 @@ const app = require("./app");
 const logger = require("./src/config/logger");
 const pool = require("./src/config/db");
 const esOutbox = require("./src/modules/search/esOutbox.service");
+const { initSocket } = require("./src/config/socket");
 
 const PORT = process.env.PORT || 5000;
 
@@ -10,6 +11,8 @@ const server = app.listen(PORT, () => {
   logger.info(`VietInsect Backend đang chạy tại http://localhost:${PORT}`);
   esOutbox.startOutboxWorker({ intervalMs: Number(process.env.ES_OUTBOX_INTERVAL_MS) || 5000 });
 });
+
+initSocket(server);
 
 // Graceful shutdown
 process.on("SIGTERM", async () => {

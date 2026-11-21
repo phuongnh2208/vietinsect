@@ -636,8 +636,14 @@ describe("DEF-105: Business Logic Service Unit Tests (Coverage >= 70%)", () => {
         license_code: "cc-by",
         is_public: true,
       });
+      const sharp = require("sharp");
+      const validPng = await sharp({
+        create: { width: 10, height: 10, channels: 3, background: { r: 10, g: 20, b: 30 } },
+      })
+        .png()
+        .toBuffer();
       const uploaded = await mediaService.uploadMedia({
-        file: { originalname: "bug.jpg", buffer: Buffer.from("x"), mimetype: "image/jpeg", size: 1 },
+        file: { originalname: "bug.png", buffer: validPng, mimetype: "image/png", size: validPng.length },
         body: { specimenId: 100, licenseCode: "cc-by" },
         adminId: 1,
       });

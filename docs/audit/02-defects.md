@@ -127,33 +127,13 @@
 
 \n- **Trạng thái:** Đã sửa – commit `69593aa`
 
-### DEF-028 · High · Functional
-- **Vi phạm:** F-SP-06 "tối đa 5.000 bản ghi/lần", §5.1 Import 5.000 bản ghi <120s.
-- **Hiện trạng:** `backend/app.js:30` `app.use(express.json())` dùng giới hạn mặc định 100kb của body-parser; FE gửi toàn bộ dòng dạng JSON (`specimen.service.js` FE dòng 80-83). 5.000 dòng × 22 cột vượt xa 100kb → HTTP 413. **CẦN XÁC MINH** bằng test tải ở Bước 4.
-- **Kỳ vọng:** Nhập được 5.000 dòng.
-- **Đề xuất:** Upload file multipart (multer) và parse phía server; hoặc tăng `limit` riêng cho route import.
-- **Công:** M
+\n- **Trạng thái:** Đã sửa (Sprint D – Nhóm 2: bulkImportJob.service.js + Socket.io JWT Admin room + sharp 200x200 thumbnail/EXIF strip/magic bytes, 4/4 integration tests PASS)
 
-### DEF-029 · High · Functional
-- **Vi phạm:** F-SP-06 (5) "background job xử lý, thanh tiến độ realtime qua WebSocket"; §3.4.
-- **Hiện trạng:** `specimen.controller.js:219-235` xử lý đồng bộ trong 1 request; `specimen.repository.js:1154-1253` insert tuần tự trong 1 transaction; không có `socket.io` trong `backend/package.json`.
-- **Kỳ vọng:** Job nền + tiến độ qua Socket.io.
-- **Đề xuất:** Hàng đợi (Redis) + worker; phát sự kiện `import:progress`.
-- **Công:** L
+\n- **Trạng thái:** Đã sửa (Sprint D – Nhóm 2: bulkImportJob.service.js + Socket.io JWT Admin room + sharp 200x200 thumbnail/EXIF strip/magic bytes, 4/4 integration tests PASS)
 
-### DEF-030 · High · Functional
-- **Vi phạm:** F-SP-06 (2) "Upload file Excel/CSV".
-- **Hiện trạng:** `SpecimenBatchPages.js:301` `accept=".csv,.txt"` (không nhận .xlsx); parse bằng `split(",")` (dòng 152-154) → hỏng với giá trị có dấu phẩy/ngoặc kép, xuống dòng trong ô.
-- **Kỳ vọng:** Đọc được .xlsx và CSV chuẩn RFC 4180.
-- **Đề xuất:** Parse phía server bằng `exceljs` (đã có dependency) cho cả xlsx/csv.
-- **Công:** M
+\n- **Trạng thái:** Đã sửa (Sprint D – Nhóm 2: bulkImportJob.service.js + Socket.io JWT Admin room + sharp 200x200 thumbnail/EXIF strip/magic bytes, 4/4 integration tests PASS)
 
-### DEF-031 · Medium · Functional
-- **Vi phạm:** F-SP-06 (3) "Map cột tương tác: kéo thả tên cột file vào đúng trường".
-- **Hiện trạng:** `SpecimenBatchPages.js:152-160` dùng header file làm key trực tiếp; không có UI mapping.
-- **Kỳ vọng:** Bước mapping cột.
-- **Đề xuất:** Thêm bước map header → trường hệ thống (lưu preset).
-- **Công:** M
+\n- **Trạng thái:** Đã sửa (Sprint D – Nhóm 2: bulkImportJob.service.js + Socket.io JWT Admin room + sharp 200x200 thumbnail/EXIF strip/magic bytes, 4/4 integration tests PASS)
 
 ### DEF-032 · Low · Performance
 - **Vi phạm:** F-SP-06 (4) "Preview 20 dòng đầu".
@@ -168,12 +148,7 @@
 
 \n- **Trạng thái:** Đã sửa – commit `6f95733`
 
-### DEF-036 · Medium · Data
-- **Vi phạm:** F-SP-06 "template chuẩn 22 cột".
-- **Hiện trạng:** Template có `gpsAccuracyM`, `institutionCode`… (`SpecimenBatchPages.js:24-47`) nhưng insert bỏ qua `gps_accuracy_m`, `common_name_en`, `habitat_id`, `life_stage_id`, `status_id`, `storage_number` (`specimen.repository.js:1229-1246`).
-- **Kỳ vọng:** Mọi cột template được lưu.
-- **Đề xuất:** Map đầy đủ cột → cột DB (tra lookup theo nhãn).
-- **Công:** S
+\n- **Trạng thái:** Đã sửa (Sprint D – Nhóm 2: bulkImportJob.service.js + Socket.io JWT Admin room + sharp 200x200 thumbnail/EXIF strip/magic bytes, 4/4 integration tests PASS)
 
 ### DEF-037 · High · Functional
 - **Vi phạm:** F-SP-07 "Xem preview số bản ghi sẽ bị ảnh hưởng → Xác nhận áp dụng. Ghi audit log cho từng bản ghi".
@@ -191,19 +166,9 @@
 - **Đề xuất:** Truyền `ids` qua state/query; export hỗ trợ `ids[]`.
 - **Công:** S
 
-### DEF-040 · High · Functional
-- **Vi phạm:** F-SP-08 "Tự động resize và tạo thumbnail 200×200px".
-- **Hiện trạng:** `media.service.js:130` đặt `thumbnailKey: objectKey` (thumbnail = ảnh gốc); không có thư viện xử lý ảnh trong `backend/package.json`.
-- **Kỳ vọng:** Sinh thumbnail 200×200 lưu MinIO.
-- **Đề xuất:** Thêm `sharp` (MIT/Apache) tạo thumbnail khi upload.
-- **Công:** S
+\n- **Trạng thái:** Đã sửa (Sprint D – Nhóm 2: bulkImportJob.service.js + Socket.io JWT Admin room + sharp 200x200 thumbnail/EXIF strip/magic bytes, 4/4 integration tests PASS)
 
-### DEF-041 · Medium · Functional
-- **Vi phạm:** F-SP-08 "Drag-and-drop nhiều ảnh cùng lúc"; SCR-06.
-- **Hiện trạng:** `media.routes.js:31` `upload.single("file")`; UI upload chỉ ở `MediaGalleryPage.js:544-660` (1 file), không có ở form/chi tiết mẫu.
-- **Kỳ vọng:** Dropzone nhiều ảnh ngay trong form/chi tiết mẫu.
-- **Đề xuất:** `upload.array("files", N)` + dropzone trong `SpecimenForm`/`SpecimenDetailPage`.
-- **Công:** M
+\n- **Trạng thái:** Đã sửa (Sprint D – Nhóm 2: bulkImportJob.service.js + Socket.io JWT Admin room + sharp 200x200 thumbnail/EXIF strip/magic bytes, 4/4 integration tests PASS)
 
 \n- **Trạng thái:** Đã sửa (Sprint D – Nhóm 1: Puppeteer pdfGenerator + label.service QR + reports.service PDF/DOCX/XLSX + LabelCanvas, 6/6 integration tests PASS)
 
@@ -684,6 +649,13 @@
 - **Kỳ vọng:** Triển khai màn hình SCR-16 riêng đáp ứng đầy đủ F-SR-04 và C-04.
 - **Công:** M
 - **Trạng thái:** Chưa đóng (ghi nhận ở Sprint C – Nhóm 2, chưa triển khai)
+
+### DEF-114 · Medium · Infra
+- **Vi phạm:** SRS §3.4 / F-SP-06 (hạ tầng reverse proxy WebSocket cho Socket.io `/socket.io`).
+- **Hiện trạng:** Chưa có cấu hình `infra/nginx` với `proxy_set_header Upgrade $http_upgrade`, `proxy_set_header Connection "upgrade"` và `proxy_read_timeout` cho endpoint `/socket.io`.
+- **Kỳ vọng:** Bổ sung cấu hình Nginx production hỗ trợ nâng cấp WebSocket cho `/socket.io`.
+- **Công:** S
+- **Trạng thái:** Chưa đóng (ghi nhận theo yêu cầu sau Nhóm 2 Sprint D, chưa sửa)
 
 ### DEF-108 · Medium · Data
 - **Vi phạm:** F-GI-06 / SCR-25 (thống kê độ giàu loài theo tỉnh chính xác).

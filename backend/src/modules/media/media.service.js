@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const sharp = require("sharp");
 const mediaRepository = require("./media.repository");
 const specimenRepository = require("../specimen/specimen.repository");
 const {
@@ -105,10 +106,84 @@ async function getStats({ isAdmin = false } = {}) {
   return mediaRepository.getStats({ includePrivate: isAdmin });
 }
 
+const MAX_INPUT_PIXELS = 25_000_000; // 25MP — chống decompression bomb
+const MAX_PUBLIC_DIMENSION = 2048;
+const THUMBNAIL_SIZE = 200;
+
+/**
+ * Kiểm tra magic bytes thực tế (không tin Content-Type header).
+ * Chỉ chấp nhận JPEG (FF D8 FF) và PNG (89 50 4E 47 0D 0A 1A 0A).
+ */
+function detectImageMagicBytes(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 8) return null;
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return { ext: "jpg", mime: "image/jpeg" };
+  }
+  if (
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47 &&
+    buffer[4] === 0x0d &&
+    buffer[5] === 0x0a &&
+    buffer[6] === 0x1a &&
+    buffer[7] === 0x0a
+  ) {
+    return { ext: "png", mime: "image/png" };
+  }
+  return null;
+}
+
+/**
+ * Xử lý ảnh bằng sharp (giới hạn limitInputPixels chống decompression bomb):
+ * - Tạo thumbnail 200×200 (strip EXIF)
+ * - Tạo bản Public đã loại bỏ hoàn toàn metadata EXIF/GPS (giữ nguyên bản gốc cho Admin)
+ */
+async function processUploadedImage(buffer, format = "jpg") {
+  const base = sharp(buffer, { limitInputPixels: MAX_INPUT_PIXELS });
+  const meta = await base.metadata();
+
+  const thumbPipeline = sharp(buffer, { limitInputPixels: MAX_INPUT_PIXELS })
+    .rotate()
+    .resize(THUMBNAIL_SIZE, THUMBNAIL_SIZE, { fit: "cover" });
+  const thumbnailBuffer =
+    format === "png"
+      ? await thumbPipeline.png({ compressionLevel: 8 }).toBuffer()
+      : await thumbPipeline.jpeg({ quality: 82 }).toBuffer();
+
+  // Sharp mặc định strip toàn bộ EXIF/GPS metadata khi không gọi .withMetadata()
+  const publicPipeline = sharp(buffer, { limitInputPixels: MAX_INPUT_PIXELS })
+    .rotate()
+    .resize(MAX_PUBLIC_DIMENSION, MAX_PUBLIC_DIMENSION, {
+      fit: "inside",
+      withoutEnlargement: true,
+    });
+  const publicBuffer =
+    format === "png"
+      ? await publicPipeline.png({ compressionLevel: 8 }).toBuffer()
+      : await publicPipeline.jpeg({ quality: 88 }).toBuffer();
+
+  return {
+    width: meta.width,
+    height: meta.height,
+    thumbnailBuffer,
+    publicBuffer,
+  };
+}
+
 async function uploadMedia({ file, body, adminId }) {
   const licenseCode = String(body.licenseCode || "cc-by").trim().toLowerCase();
   if (!ALLOWED_MEDIA_LICENSES.includes(licenseCode)) {
     throw new AppError(MediaError.INVALID_LICENSE);
+  }
+
+  const detected = detectImageMagicBytes(file?.buffer);
+  if (!detected) {
+    throw new AppError({
+      code: "MEDIA.INVALID_MAGIC_BYTES",
+      message: "Tệp tải lên không phải ảnh JPG/PNG hợp lệ (sai magic bytes)",
+      statusCode: 400,
+    });
   }
 
   const specimenId = Number(body.specimenId);
@@ -117,18 +192,26 @@ async function uploadMedia({ file, body, adminId }) {
     throw new AppError(MediaError.SPECIMEN_NOT_FOUND);
   }
 
-  const ext = (file.originalname?.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
-  const uid = crypto.randomBytes(6).toString("hex");
-  const objectKey = `specimens/${specimenId}/${Date.now()}-${uid}.${ext || "jpg"}`;
+  const processed = await processUploadedImage(file.buffer, detected.ext);
 
-  await putObjectToMinio(objectKey, file.buffer, file.mimetype || "image/jpeg");
+  const uid = crypto.randomBytes(6).toString("hex");
+  const stamp = Date.now();
+  const objectKey = `specimens/${specimenId}/${stamp}-${uid}.${detected.ext}`;
+  const publicKey = `specimens/${specimenId}/public-${stamp}-${uid}.${detected.ext}`;
+  const thumbnailKey = `specimens/${specimenId}/thumb-${stamp}-${uid}.${detected.ext}`;
+
+  await Promise.all([
+    putObjectToMinio(objectKey, file.buffer, detected.mime),
+    putObjectToMinio(publicKey, processed.publicBuffer, detected.mime),
+    putObjectToMinio(thumbnailKey, processed.thumbnailBuffer, detected.mime),
+  ]);
 
   const created = await mediaRepository.create({
     specimenId,
     uploadedBy: adminId,
     objectKey,
-    thumbnailKey: objectKey,
-    shotType: body.shotType || "habitus",
+    thumbnailKey,
+    shotType: body.shotType || body.viewAngle || "habitus",
     fileSizeBytes: file.size,
     licenseCode,
     attribution: body.attribution || "VietInsect Internal Upload",
@@ -191,7 +274,23 @@ async function getMediaFile(imageId, { isAdmin = false, exp = null, sig = null }
     return { redirect: objectKey, isPublic };
   }
 
-  const res = await getObjectFromMinio(objectKey);
+  // Non-Admin truy cập ảnh Public: ưu tiên bản đã loại bỏ EXIF/GPS (public-...)
+  let targetKey = objectKey;
+  if (!isAdmin && isPublic && objectKey.includes("/")) {
+    const parts = objectKey.split("/");
+    const filename = parts.pop();
+    const publicKey = `${parts.join("/")}/public-${filename}`;
+    const pubRes = await getObjectFromMinio(publicKey).catch(() => null);
+    if (pubRes && pubRes.statusCode >= 200 && pubRes.statusCode < 300) {
+      return {
+        buffer: pubRes.body,
+        contentType: pubRes.headers["content-type"] || guessContentType(publicKey),
+        isPublic,
+      };
+    }
+  }
+
+  const res = await getObjectFromMinio(targetKey);
   if (res.statusCode < 200 || res.statusCode >= 300) {
     throw new AppError({
       code: "MEDIA.STORAGE_ERROR",
@@ -226,6 +325,8 @@ async function deleteMedia(imageId) {
 }
 
 module.exports = {
+  detectImageMagicBytes,
+  processUploadedImage,
   listMedia,
   getStats,
   uploadMedia,
