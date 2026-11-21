@@ -5648,6 +5648,79 @@ a.taxonomy-node-name:hover {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
 }
 
+/* Scientific Circular Provincial Density Nodes & Heatmap Ramp */
+.vi-density-node-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.vi-density-node-circle {
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 800 10.5px "Manrope", sans-serif;
+  letter-spacing: -0.02em;
+  transition: transform 150ms ease;
+}
+
+.vi-density-node-wrap:hover .vi-density-node-circle {
+  transform: scale(1.1);
+}
+
+.vi-density-node-label {
+  margin-top: 2px;
+  padding: 1px 5px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #334155;
+  color: #0F172A;
+  font-size: 9.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  line-height: 1.2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+}
+
+.vi-gis-heat-ramp-bar {
+  display: inline-block;
+  width: 68px;
+  height: 10px;
+  border: 1px solid #171717;
+  background: linear-gradient(90deg, #15803D 0%, #65A30D 25%, #D97706 50%, #EA580C 75%, #DC2626 100%);
+}
+
+.vi-gis-density-quick-pills {
+  display: inline-flex;
+  margin-left: auto;
+  border: 1px solid #CBD5E1;
+  background: #F8FAF9;
+}
+
+.vi-gis-density-quick-pills button {
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 800;
+  border: none;
+  border-right: 1px solid #CBD5E1;
+  background: transparent;
+  color: #334155;
+  cursor: pointer;
+}
+
+.vi-gis-density-quick-pills button:last-child {
+  border-right: none;
+}
+
+.vi-gis-density-quick-pills button.active {
+  background: #103B25;
+  color: #FFFFFF;
+}
+
 /* 5. Scientific Specimen Occurrence Popup (Section 9) */
 .leaflet-popup-content {
   margin: 10px 12px !important;

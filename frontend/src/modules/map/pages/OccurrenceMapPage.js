@@ -93,11 +93,14 @@ function formatWgs84(lat, lon) {
 }
 
 function heatColor(count, maxCount) {
-  const ratio = maxCount > 0 ? Math.log1p(count) / Math.log1p(maxCount) : 0;
-  if (ratio >= 0.78) return "#B0241A";
-  if (ratio >= 0.52) return "#D97706";
-  if (ratio >= 0.28) return "#9C7A1F";
-  return "#237A35";
+  if (!maxCount || maxCount <= 0) return "#16A34A";
+  // Dùng lũy thừa 0.55 để phân bổ dải màu khoa học 5 mức (Xanh lá -> Xanh cốm -> Vàng hổ phách -> Cam -> Đỏ điểm nóng)
+  const ratio = Math.pow(Math.max(0, Number(count)) / Math.max(1, Number(maxCount)), 0.55);
+  if (ratio >= 0.82) return "#DC2626"; // Điểm nóng (Very High / Hotspot)
+  if (ratio >= 0.62) return "#EA580C"; // Cao (High)
+  if (ratio >= 0.42) return "#D97706"; // Khá cao (Moderate-High)
+  if (ratio >= 0.24) return "#65A30D"; // Trung bình (Moderate)
+  return "#15803D"; // Thấp (Low)
 }
 
 function richnessColor(speciesCount, maxSpecies) {
@@ -163,6 +166,7 @@ export default function OccurrenceMapPage() {
   const [showMarkers, setShowMarkers] = useState(true);
   const [enableClustering, setEnableClustering] = useState(false);
   const [syncMapExtent, setSyncMapExtent] = useState(false);
+  const [heatmapStyle, setHeatmapStyle] = useState("hybrid"); // hybrid | grid | provinces
 
   // Ecological & Thematic GIS Layers (Section 7)
   const [ecologicalLayers, setEcologicalLayers] = useState({
@@ -245,7 +249,7 @@ export default function OccurrenceMapPage() {
           });
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Debounce text inputs so we never send API requests on every keystroke
@@ -618,9 +622,12 @@ export default function OccurrenceMapPage() {
         weight: 1.2,
         dashArray: "4 4",
         fillColor: "#237A35",
-        fillOpacity: 0.06,
+        fillOpacity: viewMode === "heatmap" ? 0.03 : 0.06,
         interactive: false,
       }).addTo(parksGroup);
+
+      // Ở chế độ Mật độ & Cụm (heatmap), ẩn ghim tam giác VQG để không đè lên nhãn số lượng cụm tỉnh
+      if (viewMode === "heatmap") return;
 
       const icon = L.divIcon({
         className: "vi-park-marker-icon",
@@ -667,7 +674,7 @@ export default function OccurrenceMapPage() {
         )
         .addTo(parksGroup);
     });
-  }, [ecologicalLayers.protectedAreas]);
+  }, [ecologicalLayers.protectedAreas, viewMode]);
 
   // Render Ecological Thematic Layers: Administrative Boundaries, Ecological Regions, Species Richness (Section 7)
   useEffect(() => {
@@ -801,9 +808,8 @@ export default function OccurrenceMapPage() {
           </div>
           <div>
             <dt>${isEn ? "Coordinates (WGS84)" : "Tọa độ (WGS84)"}</dt>
-            <dd class="mono">${escapeHtml(coordsText)}${
-              pt.elevationM != null ? ` · ${pt.elevationM}m` : ""
-            }${pt.distanceKm != null ? ` · ${pt.distanceKm} km` : ""}</dd>
+            <dd class="mono">${escapeHtml(coordsText)}${pt.elevationM != null ? ` · ${pt.elevationM}m` : ""
+        }${pt.distanceKm != null ? ` · ${pt.distanceKm} km` : ""}</dd>
           </div>
           <div>
             <dt>${isEn ? "Collection Date" : "Ngày thu mẫu"}</dt>
@@ -906,72 +912,144 @@ export default function OccurrenceMapPage() {
       }).addTo(layerGroup);
     }
 
-    // 3. Density / Heatmap Mode (0.25 deg PostGIS grid + Provincial Clusters)
+    // 3. Density / Heatmap Mode (0.25 deg PostGIS grid + Smooth Thermal Halos + Circular Provincial Nodes)
     if (viewMode === "heatmap") {
-      const maxGrid = (mapData.heatGrid || []).reduce((m, g) => Math.max(m, g.count), 1);
-      (mapData.heatGrid || []).forEach((cell) => {
-        const color = heatColor(cell.count, maxGrid);
-        const radiusPx = 8 + Math.min(22, Math.sqrt(cell.count) * 0.42);
-        L.circleMarker([cell.lat, cell.lon], {
-          renderer,
-          radius: radiusPx,
-          fillColor: color,
-          color: color,
-          weight: 0,
-          fillOpacity: 0.38,
-        })
-          .bindPopup(
-            `<div class="vi-gis-specimen-popup">
-              <div class="vi-gis-popup-header">
-                <div class="vi-gis-popup-badges">
-                  <span class="vi-gis-popup-rank" style="background:${color};">POSTGIS 0.25° GRID</span>
-                </div>
-                <div class="vi-gis-popup-title" style="font-style:normal;">Ô lưới mật độ (${formatWgs84(cell.lat, cell.lon)})</div>
-              </div>
-              <dl class="vi-gis-popup-dl">
-                <div><dt>Mật độ ghi nhận</dt><dd><strong>${cell.count.toLocaleString()}</strong> mẫu vật</dd></div>
-                <div><dt>Kích thước ô lưới</dt><dd>0.25° × 0.25° (~27.5 km)</dd></div>
-              </dl>
-            </div>`,
-          )
-          .addTo(layerGroup);
-      });
+      const heatCells = mapData.heatGrid || [];
+      const maxGrid = heatCells.reduce((m, g) => Math.max(m, g.count), 1);
 
-      const maxProv = (mapData.provinceClusters || []).reduce((m, c) => Math.max(m, c.count), 1);
-      (mapData.provinceClusters || []).forEach((cluster) => {
-        if (cluster.lat == null || cluster.lon == null) return;
-        const color = heatColor(cluster.count, maxProv);
-        const size = Math.round(28 + (Math.log1p(cluster.count) / Math.log1p(maxProv)) * 22);
-        const icon = L.divIcon({
-          className: "vi-leaflet-cluster-icon",
-          html: `<div style="width:${size}px;height:${size}px;background:${color};border:1.5px solid #171717;color:#fff;display:grid;place-items:center;font:800 11px Manrope,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.22);">${
-            cluster.count >= 1000 ? `${(cluster.count / 1000).toFixed(1)}k` : cluster.count
-          }</div>`,
-          iconSize: [size, size],
-          iconAnchor: [size / 2, size / 2],
-        });
-        L.marker([cluster.lat, cluster.lon], { icon })
-          .bindPopup(
-            `<div class="vi-gis-specimen-popup">
-              <div class="vi-gis-popup-header">
-                <div class="vi-gis-popup-badges">
-                  <span class="vi-gis-popup-rank" style="background:${color};">PROVINCE CLUSTER</span>
-                </div>
-                <div class="vi-gis-popup-title" style="font-style:normal;">${escapeHtml(cluster.provinceNameVn)}</div>
-              </div>
-              <dl class="vi-gis-popup-dl">
-                <div><dt>Tổng mẫu vật</dt><dd><strong>${cluster.count.toLocaleString()}</strong> bản ghi</dd></div>
-                ${
-                  cluster.speciesCount
-                    ? `<div><dt>Số loài đại diện</dt><dd><strong>${cluster.speciesCount.toLocaleString()}</strong> loài</dd></div>`
-                    : ""
-                }
-                <div><dt>Tọa độ tâm cụm</dt><dd class="mono">${formatWgs84(cluster.lat, cluster.lon)}</dd></div>
-              </dl>
-            </div>`,
+      if (heatmapStyle !== "provinces") {
+        heatCells.forEach((cell) => {
+          const color = heatColor(cell.count, maxGrid);
+          const norm = Math.pow(cell.count / maxGrid, 0.5);
+          const radiusPx = Math.round(10 + norm * 18);
+
+          // Lớp 1: Vầng nhiệt lan tỏa mềm (Outer Thermal Halo) trên Canvas
+          L.circleMarker([cell.lat, cell.lon], {
+            renderer,
+            radius: Math.round(radiusPx * 1.9),
+            fillColor: color,
+            color: color,
+            weight: 0,
+            fillOpacity: 0.15,
+            interactive: false,
+          }).addTo(layerGroup);
+
+          // Lớp 2: Ô lưới chuẩn địa lý PostGIS 0.25° × 0.25° (Geographic Grid Cell)
+          L.rectangle(
+            [
+              [cell.lat - 0.125, cell.lon - 0.125],
+              [cell.lat + 0.125, cell.lon + 0.125],
+            ],
+            {
+              renderer,
+              fillColor: color,
+              color,
+              weight: 0.8,
+              opacity: 0.68,
+              fillOpacity: 0.34,
+            },
           )
-          .addTo(layerGroup);
-      });
+            .bindPopup(
+              `<div class="vi-gis-specimen-popup">
+                <div class="vi-gis-popup-header">
+                  <div class="vi-gis-popup-badges">
+                    <span class="vi-gis-popup-rank" style="background:${color};">POSTGIS 0.25° GRID</span>
+                    <span class="vi-gis-popup-code">~27.5 × 27.5 KM</span>
+                  </div>
+                  <div class="vi-gis-popup-title" style="font-style:normal;">Ô lưới mật độ không gian</div>
+                </div>
+                <dl class="vi-gis-popup-dl">
+                  <div><dt>Tâm ô lưới</dt><dd class="mono">${formatWgs84(cell.lat, cell.lon)}</dd></div>
+                  <div><dt>Mật độ ghi nhận</dt><dd><strong>${cell.count.toLocaleString()}</strong> mẫu vật</dd></div>
+                  <div><dt>Tỷ lệ so với đỉnh</dt><dd>${((cell.count / maxGrid) * 100).toFixed(1)}%</dd></div>
+                </dl>
+              </div>`,
+              {
+                maxWidth: 300,
+                minWidth: 245,
+                autoPanPaddingTopLeft: [20, 64],
+                autoPanPaddingBottomRight: [20, 84],
+              },
+            )
+            .addTo(layerGroup);
+
+          // Lớp 3: Nhân nhiệt trung tâm (Inner Thermal Core)
+          L.circleMarker([cell.lat, cell.lon], {
+            renderer,
+            radius: Math.max(4, Math.round(radiusPx * 0.45)),
+            fillColor: color,
+            color: "#FFFFFF",
+            weight: 0.8,
+            fillOpacity: 0.82,
+            interactive: false,
+          }).addTo(layerGroup);
+        });
+      }
+
+      if (heatmapStyle !== "grid") {
+        const clusters = mapData.provinceClusters || [];
+        const maxProv = clusters.reduce((m, c) => Math.max(m, c.count), 1);
+
+        clusters.forEach((cluster, idx) => {
+          if (cluster.lat == null || cluster.lon == null) return;
+          const color = heatColor(cluster.count, maxProv);
+          const ratio = Math.pow(cluster.count / maxProv, 0.55);
+          const size = Math.round(26 + ratio * 16);
+          const countLabel =
+            cluster.count >= 1000 ? `${(cluster.count / 1000).toFixed(1)}k` : cluster.count;
+          const shortProv = String(cluster.provinceNameVn || "").replace(/^(Tỉnh|Thành phố)\s+/i, "");
+
+          const icon = L.divIcon({
+            className: "vi-leaflet-cluster-icon",
+            html: `<div class="vi-density-node-wrap">
+              <div class="vi-density-node-circle" style="width:${size}px;height:${size}px;background:${color};box-shadow:0 0 0 4px ${color}38, 0 3px 8px rgba(0,0,0,0.26);">
+                <span>${countLabel}</span>
+              </div>
+              ${
+                idx < 10
+                  ? `<span class="vi-density-node-label">${escapeHtml(shortProv)}</span>`
+                  : ""
+              }
+            </div>`,
+            iconSize: [size + 36, size + 20],
+            iconAnchor: [(size + 36) / 2, size / 2],
+          });
+
+          L.marker([cluster.lat, cluster.lon], { icon })
+            .bindPopup(
+              `<div class="vi-gis-specimen-popup">
+                <div class="vi-gis-popup-header">
+                  <div class="vi-gis-popup-badges">
+                    <span class="vi-gis-popup-rank" style="background:${color};">PROVINCE DENSITY</span>
+                    <span class="vi-gis-popup-code">TOP #${idx + 1}</span>
+                  </div>
+                  <div class="vi-gis-popup-title" style="font-style:normal;">${escapeHtml(cluster.provinceNameVn)}</div>
+                </div>
+                <dl class="vi-gis-popup-dl">
+                  <div><dt>Tổng mẫu vật</dt><dd><strong>${cluster.count.toLocaleString()}</strong> bản ghi</dd></div>
+                  ${
+                    cluster.speciesCount
+                      ? `<div><dt>Độ giàu loài</dt><dd><strong>${cluster.speciesCount.toLocaleString()}</strong> loài</dd></div>`
+                      : ""
+                  }
+                  ${
+                    cluster.region
+                      ? `<div><dt>Vùng sinh thái</dt><dd>${escapeHtml(cluster.region)}</dd></div>`
+                      : ""
+                  }
+                  <div><dt>Tọa độ trọng tâm</dt><dd class="mono">${formatWgs84(cluster.lat, cluster.lon)}</dd></div>
+                </dl>
+              </div>`,
+              {
+                maxWidth: 300,
+                minWidth: 250,
+                autoPanPaddingTopLeft: [20, 64],
+                autoPanPaddingBottomRight: [20, 84],
+              },
+            )
+            .addTo(layerGroup);
+        });
+      }
       return;
     }
 
@@ -1087,6 +1165,7 @@ export default function OccurrenceMapPage() {
     showMarkers,
     ecologicalLayers.occurrences,
     enableClustering,
+    heatmapStyle,
     mapZoom,
     selectedPointId,
     buildSpecimenPopupHtml,
@@ -1716,7 +1795,28 @@ export default function OccurrenceMapPage() {
             <section className="vi-gis-filter-group">
               <h3 className="vi-gis-group-heading">{t("webgis.filters.groupDisplay")}</h3>
 
-              {viewMode !== "heatmap" && (
+              {viewMode === "heatmap" ? (
+                <div className="vi-gis-field">
+                  <label htmlFor="gis-heatmap-style">
+                    {isEn ? "Density Display Layer" : "Kiểu hiển thị mật độ không gian"}
+                  </label>
+                  <select
+                    id="gis-heatmap-style"
+                    value={heatmapStyle}
+                    onChange={(e) => setHeatmapStyle(e.target.value)}
+                  >
+                    <option value="hybrid">
+                      {isEn ? "Hybrid (0.25° Grid + Province Nodes)" : "Kết hợp (Lưới nhiệt 0.25° + Cụm tỉnh)"}
+                    </option>
+                    <option value="grid">
+                      {isEn ? "0.25° Spatial Heat Grid Only" : "Chỉ lưới nhiệt không gian 0.25°"}
+                    </option>
+                    <option value="provinces">
+                      {isEn ? "Provincial Density Circles Only" : "Chỉ vòng tròn mật độ Tỉnh/Thành"}
+                    </option>
+                  </select>
+                </div>
+              ) : (
                 <div className="vi-gis-field">
                   <label htmlFor="gis-filter-limit">{t("webgis.filters.maxPoints")}</label>
                   <select
@@ -1790,15 +1890,15 @@ export default function OccurrenceMapPage() {
                       {(lookups.regions.length > 0
                         ? lookups.regions
                         : [
-                            "Tây Bắc",
-                            "Đông Bắc",
-                            "Đồng bằng sông Hồng",
-                            "Bắc Trung Bộ",
-                            "Nam Trung Bộ",
-                            "Tây Nguyên",
-                            "Đông Nam Bộ",
-                            "Đồng bằng sông Cửu Long",
-                          ]
+                          "Tây Bắc",
+                          "Đông Bắc",
+                          "Đồng bằng sông Hồng",
+                          "Bắc Trung Bộ",
+                          "Nam Trung Bộ",
+                          "Tây Nguyên",
+                          "Đông Nam Bộ",
+                          "Đồng bằng sông Cửu Long",
+                        ]
                       ).map((reg) => (
                         <option key={reg} value={reg}>
                           {reg}
@@ -2077,12 +2177,10 @@ export default function OccurrenceMapPage() {
                     ? `PostGIS 100% Aggregation (${mapData.totalMatching.toLocaleString()} records)`
                     : `Tổng hợp PostGIS 100% (${mapData.totalMatching.toLocaleString()} mẫu vật)`
                   : viewMode === "radius"
-                    ? `PostGIS ${radiusPin.radiusKm}km: ${mapData.totalMatching.toLocaleString()} ${
-                        isEn ? "matches" : "mẫu khớp"
-                      }`
-                    : `${isEn ? "Showing" : "Hiển thị"} ${mapData.returnedPoints.toLocaleString()} / ${mapData.totalMatching.toLocaleString()} ${
-                        isEn ? "occurrences" : "mẫu vật"
-                      }`}
+                    ? `PostGIS ${radiusPin.radiusKm}km: ${mapData.totalMatching.toLocaleString()} ${isEn ? "matches" : "mẫu khớp"
+                    }`
+                    : `${isEn ? "Showing" : "Hiển thị"} ${mapData.returnedPoints.toLocaleString()} / ${mapData.totalMatching.toLocaleString()} ${isEn ? "occurrences" : "mẫu vật"
+                    }`}
             </div>
           </div>
 
@@ -2225,20 +2323,52 @@ export default function OccurrenceMapPage() {
                 {viewMode === "heatmap" ? (
                   <div className="vi-gis-legend-row">
                     <span className="vi-gis-legend-label">
-                      {isEn ? "Density Scale:" : "Thang mật độ không gian:"}
+                      {isEn ? "Density Scale:" : "Phổ mật độ không gian:"}
+                    </span>
+                    <span className="vi-gis-heat-ramp-bar" aria-hidden="true" />
+                    <span>
+                      <i className="is-round" style={{ background: "#15803D" }} />{" "}
+                      {isEn ? "Low" : "Thấp (<200)"}
                     </span>
                     <span>
-                      <i style={{ background: "#237A35" }} /> {isEn ? "Low (<100)" : "Thấp (<100)"}
+                      <i className="is-round" style={{ background: "#65A30D" }} />{" "}
+                      {isEn ? "Moderate" : "Trung bình"}
                     </span>
                     <span>
-                      <i style={{ background: "#9C7A1F" }} /> {isEn ? "Medium" : "Trung bình"}
+                      <i className="is-round" style={{ background: "#D97706" }} />{" "}
+                      {isEn ? "Moderate-High" : "Khá cao"}
                     </span>
                     <span>
-                      <i style={{ background: "#D97706" }} /> {isEn ? "High" : "Cao"}
+                      <i className="is-round" style={{ background: "#EA580C" }} />{" "}
+                      {isEn ? "High" : "Cao"}
                     </span>
                     <span>
-                      <i style={{ background: "#B0241A" }} /> {isEn ? "Hotspot (>2,000)" : "Điểm nóng (>2.000)"}
+                      <i className="is-round" style={{ background: "#DC2626" }} />{" "}
+                      {isEn ? "Hotspot" : "Điểm nóng (>10k)"}
                     </span>
+                    <div className="vi-gis-density-quick-pills">
+                      <button
+                        type="button"
+                        className={heatmapStyle === "hybrid" ? "active" : ""}
+                        onClick={() => setHeatmapStyle("hybrid")}
+                      >
+                        {isEn ? "Grid + Provinces" : "Lưới + Tỉnh"}
+                      </button>
+                      <button
+                        type="button"
+                        className={heatmapStyle === "grid" ? "active" : ""}
+                        onClick={() => setHeatmapStyle("grid")}
+                      >
+                        {isEn ? "0.25° Grid" : "Chỉ lưới 0.25°"}
+                      </button>
+                      <button
+                        type="button"
+                        className={heatmapStyle === "provinces" ? "active" : ""}
+                        onClick={() => setHeatmapStyle("provinces")}
+                      >
+                        {isEn ? "Provinces" : "Chỉ cụm tỉnh"}
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="vi-gis-legend-row">
