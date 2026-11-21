@@ -77,6 +77,7 @@ app.use("/api/specimens", require("./src/modules/specimen/specimen.routes"));
 app.use("/api/search", require("./src/modules/search/search.routes"));
 app.use("/api/dna", require("./src/modules/dna/dna.routes"));
 app.use("/api/media", require("./src/modules/media/media.routes"));
+app.use("/api/reports", require("./src/modules/reports/reports.routes"));
 app.use("/api/system", require("./src/modules/system/system.routes"));
 
 // 404 handler

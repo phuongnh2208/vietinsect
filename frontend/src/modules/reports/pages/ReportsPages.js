@@ -11,6 +11,7 @@ import {
   Legend,
 } from "recharts";
 import specimenService from "../../specimen/specimen.service";
+import http from "../../../services/http";
 import useAuthStore from "../../../stores/auth.store";
 import Icon from "../../../components/ui/Icon";
 
@@ -87,6 +88,17 @@ export function ReportsChecklistPage() {
       const extMap = { dwca: "zip", xlsx: "xlsx", geojson: "geojson" };
       const stamp = new Date().toISOString().slice(0, 10);
       downloadBlob(blob, `vietinsect-report-${stamp}.${extMap[format] || "dat"}`);
+    } catch (_) {
+    } finally {
+      setExportingFormat(null);
+    }
+  };
+
+  const handleServerReport = async (endpoint, params, filename) => {
+    setExportingFormat(filename);
+    try {
+      const res = await http.get(endpoint, { params, responseType: "blob" });
+      downloadBlob(res.data, filename);
     } catch (_) {
     } finally {
       setExportingFormat(null);
@@ -188,11 +200,50 @@ export function ReportsChecklistPage() {
             </p>
           </div>
           <div className="hero-actions" style={{ marginTop: 0 }}>
-            <button type="button" className="button button-primary" onClick={() => window.print()}>
-              <Icon name="printer" size={14} /> In / Xuất PDF Đóng dấu VAST
+            <button
+              type="button"
+              className="button button-primary"
+              disabled={Boolean(exportingFormat)}
+              onClick={() =>
+                handleServerReport(
+                  "/reports/summary",
+                  { format: "pdf" },
+                  `vietinsect-summary-${new Date().toISOString().slice(0, 10)}.pdf`
+                )
+              }
+            >
+              <Icon name="printer" size={14} /> Báo cáo tổng hợp (PDF)
             </button>
-            <button type="button" className="button button-secondary" onClick={handleExportChecklistCsv}>
-              <Icon name="download" size={14} /> Xuất Danh mục Loài (.CSV)
+            <button
+              type="button"
+              className="button button-secondary"
+              disabled={Boolean(exportingFormat)}
+              onClick={() =>
+                handleServerReport(
+                  "/reports/checklist",
+                  { format: "pdf", provinceId: filters.provinceId || undefined, order: filters.order || undefined },
+                  `vietinsect-checklist-${new Date().toISOString().slice(0, 10)}.pdf`
+                )
+              }
+            >
+              <Icon name="download" size={14} /> Danh lục loài (PDF)
+            </button>
+            <button
+              type="button"
+              className="button button-secondary"
+              disabled={Boolean(exportingFormat)}
+              onClick={() =>
+                handleServerReport(
+                  "/reports/checklist",
+                  { format: "docx", provinceId: filters.provinceId || undefined, order: filters.order || undefined },
+                  `vietinsect-checklist-${new Date().toISOString().slice(0, 10)}.docx`
+                )
+              }
+            >
+              <Icon name="download" size={14} /> Danh lục loài (.DOCX)
+            </button>
+            <button type="button" className="button button-ghost" onClick={handleExportChecklistCsv}>
+              <Icon name="download" size={14} /> Xuất CSV
             </button>
             <button
               type="button"

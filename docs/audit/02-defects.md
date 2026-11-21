@@ -9,12 +9,7 @@
 
 \n- **Trạng thái:** Đã sửa – commit `765155f`
 
-### DEF-003 · Critical · Build
-- **Vi phạm:** SRS §6.5 "PDF: Puppeteer"; F-SP-09, F-RP-01/05.
-- **Hiện trạng:** `backend/package.json` dependencies không có `puppeteer`.
-- **Kỳ vọng:** Puppeteer sinh PDF phía server.
-- **Đề xuất:** Thêm Puppeteer + service sinh PDF (nhãn, báo cáo).
-- **Công:** M
+\n- **Trạng thái:** Đã sửa (Sprint D – Nhóm 1: Puppeteer pdfGenerator + label.service QR + reports.service PDF/DOCX/XLSX + LabelCanvas, 6/6 integration tests PASS)
 
 ### DEF-004 · Critical · Build
 - **Vi phạm:** SRS §6.5 "File storage: MinIO SDK".
@@ -210,19 +205,9 @@
 - **Đề xuất:** `upload.array("files", N)` + dropzone trong `SpecimenForm`/`SpecimenDetailPage`.
 - **Công:** M
 
-### DEF-042 · High · Functional
-- **Vi phạm:** F-SP-09, SCR-11 "Tự động sinh mã QR chứa mã mẫu vật".
-- **Hiện trạng:** `SpecimenBatchPages.js:955-966` hiển thị chuỗi tĩnh `"|||| ||| |||| QR"`; không có thư viện QR ở FE/BE.
-- **Kỳ vọng:** QR thật mã hóa mã mẫu/URL mẫu.
-- **Đề xuất:** Dùng thư viện QR mã nguồn mở (MIT) sinh SVG.
-- **Công:** S
+\n- **Trạng thái:** Đã sửa (Sprint D – Nhóm 1: Puppeteer pdfGenerator + label.service QR + reports.service PDF/DOCX/XLSX + LabelCanvas, 6/6 integration tests PASS)
 
-### DEF-043 · High · Functional
-- **Vi phạm:** F-SP-09 "chọn template nhãn, font chữ, kích thước … Xuất PDF in hàng loạt theo chuẩn Specify 7".
-- **Hiện trạng:** `SpecimenBatchPages.js:800` và `SpecimenLabelModal.js:7-9` dùng `window.print()`; cấu hình chỉ có khổ giấy/số cột/tiêu đề (`:752-758`), không có template/font/kích thước nhãn; danh sách chọn chỉ 18 mẫu (`:762`) và tự chọn sẵn 9 (`:766`).
-- **Kỳ vọng:** PDF sinh phía server (Puppeteer), chọn lô bất kỳ.
-- **Đề xuất:** Endpoint `POST /specimens/labels/pdf` (Puppeteer) nhận danh sách id + cấu hình.
-- **Công:** M
+\n- **Trạng thái:** Đã sửa (Sprint D – Nhóm 1: Puppeteer pdfGenerator + label.service QR + reports.service PDF/DOCX/XLSX + LabelCanvas, 6/6 integration tests PASS)
 
 ### DEF-044 · Medium · Functional
 - **Vi phạm:** F-SP-10 "file Excel mẫu chuẩn 22 cột, header Việt + Anh, ghi chú định dạng, phiên bản trong tên file".
@@ -475,19 +460,9 @@
 
 ## J. Báo cáo & Xuất dữ liệu (F-RP)
 
-### DEF-080 · Medium · Functional
-- **Vi phạm:** F-RP-01, SCR-26 "Xuất PDF/Excel: tổng quan số mẫu/loài/phân bố địa lý, biểu đồ thanh theo bộ côn trùng, bảng top 10 tỉnh có nhiều mẫu nhất. PDF tự động đóng dấu header ... footer ... và watermark bản quyền".
-- **Hiện trạng:** `ReportsChecklistPage` (`ReportsPages.js:35-376`) chỉ hiển thị bảng danh mục loài, **không có biểu đồ thanh theo bộ côn trùng và không có bảng Top 10 tỉnh có nhiều mẫu nhất**; nút xuất PDF (`:191`) chỉ gọi `window.print()`, không sinh PDF từ server có footer số trang và watermark.
-- **Kỳ vọng:** Báo cáo thống kê tổng hợp có đủ biểu đồ theo bộ, bảng Top 10 tỉnh và xuất PDF chuẩn từ server (Puppeteer).
-- **Đề xuất:** Bổ sung phần tổng quan (BarChart theo bộ + bảng Top 10 tỉnh từ `stats.byOrder`/`stats.topProvinces`) và endpoint xuất PDF bằng Puppeteer.
-- **Công:** M
+\n- **Trạng thái:** Đã sửa (Sprint D – Nhóm 1: Puppeteer pdfGenerator + label.service QR + reports.service PDF/DOCX/XLSX + LabelCanvas, 6/6 integration tests PASS)
 
-### DEF-081 · High · Functional
-- **Vi phạm:** F-RP-02 "Kết xuất danh lục loài theo định dạng chuẩn báo cáo khoa học: sắp xếp theo Bộ → Họ → Loài. Mỗi loài ghi tên khoa học, tên tác giả, tên thường VN/Anh, số mẫu, tình trạng IUCN. Xuất Word (.docx) và PDF. Tùy chọn lọc theo tỉnh hoặc khoảng thời gian".
-- **Hiện trạng:** (1) `specimen.repository.js:1050` sắp xếp danh lục theo `ORDER BY specimen_count DESC, t1.scientific_name ASC` thay vì phân cấp `Bộ → Họ → Loài`; (2) **hoàn toàn không có chức năng xuất file Word (`.docx`)** và không sinh PDF từ server; (3) `ReportsChecklistPage` (`ReportsPages.js:44-49,237-288`) **không có bộ lọc theo khoảng thời gian (`dateFrom`/`dateTo`)**; (4) bảng hiển thị và file CSV (`:98-125,313-368`) thiếu cột **tên thường tiếng Anh (`vernacular_name_en`)**.
-- **Kỳ vọng:** Sắp xếp theo `order_name, family_name, scientific_name`; lọc theo tỉnh và khoảng thời gian; hiển thị đủ tên thường VN/EN; xuất được cả `.docx` và `.pdf`.
-- **Đề xuất:** Sửa `ORDER BY` và thêm lọc `dateFrom/dateTo` trong `getAnalytics`; bổ sung xuất `.docx` + `.pdf` phía backend.
-- **Công:** M
+\n- **Trạng thái:** Đã sửa (Sprint D – Nhóm 1: Puppeteer pdfGenerator + label.service QR + reports.service PDF/DOCX/XLSX + LabelCanvas, 6/6 integration tests PASS)
 
 ### DEF-082 · High · Functional
 - **Vi phạm:** F-RP-03, SCR-27 "Thống kê hiệu suất theo khoảng thời gian tùy chọn: số bản ghi nhập mới, số bản ghi chỉnh sửa, số ảnh bổ sung, số chuỗi DNA bổ sung. Bảng tổng hợp theo từng tháng. Biểu đồ đường xu hướng. Xuất Excel".
@@ -503,12 +478,7 @@
 - **Đề xuất:** Thêm CRUD `/api/system/report-configs`; truyền tham số `columns=col1,col2,...` vào `/api/specimens/export` để server sinh cả `.xlsx` và `.csv` theo đúng cột đã chọn; bổ sung kéo thả sắp xếp cột.
 - **Công:** M
 
-### DEF-084 · High · Functional
-- **Vi phạm:** F-RP-05 "Tự động chèn vào mọi file PDF xuất ra: Header gồm Quốc hiệu Việt Nam và tên Viện CNTT — VAST; Footer gồm ngày giờ trích xuất và số trang; Watermark mờ tên hệ thống VietInsect bảo vệ bản quyền. Admin cấu hình logo và thông tin tổ chức tại SCR-30".
-- **Hiện trạng:** Không có dịch vụ sinh PDF phía server (thiếu Puppeteer — DEF-003); chỉ có một khối HTML tiêu đề tĩnh trên trang SCR-26 (`ReportsPages.js:139-175`), không có footer đánh số trang tự động và không có lớp watermark mờ trên mọi bản PDF; trang SCR-30 (`SystemAdminPage.js:294-365`) cũng chưa có mục cấu hình logo và thông tin tổ chức.
-- **Kỳ vọng:** Mọi file PDF báo cáo xuất ra đều được đóng dấu Header, Footer (ngày giờ + số trang `Page X of Y`) và Watermark mờ "VietInsect", lấy logo & tên tổ chức từ cấu hình SCR-30.
-- **Đề xuất:** Dùng Puppeteer `page.pdf({ displayHeaderFooter: true, headerTemplate, footerTemplate })` kết hợp CSS watermark cố định và đọc cấu hình `org_name`, `org_logo` từ `system_config`.
-- **Công:** M
+\n- **Trạng thái:** Đã sửa (Sprint D – Nhóm 1: Puppeteer pdfGenerator + label.service QR + reports.service PDF/DOCX/XLSX + LabelCanvas, 6/6 integration tests PASS)
 
 ### DEF-085 · Medium · Functional
 - **Vi phạm:** F-RP-06, §5.5 "Tạo và export Darwin Core Archive (.zip): mapping trường CSDL sang DwC terms, file meta.xml, eml.xml (metadata dataset). Kết nối GBIF Integrated Publishing Toolkit (IPT). Theo dõi trạng thái sync và lịch sử xuất bản. Sinh DOI cho mỗi dataset version".

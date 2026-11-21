@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import specimenService from "../specimen.service";
+import http from "../../../services/http";
+import LabelCanvas from "../components/LabelCanvas";
 import Icon from "../../../components/ui/Icon";
 
 function fmtNum(n) {
@@ -764,10 +766,31 @@ export function BatchLabelPrintPage() {
   const [layoutConfig, setLayoutConfig] = useState({
     colsPerRow: 3,
     paperSize: "A4",
+    template: "specify7",
+    fontFamily: "DejaVu Sans",
+    fontSize: 10,
     includeQr: true,
     includeGps: true,
     institutionTitle: "VIỆN HÀN LÂM KH&CN VIỆT NAM (VAST)",
   });
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const handleExportPdf = async () => {
+    if (!selectedIds.length) return;
+    setExportingPdf(true);
+    try {
+      const res = await http.post(
+        "/reports/labels/pdf",
+        { specimenIds: selectedIds, ...layoutConfig },
+        { responseType: "blob" }
+      );
+      downloadBlob(res.data, `vietinsect-labels-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (_) {
+      window.print();
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   useEffect(() => {
     specimenService
@@ -809,8 +832,14 @@ export function BatchLabelPrintPage() {
           </p>
         </div>
         <div className="hero-actions" style={{ marginTop: 0 }}>
-          <button type="button" className="button button-primary" onClick={() => window.print()}>
-            <Icon name="printer" size={14} /> In / Xuất PDF ({selectedSpecimens.length} nhãn)
+          <button
+            type="button"
+            className="button button-primary"
+            disabled={exportingPdf || !selectedSpecimens.length}
+            onClick={handleExportPdf}
+          >
+            <Icon name="printer" size={14} />{" "}
+            {exportingPdf ? "Đang tạo PDF..." : `Xuất PDF Nhãn QR (${selectedSpecimens.length} nhãn)`}
           </button>
         </div>
       </div>
@@ -856,6 +885,28 @@ export function BatchLabelPrintPage() {
             </select>
           </div>
           <div className="form-field" style={{ margin: 0 }}>
+            <label>MẪU NHÃN (TEMPLATE)</label>
+            <select
+              value={layoutConfig.template}
+              onChange={(e) => setLayoutConfig((p) => ({ ...p, template: e.target.value }))}
+            >
+              <option value="specify7">Specify 7 Chuẩn (35×55mm)</option>
+              <option value="museum-box">Nhãn hộp mẫu lớn</option>
+              <option value="pin-mini">Nhãn ghim kim nhỏ</option>
+            </select>
+          </div>
+          <div className="form-field" style={{ margin: 0 }}>
+            <label>FONT CHỮ</label>
+            <select
+              value={layoutConfig.fontFamily}
+              onChange={(e) => setLayoutConfig((p) => ({ ...p, fontFamily: e.target.value }))}
+            >
+              <option value="DejaVu Sans">DejaVu Sans (Unicode VN)</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Courier New">Courier New (Monospace)</option>
+            </select>
+          </div>
+          <div className="form-field" style={{ margin: 0 }}>
             <label>TIÊU ĐỀ ĐƠN VỊ LƯU TRỮ</label>
             <input
               type="text"
@@ -883,104 +934,8 @@ export function BatchLabelPrintPage() {
         </div>
       </div>
 
-      {/* Printable Label Sheet Grid */}
-      <div
-        className="card"
-        style={{
-          padding: 24,
-          background: "#FFFFFF",
-          border: "2px solid #111111",
-        }}
-      >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: `repeat(${layoutConfig.colsPerRow}, 1fr)`,
-            gap: 16,
-          }}
-        >
-          {selectedSpecimens.map((s) => (
-            <div
-              key={s.id}
-              style={{
-                border: "2px solid #111111",
-                padding: 12,
-                background: "#FFFFFF",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                minHeight: 165,
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    fontSize: 9,
-                    fontWeight: 800,
-                    letterSpacing: "0.06em",
-                    borderBottom: "1px solid #111111",
-                    paddingBottom: 4,
-                    marginBottom: 6,
-                    display: "flex",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <span>{layoutConfig.institutionTitle}</span>
-                  <span className="mono">#{s.id}</span>
-                </div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: "#111111", marginBottom: 2 }}>
-                  <em>{s.scientificName}</em>
-                </div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#0F3820", marginBottom: 6 }}>
-                  {s.orderName || "Insecta"} · {s.familyName || "—"}
-                </div>
-                <div style={{ fontSize: 11, lineHeight: 1.45, color: "#111111" }}>
-                  <div>
-                    <strong>Địa điểm:</strong> {s.provinceNameVn || "Việt Nam"}
-                    {s.localityDetail ? ` (${s.localityDetail})` : ""}
-                  </div>
-                  {layoutConfig.includeGps && s.latitude != null && (
-                    <div className="mono" style={{ fontSize: 10 }}>
-                      <strong>GPS:</strong> {Number(s.latitude).toFixed(4)}°N, {Number(s.longitude).toFixed(4)}°E
-                    </div>
-                  )}
-                  <div>
-                    <strong>Ngày thu:</strong> {s.collectionDate || "—"} · <strong>Leg:</strong>{" "}
-                    {s.recordedBy || "VAST"}
-                  </div>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  borderTop: "1px dashed #111111",
-                  paddingTop: 6,
-                  marginTop: 8,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span className="mono" style={{ fontSize: 11, fontWeight: 800 }}>
-                  {s.specimenCode}
-                </span>
-                <span
-                  className="mono"
-                  style={{
-                    fontSize: 9,
-                    padding: "2px 6px",
-                    border: "1px solid #111111",
-                    background: "#F5F5F5",
-                    fontWeight: 700,
-                  }}
-                >
-                  |||| ||| |||| QR
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Printable Label Sheet Preview (LabelCanvas) */}
+      <LabelCanvas specimens={selectedSpecimens} layoutConfig={layoutConfig} />
     </section>
   );
 }
