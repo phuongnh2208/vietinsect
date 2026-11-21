@@ -1,58 +1,223 @@
-import React, { useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 import Icon from "../../../components/ui/Icon";
+import specimenService from "../../specimen/specimen.service";
 
-const points = [
-  { x: 47, y: 17, value: 86, label: "Hà Giang" },
-  { x: 50, y: 25, value: 65, label: "Lào Cai" },
-  { x: 56, y: 31, value: 91, label: "Hà Nội" },
-  { x: 61, y: 39, value: 76, label: "Ninh Bình" },
-  { x: 66, y: 48, value: 55, label: "Quảng Bình" },
-  { x: 72, y: 58, value: 83, label: "Đà Nẵng" },
-  { x: 74, y: 67, value: 68, label: "Đắk Lắk" },
-  { x: 70, y: 77, value: 94, label: "Lâm Đồng" },
-  { x: 62, y: 87, value: 72, label: "Đồng Nai" },
-  { x: 53, y: 93, value: 88, label: "Cà Mau" },
-];
+const ESRI_STREET_URL =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
+const ESRI_SATELLITE_URL =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 
-function densityColor(value) {
-  if (value >= 85) return "#B0241A";
-  if (value >= 70) return "#9C7A1F";
+function getDensityColor(count) {
+  if (count >= 5000) return "#B0241A";
+  if (count >= 1500) return "#9C7A1F";
   return "#2E7D32";
 }
 
-export default function HomeMapHero() {
-  const { t } = useTranslation();
-  const [mode, setMode] = useState("density");
-  const [zoom, setZoom] = useState(1);
-  const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState(null);
+function getMarkerRadius(count, mode) {
+  if (mode === "points") return 7;
+  if (count >= 8000) return 16;
+  if (count >= 3000) return 13;
+  if (count >= 1000) return 10;
+  return 7;
+}
 
-  const visiblePoints = useMemo(() => {
+export default function HomeMapHero({ stats = null }) {
+  const navigate = useNavigate();
+  const [mode, setMode] = useState("density");
+  const [basemap, setBasemap] = useState("street");
+  const [query, setQuery] = useState("");
+  const [fetchedProvinces, setFetchedProvinces] = useState([]);
+
+  useEffect(() => {
+    if (stats?.topProvinces) return;
+    specimenService
+      .getStats()
+      .then((res) => {
+        if (res?.topProvinces) setFetchedProvinces(res.topProvinces);
+      })
+      .catch(() => {});
+  }, [stats?.topProvinces]);
+
+  const provinces = stats?.topProvinces || fetchedProvinces;
+
+  const visibleProvinces = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("vi");
-    if (!normalized) return points;
-    return points.filter((point) => point.label.toLocaleLowerCase("vi").includes(normalized));
-  }, [query]);
+    if (!normalized) return provinces;
+    return provinces.filter((p) =>
+      String(p.province_name_vn || "")
+        .toLocaleLowerCase("vi")
+        .includes(normalized)
+    );
+  }, [provinces, query]);
 
   return (
     <section className="home-map-section" aria-labelledby="home-map-title">
       <div className="home-map-heading">
-        <div><span className="eyebrow"><Icon name="map" size={14} />Dữ liệu theo không gian</span><h2 id="home-map-title">Khám phá đa dạng sinh học Việt Nam</h2><p>Phân bố điểm ghi nhận theo 34 tỉnh/thành đã chuẩn hóa trong hệ thống.</p></div>
-        <div className="map-mode-toggle" role="group" aria-label="Chế độ bản đồ"><button className={mode === "points" ? "active" : ""} onClick={() => setMode("points")}>Điểm</button><button className={mode === "density" ? "active" : ""} onClick={() => setMode("density")}>Mật độ</button></div>
-      </div>
-      <div className="home-map-card">
-        <div className="map-search-glass"><Icon name="search" size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm tỉnh/thành hoặc loài..." aria-label="Tìm trên bản đồ" />{query && <button className="icon-button" onClick={() => setQuery("")} aria-label="Xóa tìm kiếm"><Icon name="close" size={15} /></button>}</div>
-        <div className="map-zoom-control"><button onClick={() => setZoom((value) => Math.min(1.35, Number((value + .1).toFixed(2))))} aria-label="Phóng to"><Icon name="plus" size={17} /></button><span>{Math.round(zoom * 100)}%</span><button onClick={() => setZoom((value) => Math.max(.8, Number((value - .1).toFixed(2))))} aria-label="Thu nhỏ"><Icon name="minus" size={17} /></button></div>
-        <div className="vietnam-map-stage">
-          <div className="vietnam-map-scale" style={{ transform: `scale(${zoom})` }}>
-            <svg className="vietnam-silhouette" viewBox="0 0 280 530" role="img" aria-label="Bản đồ silhouette Việt Nam">
-              <path d="M91 18c16-8 37 2 44 17 6 14-3 26 12 38 14 11 25 22 23 39-2 16-15 25-11 40 4 14 18 19 22 34 5 20-12 28-7 45 5 16 22 27 22 46 0 17-14 26-19 39-6 17-2 32-9 44-8 15-22 16-31 30-8 12-7 28-18 36-12 9-22 1-31 10-12 12-13 35-25 44-12 9-32 3-40-8-8-12-3-29-13-40-11-12-31-15-34-33-2-16 16-28 14-45-2-18-22-28-22-44 0-18 21-26 20-43-1-16-17-26-18-42-2-18 13-29 12-45-1-16-16-25-16-40 0-16 14-26 17-41 2-12-11-22-5-34 5-12 17-14 26-20Z" />
-            </svg>
-            <div className="map-point-layer">{visiblePoints.map((point) => <button key={point.label} className={`map-cluster ${mode === "density" ? "is-density" : "is-point"} ${selected === point.label ? "is-selected" : ""}`} style={{ left: `${point.x}%`, top: `${point.y}%`, background: densityColor(point.value), "--cluster-size": `${mode === "density" ? 14 + point.value / 7 : 14}px` }} onClick={() => setSelected(point.label)} aria-label={`${point.label}: ${point.value} điểm ghi nhận`}><span>{mode === "density" ? point.value : ""}</span></button>)}</div>
-          </div>
-          {selected && <div className="map-tooltip"><button className="icon-button" onClick={() => setSelected(null)} aria-label={t("common.close")}><Icon name="close" size={14} /></button><strong>{selected}</strong><span>Điểm ghi nhận đang hiển thị</span></div>}
+        <div>
+          <span className="eyebrow">
+            <Icon name="map" size={14} />
+            Dữ liệu theo không gian PostGIS
+          </span>
+          <h2 id="home-map-title">Khám phá đa dạng sinh học Việt Nam</h2>
+          <p>
+            Phân bố điểm ghi nhận thực tế theo 34 tỉnh/thành phố chuẩn hóa (Nghị quyết
+            202/2025/QH15).
+          </p>
         </div>
-        <div className="map-legend"><span><i className="legend-dot legend-low" />Ít dữ liệu</span><span><i className="legend-dot legend-mid" />Trung bình</span><span><i className="legend-dot legend-high" />Mật độ cao</span></div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <div className="map-mode-toggle" role="group" aria-label="Chế độ bản đồ">
+            <button
+              type="button"
+              className={mode === "points" ? "active" : ""}
+              onClick={() => setMode("points")}
+            >
+              Điểm
+            </button>
+            <button
+              type="button"
+              className={mode === "density" ? "active" : ""}
+              onClick={() => setMode("density")}
+            >
+              Mật độ
+            </button>
+          </div>
+          <div className="map-mode-toggle" role="group" aria-label="Lớp nền bản đồ">
+            <button
+              type="button"
+              className={basemap === "street" ? "active" : ""}
+              onClick={() => setBasemap("street")}
+            >
+              Khoa học
+            </button>
+            <button
+              type="button"
+              className={basemap === "satellite" ? "active" : ""}
+              onClick={() => setBasemap("satellite")}
+            >
+              Vệ tinh
+            </button>
+          </div>
+          <button
+            type="button"
+            className="button button-sm button-primary"
+            onClick={() => navigate("/map")}
+          >
+            Mở Bản đồ GIS đầy đủ →
+          </button>
+        </div>
+      </div>
+
+      <div className="home-map-card" style={{ padding: 0, overflow: "hidden" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "12px 16px",
+            borderBottom: "1px solid #111111",
+            background: "#F8FAF9",
+            flexWrap: "wrap",
+            gap: 10,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              background: "#FFFFFF",
+              border: "1px solid #111111",
+              padding: "6px 12px",
+              minWidth: 260,
+            }}
+          >
+            <Icon name="search" size={16} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Lọc nhanh tỉnh/thành (VD: Lâm Đồng, Đà Nẵng, Lào Cai)..."
+              aria-label="Tìm trên bản đồ"
+              style={{
+                border: 0,
+                outline: 0,
+                width: "100%",
+                fontSize: 13,
+                color: "#111111",
+                background: "transparent",
+              }}
+            />
+            {query && (
+              <button
+                type="button"
+                className="icon-button"
+                onClick={() => setQuery("")}
+                aria-label="Xóa tìm kiếm"
+              >
+                <Icon name="close" size={14} />
+              </button>
+            )}
+          </div>
+
+          <div className="map-legend" style={{ margin: 0 }}>
+            <span>
+              <i className="legend-dot legend-low" /> &lt; 1.500 mẫu
+            </span>
+            <span>
+              <i className="legend-dot legend-mid" /> 1.500 – 5.000 mẫu
+            </span>
+            <span>
+              <i className="legend-dot legend-high" /> &gt; 5.000 mẫu (Điểm nóng)
+            </span>
+          </div>
+        </div>
+
+        <div style={{ height: 460, width: "100%" }}>
+          <MapContainer
+            center={[16.2, 106.5]}
+            zoom={6}
+            style={{ height: "100%", width: "100%" }}
+            scrollWheelZoom={false}
+          >
+            <TileLayer
+              key={basemap}
+              attribution="Tiles &copy; Esri"
+              url={basemap === "satellite" ? ESRI_SATELLITE_URL : ESRI_STREET_URL}
+            />
+            {visibleProvinces.map((prov) =>
+              prov.lat != null && prov.lon != null ? (
+                <CircleMarker
+                  key={prov.province_id}
+                  center={[prov.lat, prov.lon]}
+                  radius={getMarkerRadius(Number(prov.count), mode)}
+                  pathOptions={{
+                    color: "#111111",
+                    weight: 1.5,
+                    fillColor: getDensityColor(Number(prov.count)),
+                    fillOpacity: 0.85,
+                  }}
+                >
+                  <Popup>
+                    <div style={{ fontSize: 12.5, color: "#111111" }}>
+                      <strong>{prov.province_name_vn}</strong>
+                      <div>
+                        Số mẫu vật ghi nhận:{" "}
+                        <strong>{Number(prov.count).toLocaleString("vi-VN")}</strong>
+                      </div>
+                      <div style={{ marginTop: 6 }}>
+                        <Link to={`/specimens/search?provinceId=${prov.province_id}`}>
+                          Tra cứu mẫu vật tại {prov.province_name_vn} →
+                        </Link>
+                      </div>
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              ) : null
+            )}
+          </MapContainer>
+        </div>
       </div>
     </section>
   );

@@ -187,6 +187,10 @@ async function syncSpecimenWithRetry(specimenId, { priority = false, refresh = f
     try {
       await indexSpecimenNow(specimenId, { refresh });
       priorityRetryQueue.delete(specimenId);
+      await knex("es_sync_outbox")
+        .where({ entity_type: "specimen", entity_id: Number(specimenId), status: "pending" })
+        .update({ status: "done", processed_at: knex.fn.now() })
+        .catch(() => {});
       return true;
     } catch (err) {
       lastErr = err;

@@ -26,16 +26,16 @@
 }
 
 :root.dark {
-  --vi-bg: #0A2415; /* Xanh lá đậm cho Dark mode */
-  --vi-surface: #0F3820;
-  --vi-surface-2: #144427;
-  --vi-surface-3: #1B5D2A;
-  --vi-ink: #FFFFFF;
-  --vi-muted: #A0B8A6;
-  --vi-border: rgba(255, 255, 255, 0.2);
-  --vi-border-strong: rgba(255, 255, 255, 0.4);
-  --vi-shadow: 0 16px 42px rgba(0, 0, 0, 0.3);
-  --vi-shadow-sm: 0 5px 20px rgba(0, 0, 0, 0.25);
+  --vi-bg: #FFFFFF;
+  --vi-surface: #FFFFFF;
+  --vi-surface-2: #F2F7F2;
+  --vi-surface-3: #E8F2E8;
+  --vi-ink: #111111;
+  --vi-muted: #555555;
+  --vi-border: #111111;
+  --vi-border-strong: #111111;
+  --vi-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  --vi-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.05);
 }
 
 * { box-sizing: border-box; }
@@ -177,12 +177,22 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   gap: 12px;
   padding: 11px 12px;
+  background: transparent;
   border: 1px solid transparent;
   border-radius: 0px; /* Không bo góc */
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.85);
   font-size: 13px;
   font-weight: 600;
   transition: transform 180ms var(--ease-out), background 180ms var(--ease-out), color 180ms var(--ease-out), border-color 180ms var(--ease-out);
+}
+.sidebar .vietinsect-brand-logo,
+.sidebar .vietinsect-brand-logo .brand-title,
+.editorial-footer .vietinsect-brand-logo,
+.auth-visual .vietinsect-brand-logo {
+  color: #FFFFFF;
+}
+.sidebar .vietinsect-brand-logo .brand-subtitle {
+  color: #DCE8D2;
 }
 .sidebar-link:hover {
   transform: translateX(3px);
@@ -591,8 +601,8 @@ a { color: inherit; text-decoration: none; }
 .hero-title { max-width: 680px; margin-top: 12px; font-size: clamp(36px, 6vw, 72px); line-height: 1.02; }
 .hero-copy { max-width: 600px; margin: 18px 0 0; color: rgba(255,255,255,.72); font-size: 16px; line-height: 1.75; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
-.hero-actions .button-ghost { border-color: rgba(255,255,255,.28); color: #fff; }
-.hero-actions .button-ghost:hover { border-color: #fff; background: rgba(255,255,255,.1); color: #fff; }
+.public-hero .hero-actions .button-ghost { border-color: rgba(255,255,255,.28); color: #fff; background: transparent; }
+.public-hero .hero-actions .button-ghost:hover { border-color: #fff; background: rgba(255,255,255,.1); color: #fff; }
 .public-stat-strip { display: grid; grid-template-columns: repeat(3, 1fr); width: min(1100px, calc(100% - 10vw)); margin: -30px auto 0; position: relative; z-index: 2; border-radius: var(--vi-radius); background: var(--vi-secondary); box-shadow: var(--vi-shadow); color: #fff; }
 .public-stat { padding: 20px 24px; text-align: center; border-right: 1px solid rgba(255,255,255,.14); }
 .public-stat:last-child { border-right: 0; }
@@ -814,8 +824,8 @@ a { color: inherit; text-decoration: none; }
   user-select: none;
 }
 .brand-insect-icon {
-  width: 46px;
-  height: 38px;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
   transition: transform 220ms var(--ease-out);
 }
@@ -2056,6 +2066,7 @@ a { color: inherit; text-decoration: none; }
   padding: 12px 14px;
   border-bottom: 1px solid #E2E8F0;
   vertical-align: middle;
+  color: #111111;
 }
 .vi-data-table tbody tr:hover {
   background: #F8FBF8;
@@ -3196,63 +3207,199 @@ a.taxonomy-node-name:hover {
   font-size: 11px;
   color: #64748B;
 }
-.dna-subgroup-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: #334155;
-  margin: 0 0 10px 0;
+.dna-counts-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
-.dna-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-}
-.dna-record-card {
-  border: 1px solid #CBD5E1;
-  background: #FAFCFA;
-  padding: 12px;
+.vi-dna-stack {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 14px;
 }
-.dna-record-card.is-species-ref {
-  border-left: 3px solid #3B82F6;
-  background: #F8FAFC;
-}
-.dna-card-top {
+.vi-dna-barcode-card {
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+  padding: 14px 16px;
   display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.vi-dna-barcode-card.is-direct {
+  border-left: 4px solid #237A35;
+  background: #FAFCFA;
+}
+.vi-dna-barcode-card.is-reference {
+  border-left: 4px solid #2563EB;
+  background: #FAFCFF;
+}
+.vi-dna-card-header {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 }
-.dna-accession-box {
+.vi-dna-card-title-group {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .dna-marker-badge {
-  padding: 2px 6px;
+  padding: 3px 8px;
   background: #103B25;
   color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.vi-dna-accession-code {
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-size: 14px;
+  color: #0F172A;
+}
+.vi-dna-organism-name {
+  font-size: 13px;
+  color: #334155;
+  padding-left: 4px;
+  border-left: 1px solid #CBD5E1;
+}
+.vi-dna-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.vi-bold-blue-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  background: #1D4ED8;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+  border-radius: 0px;
+}
+.vi-bold-blue-badge:hover {
+  background: #1E40AF;
+  color: #FFFFFF;
+}
+.vi-dna-match-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 0px;
+}
+.vi-dna-match-badge.is-direct-badge {
+  background: #DCFCE7;
+  color: #166534;
+}
+.vi-dna-match-badge.is-ref-badge {
+  background: #DBEAFE;
+  color: #1E40AF;
+}
+.vi-dna-length-pill {
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-size: 11px;
+  font-weight: 700;
+  background: #F1F5F9;
+  color: #334155;
+  padding: 2px 8px;
+  border: 1px solid #CBD5E1;
+}
+
+/* BOLD Systems Chromatic Barcode Strip */
+.vi-dna-chromatic-box {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  padding: 10px 12px;
+}
+.vi-dna-chromatic-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.vi-dna-chromatic-label {
   font-size: 10px;
   font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #475569;
 }
-.dna-bp-chip {
-  font-family: monospace;
-  font-size: 11px;
-  color: #64748B;
-}
-.dna-card-body {
-  display: grid;
-  gap: 4px;
-  font-size: 11px;
-}
-.dna-field-row {
+.vi-dna-base-legend {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  color: #334155;
+  flex-wrap: wrap;
 }
-.dna-field-row span {
+.vi-dna-base-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.vi-dna-base-legend i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+}
+.vi-dna-gc-chip {
+  background: #E2E8F0;
+  color: #0F172A;
+  padding: 1px 6px;
+  font-size: 11px;
+}
+.vi-dna-barcode-strip {
+  display: flex;
+  align-items: stretch;
+  height: 26px;
+  width: 100%;
+  background: #0F172A;
+  padding: 2px;
+  gap: 1px;
+  overflow: hidden;
+}
+.vi-dna-barcode-bar {
+  flex: 1 1 0;
+  min-width: 1px;
+  height: 100%;
+}
+
+/* Metadata Grid */
+.vi-dna-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 16px;
+  padding: 8px 0;
+  border-top: 1px solid #E2E8F0;
+  border-bottom: 1px solid #E2E8F0;
+}
+.vi-dna-meta-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.vi-dna-meta-key {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: #64748B;
+}
+.vi-dna-meta-val {
+  font-size: 12px;
+  color: #1E293B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .dna-ext-link {
   color: #237A35;
@@ -3260,13 +3407,90 @@ a.taxonomy-node-name:hover {
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
 }
-.dna-author-val {
-  max-width: 150px;
+.dna-ext-link:hover {
+  text-decoration: underline;
+}
+
+/* Inline GenBank ORIGIN FASTA Preview */
+.vi-dna-fasta-preview {
+  border: 1px solid #CBD5E1;
+  background: #0F172A;
+  color: #E2E8F0;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+}
+.vi-dna-fasta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  background: #1E293B;
+  border-bottom: 1px solid #334155;
+  font-size: 11px;
+  color: #94A3B8;
+}
+.vi-dna-fasta-header-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.vi-dna-expand-btn {
+  background: transparent;
+  border: 1px solid #475569;
+  color: #38BDF8;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.vi-dna-expand-btn:hover {
+  background: #334155;
+}
+.vi-dna-origin-body {
+  padding: 8px 10px;
+  font-size: 11.5px;
+  line-height: 1.55;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.vi-dna-origin-line {
+  display: flex;
+  gap: 12px;
+}
+.vi-dna-origin-pos {
+  width: 36px;
+  text-align: right;
+  color: #64748B;
+  user-select: none;
+  flex-shrink: 0;
+}
+.vi-dna-origin-seq {
+  color: #A7F3D0;
+  letter-spacing: 0.04em;
+  word-break: break-all;
+}
+.vi-dna-origin-more {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #94A3B8;
+  font-style: italic;
+}
+
+.vi-dna-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.vi-dna-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .dna-species-notice {
   display: flex;
@@ -3616,4 +3840,234 @@ a.taxonomy-node-name:hover {
     box-shadow: none;
   }
 }
+
+/* ============================================================================
+   ROLE DISTINCTION (USER vs ADMIN) & BACK NAVIGATION SYSTEM (SRS §2.3 & F-AD-01)
+   Tuân thủ Design System v2.1 (docs/design.md §3.B: Sharp 0px border-radius)
+   ============================================================================ */
+.vi-role-context-bar {
+  background: #0F3820;
+  color: #FFFFFF;
+  border-bottom: 1px solid #111111;
+  font-size: 12px;
+  padding: 7px 0;
+}
+.vi-role-bar-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.vi-role-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.vi-role-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vi-role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  border-radius: 0px;
+  text-transform: uppercase;
+}
+.vi-role-pill.is-user {
+  background: #E8F5E9;
+  color: #0F3820;
+  border: 1px solid #2E7D32;
+}
+.vi-role-pill.is-admin {
+  background: #103B25;
+  color: #FFFFFF;
+  border: 1px solid #111111;
+}
+.vi-role-desc {
+  color: #DCE8D2;
+  font-size: 11.5px;
+}
+
+/* Back buttons (Topbar & Page level) */
+.vi-back-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  background: #FFFFFF;
+  color: #111111;
+  border: 1px solid #111111;
+  border-radius: 0px;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.vi-back-nav-btn:hover {
+  background: #2E7D32;
+  color: #FFFFFF;
+}
+.vi-back-nav-btn.is-admin-topbar {
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+.vi-role-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-decoration: none;
+  border-radius: 0px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.vi-role-switch-btn.is-to-admin {
+  background: #F59E0B;
+  color: #111111;
+  border: 1px solid #111111;
+}
+.vi-role-switch-btn.is-to-admin:hover {
+  background: #D97706;
+  color: #FFFFFF;
+}
+.vi-role-switch-btn.is-to-login {
+  background: rgba(255, 255, 255, 0.14);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+}
+.vi-role-switch-btn.is-to-login:hover {
+  background: #FFFFFF;
+  color: #0F3820;
+}
+.vi-role-switch-btn.is-to-public {
+  background: #F2F7F2;
+  color: #0F3820;
+  border: 1px solid #1F4E2D;
+}
+.vi-role-switch-btn.is-to-public:hover {
+  background: #2E7D32;
+  color: #FFFFFF;
+}
+
+/* Page-level Back + Breadcrumb + Context Tag Row */
+.vi-header-nav-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #DCE3E8;
+}
+.vi-header-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.vi-back-page-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #FFFFFF;
+  color: #111111;
+  border: 1px solid #111111;
+  border-radius: 0px;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 2px 2px 0px #111111;
+  transition: transform 0.1s ease, background 0.15s ease;
+}
+.vi-back-page-btn:hover {
+  background: #103B25;
+  color: #FFFFFF;
+  transform: translate(-1px, -1px);
+}
+.vi-header-nav-right {
+  display: flex;
+  align-items: center;
+}
+.vi-context-mode-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border-radius: 0px;
+}
+.vi-context-mode-tag.is-user-tag {
+  background: #F2F7F2;
+  color: #1F4E2D;
+  border: 1px solid #2E7D32;
+}
+.vi-context-mode-tag.is-admin-tag {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #D97706;
+}
+
+/* Segmented Action Toolbars: Public User Actions vs Admin CRUD Actions */
+.specimen-actions-toolbar-segmented {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 12px;
+}
+.vi-action-role-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 0px;
+}
+.vi-action-role-box.is-public-box {
+  background: #F8FAF9;
+  border: 1px solid #CBD5E1;
+}
+.vi-action-role-box.is-admin-box {
+  background: #FFFBEB;
+  border: 1px solid #D97706;
+}
+.vi-action-role-box.is-readonly-notice {
+  background: #F8FAFC;
+  border: 1px dashed #94A3B8;
+}
+.vi-action-box-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #475569;
+  text-transform: uppercase;
+}
+.vi-action-box-label.is-admin-label {
+  color: #B45309;
+}
+.vi-readonly-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.vi-readonly-text {
+  font-size: 11.5px;
+  color: #64748B;
+}
+
 

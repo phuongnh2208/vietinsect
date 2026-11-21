@@ -1,11 +1,19 @@
 const knex = require("../../config/knex");
 
-async function insertAuditLog({ adminId, actionType, targetTable, targetId, ipAddress, details }) {
-  // Cột ip_address kiểu INET — chuẩn hóa IPv6-mapped IPv4 hoặc để null nếu không hợp lệ
-  let cleanIp = ipAddress ? String(ipAddress).split(",")[0].trim() : null;
-  if (cleanIp && !/^[0-9a-fA-F:.]+$/.test(cleanIp)) {
-    cleanIp = null;
+function normalizeClientIp(rawIp) {
+  if (!rawIp) return null;
+  let ip = String(rawIp).split(",")[0].trim();
+  if (ip === "::1" || ip === "0:0:0:0:0:0:0:1") return "127.0.0.1";
+  if (ip.toLowerCase().startsWith("::ffff:")) {
+    ip = ip.slice(7);
   }
+  if (!/^[0-9a-fA-F:.]+$/.test(ip)) return null;
+  return ip;
+}
+
+async function insertAuditLog({ adminId, actionType, targetTable, targetId, ipAddress, details }) {
+  // Cột ip_address kiểu INET — chuẩn hóa IPv6 loopback (::1) & IPv6-mapped IPv4 (::ffff:x.x.x.x) về IPv4 chuẩn
+  const cleanIp = normalizeClientIp(ipAddress);
 
   await knex("audit_logs").insert({
     admin_id: adminId || null,

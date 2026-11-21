@@ -89,6 +89,54 @@ async function main() {
 
   await knex.raw("SELECT 1");
   console.log("[backfill] ✅ DB connected");
+
+  // Bước 1: Khớp không gian PostGIS (Nearest Province Centroid) cho các mẫu đã có tọa độ GPS
+  if (!DRY_RUN) {
+    const spatialRes = await knex.raw(`
+      WITH prov_centroids AS (
+        SELECT
+          province_id,
+          ST_SetSRID(
+            ST_MakePoint(
+              AVG(ST_X(collection_point::geometry)),
+              AVG(ST_Y(collection_point::geometry))
+            ),
+            4326
+          )::geography AS center_pt
+        FROM specimens
+        WHERE province_id IS NOT NULL
+          AND collection_point IS NOT NULL
+          AND deleted_at IS NULL
+        GROUP BY province_id
+      )
+      UPDATE specimens AS s
+      SET province_id = nearest.province_id
+      FROM (
+        SELECT
+          s2.specimen_id,
+          s2.collection_date,
+          (
+            SELECT pc.province_id
+            FROM prov_centroids pc
+            ORDER BY s2.collection_point <-> pc.center_pt
+            LIMIT 1
+          ) AS province_id
+        FROM specimens s2
+        WHERE s2.province_id IS NULL
+          AND s2.collection_point IS NOT NULL
+          AND s2.deleted_at IS NULL
+      ) AS nearest
+      WHERE s.specimen_id = nearest.specimen_id
+        AND s.collection_date = nearest.collection_date
+    `);
+    console.log(`[backfill] 🗺️ PostGIS Spatial Backfill đã gán tỉnh/thành cho: ${spatialRes.rowCount} mẫu vật có tọa độ GPS.`);
+  }
+
+  if (args.includes("--spatial-only")) {
+    await knex.destroy();
+    return;
+  }
+
   await loadProvinceCache();
   console.log(`[backfill] Province cache: ${provinceCache.length} provinces`);
 

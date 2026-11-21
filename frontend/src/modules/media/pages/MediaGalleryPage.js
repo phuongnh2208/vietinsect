@@ -153,7 +153,7 @@ export default function MediaGalleryPage() {
         <div>
           <div className="eyebrow">
             <Icon name="sparkles" size={14} />
-            SCR-17 · Thư viện Hình ảnh Lưu trữ Nội bộ (MinIO Object Storage)
+            Thư viện Hình ảnh Lưu trữ Nội bộ (MinIO Object Storage)
           </div>
           <h1>Thư viện hình ảnh côn trùng Việt Nam</h1>
           <p className="page-description">

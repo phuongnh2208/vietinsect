@@ -15,6 +15,15 @@ export default function SpecimenHeader({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const orderColor = getOrderColor(specimen.orderName);
+  const listFallbackPath = isAdmin ? "/admin/specimens" : "/specimens/search";
+
+  const handleGoBack = () => {
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate(listFallbackPath);
+    }
+  };
 
   const handleShare = () => {
     onCopyText(window.location.href, "Đã sao chép liên kết hồ sơ mẫu vật");
@@ -65,21 +74,35 @@ export default function SpecimenHeader({
 
   return (
     <header className="vi-specimen-header">
-      {/* 1. Breadcrumb navigation */}
-      <nav className="vi-specimen-breadcrumb" aria-label="Breadcrumb">
-        <Link to={isAdmin ? "/admin/dashboard" : "/"}>Trang chủ</Link>
-        <Icon name="chevron-right" size={12} />
-        <Link to={isAdmin ? "/admin/specimens" : "/specimens/search"}>Bộ sưu tập Mẫu vật</Link>
-        <Icon name="chevron-right" size={12} />
-        <span className="breadcrumb-current">{specimen.specimenCode}</span>
-      </nav>
+      {/* 1. Top Navigation Row: Nút Quay lại + Breadcrumb */}
+      <div className="vi-header-nav-row">
+        <div className="vi-header-nav-left">
+          <button
+            type="button"
+            className="vi-back-page-btn"
+            onClick={handleGoBack}
+            title="Quay lại trang trước"
+          >
+            <Icon name="chevron-left" size={15} />
+            <span>Quay lại</span>
+          </button>
+
+          <nav className="vi-specimen-breadcrumb" aria-label="Breadcrumb">
+            <Link to={isAdmin ? "/admin/dashboard" : "/"}>Trang chủ</Link>
+            <Icon name="chevron-right" size={12} />
+            <Link to={listFallbackPath}>Bộ sưu tập Mẫu vật</Link>
+            <Icon name="chevron-right" size={12} />
+            <span className="breadcrumb-current">{specimen.specimenCode}</span>
+          </nav>
+        </div>
+      </div>
 
       {/* 2. Main Title Row */}
       <div className="specimen-title-row">
         <div className="specimen-title-left">
           <div className="specimen-id-chip">
             <Icon name="bug" size={13} />
-            <span>SCR-08 · HỒ SƠ MẪU VẬT DARWIN CORE</span>
+            <span>HỒ SƠ MẪU VẬT DARWIN CORE</span>
             <span className="specimen-code-tag">{specimen.specimenCode}</span>
           </div>
 
@@ -135,7 +158,7 @@ export default function SpecimenHeader({
           </div>
         </div>
 
-        {/* 3. Action Toolbar */}
+        {/* 3. Action Toolbar: User chỉ thấy nút công khai, Admin thấy thêm nút quản trị */}
         <div className="specimen-actions-toolbar">
           <div className="actions-group-public">
             <button
@@ -169,7 +192,6 @@ export default function SpecimenHeader({
             </button>
           </div>
 
-          {/* Admin Context Actions */}
           {isAdmin && (
             <div className="actions-group-admin">
               <button
@@ -196,6 +218,7 @@ export default function SpecimenHeader({
                 type="button"
                 className="button button-sm button-primary"
                 onClick={() => navigate(`/admin/specimens/edit?id=${specimen.id}`)}
+                title="Chỉnh sửa thông tin mẫu vật"
               >
                 <Icon name="edit" size={14} />
                 Chỉnh sửa
@@ -205,9 +228,10 @@ export default function SpecimenHeader({
                 type="button"
                 className="button button-sm button-danger"
                 onClick={() => setDeleteConfirmOpen(true)}
-                title="Xóa mẫu vật khỏi hệ thống"
+                title="Xóa mềm mẫu vật khỏi hệ thống"
               >
                 <Icon name="trash" size={14} />
+                Xóa
               </button>
             </div>
           )}

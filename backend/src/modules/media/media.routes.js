@@ -48,7 +48,7 @@ router.post("/upload", requireAdmin, upload.single("file"), async (req, res, nex
       actionType: "UPLOAD_MEDIA",
       targetTable: "specimen_images",
       targetId: created.id,
-      ipAddress: req.headers["x-forwarded-for"] || req.socket?.remoteAddress,
+      ipAddress: req.ip || req.socket?.remoteAddress,
       details: {
         specimenId: created.specimenId,
         objectKey: created.objectKey,
@@ -93,7 +93,7 @@ router.delete("/:id", requireAdmin, async (req, res, next) => {
       actionType: "DELETE_MEDIA",
       targetTable: "specimen_images",
       targetId: imageId,
-      ipAddress: req.headers["x-forwarded-for"] || req.socket?.remoteAddress,
+      ipAddress: req.ip || req.socket?.remoteAddress,
       details: {},
     });
 

@@ -30,6 +30,17 @@ async function getStats() {
   return data.data;
 }
 
+async function getAnalytics(params = {}) {
+  const cleanParams = {};
+  Object.entries(params).forEach(([key, val]) => {
+    if (val !== undefined && val !== null && val !== "") {
+      cleanParams[key] = val;
+    }
+  });
+  const { data } = await http.get("/specimens/analytics", { params: cleanParams });
+  return data.data;
+}
+
 async function getMapOccurrences(params = {}) {
   const cleanParams = {};
   Object.entries(params).forEach(([key, val]) => {
@@ -61,6 +72,16 @@ async function batchTogglePublic(specimenIds, isPublic) {
   return data.data;
 }
 
+async function batchUpdateSpecimens(specimenIds, updates) {
+  const { data } = await http.patch("/specimens/batch-update", { specimenIds, updates });
+  return data.data;
+}
+
+async function bulkImportSpecimens(rows) {
+  const { data } = await http.post("/specimens/bulk-import", { rows });
+  return data.data;
+}
+
 async function deleteSpecimen(id) {
   await http.delete(`/specimens/${id}`);
 }
@@ -85,12 +106,15 @@ const specimenService = {
   getSpecimenById,
   getLookups,
   getStats,
+  getAnalytics,
   getMapOccurrences,
   exportSpecimens,
   createSpecimen,
   updateSpecimen,
   togglePublic,
   batchTogglePublic,
+  batchUpdateSpecimens,
+  bulkImportSpecimens,
   deleteSpecimen,
 };
 

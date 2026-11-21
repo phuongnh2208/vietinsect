@@ -1,20 +1,16 @@
 import React from "react";
 import { NavLink, Link, Outlet } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import BrandLogo from "../ui/BrandLogo";
-import Icon from "../ui/Icon";
 
 const publicNavItems = [
-  { label: "Get data", path: "/specimens/search", matchPrefix: ["/specimens", "/dna"] },
-  { label: "How to", path: "/search/advanced", matchPrefix: ["/search/advanced"] },
-  { label: "Tools", path: "/map", matchPrefix: ["/map", "/ai"] },
-  { label: "Community", path: "/taxonomy", matchPrefix: ["/taxonomy", "/species"] },
-  { label: "About", path: "/reports", matchPrefix: ["/reports"] },
+  { label: "Tra cứu Mẫu vật", path: "/specimens/search" },
+  { label: "Bản đồ GIS", path: "/map" },
+  { label: "Cây Phân loại", path: "/taxonomy" },
+  { label: "Mã vạch DNA", path: "/dna" },
+  { label: "Thư viện Ảnh", path: "/media" },
 ];
 
 export default function PublicLayout() {
-  const { t } = useTranslation();
-
   return (
     <div className="app-shell public-shell editorial-theme">
       {/* Top Main Navigation Bar */}
@@ -28,11 +24,9 @@ export default function PublicLayout() {
             <div className="nav-links-wrapper">
               {publicNavItems.map((item) => (
                 <NavLink
-                  key={item.label}
+                  key={item.path}
                   to={item.path}
-                  className={({ isActive }) =>
-                    `nav-link-item ${isActive ? "active" : ""}`
-                  }
+                  className={({ isActive }) => `nav-link-item ${isActive ? "active" : ""}`}
                 >
                   {item.label}
                 </NavLink>
@@ -59,21 +53,24 @@ export default function PublicLayout() {
 
           <div className="footer-links-grid">
             <div className="footer-col">
-              <h4>Get Data</h4>
+              <h4>Khai thác Dữ liệu</h4>
               <Link to="/specimens/search">Tra cứu mẫu vật số</Link>
               <Link to="/taxonomy">Cây phân loại sinh học</Link>
-              <Link to="/dna">Dữ liệu chuỗi DNA</Link>
+              <Link to="/dna">Kho mã vạch DNA</Link>
+              <Link to="/media">Thư viện hình ảnh</Link>
             </div>
             <div className="footer-col">
-              <h4>Tools & Analysis</h4>
+              <h4>Công cụ & Bản đồ</h4>
               <Link to="/map">Bản đồ phân bố GIS</Link>
               <Link to="/ai/species-identification">Nhận diện loài AI</Link>
               <Link to="/search/advanced">Tìm kiếm nâng cao</Link>
             </div>
             <div className="footer-col">
-              <h4>About & Standards</h4>
+              <h4>Tiêu chuẩn & Quản trị</h4>
               <Link to="/reports">Báo cáo đa dạng sinh học</Link>
-              <a href="https://www.gbif.org" target="_blank" rel="noreferrer">GBIF Data Standard</a>
+              <a href="https://www.gbif.org" target="_blank" rel="noreferrer">
+                Chuẩn quốc tế GBIF / Darwin Core
+              </a>
               <Link to="/login">Khu vực Quản trị</Link>
             </div>
           </div>
@@ -81,7 +78,7 @@ export default function PublicLayout() {
 
         <div className="footer-bottom-bar">
           <div className="footer-container bottom-flex">
-            <span>© {new Date().getFullYear()} VietInsect. All rights reserved.</span>
+            <span>© {new Date().getFullYear()} VietInsect — Viện Công nghệ Thông tin (VAST).</span>
             <span className="footer-tagline">Open Biodiversity Data Platform</span>
           </div>
         </div>

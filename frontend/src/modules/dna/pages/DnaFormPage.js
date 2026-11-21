@@ -250,7 +250,7 @@ export default function DnaFormPage() {
         <div>
           <div className="eyebrow">
             <Icon name="dna" size={14} />
-            SCR-21 · {isEdit ? "Hiệu chỉnh Trình tự DNA" : "Nhập Mới & Đồng bộ GenBank"}
+            {isEdit ? "Hiệu chỉnh Trình tự DNA" : "Nhập Mới & Đồng bộ GenBank"}
           </div>
           <h1>{isEdit ? "Chỉnh sửa hồ sơ trình tự DNA" : "Khởi tạo hồ sơ trình tự mã vạch DNA"}</h1>
           <p className="page-description">

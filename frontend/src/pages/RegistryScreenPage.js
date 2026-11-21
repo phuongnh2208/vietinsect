@@ -16,10 +16,10 @@ export default function RegistryScreenPage({ screenId }) {
   const isAdmin = useIsAdminContext();
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const handleAction = () => toast(`${screen.id} · ${t("common.comingSoon")}`, "warning");
+  const handleAction = () => toast(`${screen.title} · ${t("common.comingSoon")}`, "warning");
   const handleConfirm = () => {
     setDialogOpen(false);
-    toast(`${screen.id} · ${t("toast.success")}`, "success");
+    toast(`${screen.title} · ${t("toast.success")}`, "success");
   };
 
   return (
@@ -28,7 +28,7 @@ export default function RegistryScreenPage({ screenId }) {
         <div>
           <div className="eyebrow">
             <Icon name={screen.icon} size={14} />
-            {screen.id} · {screen.group}
+            {screen.group}
           </div>
           <h1>{screen.title}</h1>
           <p className="page-description">{screen.description}</p>
@@ -46,7 +46,7 @@ export default function RegistryScreenPage({ screenId }) {
       <div className="screen-placeholder-grid">
         <section className="card panel">
           <div className="panel-title">
-            <h2>Không gian làm việc {screen.id}</h2>
+            <h2>Không gian làm việc · {screen.title}</h2>
             <span style={{ fontWeight: 600, color: "#64748B" }}>{screen.englishTitle}</span>
           </div>
           <div className="placeholder-list">
@@ -111,7 +111,7 @@ export default function RegistryScreenPage({ screenId }) {
 
       <ConfirmDialog
         open={dialogOpen}
-        title={`Xác nhận thao tác ${screen.id}`}
+        title={`Xác nhận thao tác ${screen.title}`}
         message="Thao tác này đã được kết nối với hệ thống bảo mật và ghi nhật ký Audit Log."
         onCancel={() => setDialogOpen(false)}
         onConfirm={handleConfirm}

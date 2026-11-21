@@ -54,6 +54,7 @@ async function countSpecimensRollup({ includePrivate = false } = {}) {
         CASE WHEN t1.taxon_rank IN ('Kingdom','Phylum','Class','Order','Family') THEN t1.taxon_id END,
         CASE WHEN t2.taxon_rank IN ('Kingdom','Phylum','Class','Order','Family') THEN t2.taxon_id END,
         CASE WHEN t3.taxon_rank IN ('Kingdom','Phylum','Class','Order','Family') THEN t3.taxon_id END,
+        CASE WHEN t4.taxon_rank IN ('Kingdom','Phylum','Class','Order','Family') THEN t4.taxon_id END,
         t1.taxon_id
       ) AS taxon_id,
       COUNT(*)::int AS count
@@ -61,6 +62,7 @@ async function countSpecimensRollup({ includePrivate = false } = {}) {
     JOIN taxa t1 ON s.taxon_id = t1.taxon_id
     LEFT JOIN taxa t2 ON t1.parent_id = t2.taxon_id
     LEFT JOIN taxa t3 ON t2.parent_id = t3.taxon_id
+    LEFT JOIN taxa t4 ON t3.parent_id = t4.taxon_id
     WHERE s.deleted_at IS NULL ${visSql}
     GROUP BY 1
   `);
@@ -99,16 +101,34 @@ async function search(query, limit = 15) {
 
 async function countSpecimensByTaxonIds(taxonIds, { includePrivate = false } = {}) {
   if (!taxonIds || taxonIds.length === 0) return [];
-  const rows = await knex("specimens")
-    .whereIn("taxon_id", taxonIds)
-    .whereNull("deleted_at")
-    .modify((q) => {
-      if (!includePrivate) q.where("is_public", true);
-    })
-    .groupBy("taxon_id")
-    .select("taxon_id")
-    .count("* as count");
-  return rows.map((r) => ({ taxon_id: Number(r.taxon_id), count: parseInt(r.count, 10) }));
+  const ids = taxonIds.map((id) => Number(id));
+  const visSql = includePrivate ? "" : "AND s.is_public = true";
+  const { rows } = await knex.raw(
+    `
+    SELECT
+      CASE
+        WHEN s.taxon_id = ANY(?::bigint[]) THEN s.taxon_id
+        WHEN t1.parent_id = ANY(?::bigint[]) THEN t1.parent_id
+        WHEN t2.parent_id = ANY(?::bigint[]) THEN t2.parent_id
+      END AS taxon_id,
+      COUNT(*)::int AS count
+    FROM specimens s
+    JOIN taxa t1 ON s.taxon_id = t1.taxon_id
+    LEFT JOIN taxa t2 ON t1.parent_id = t2.taxon_id
+    WHERE s.deleted_at IS NULL
+      AND (
+        s.taxon_id = ANY(?::bigint[])
+        OR t1.parent_id = ANY(?::bigint[])
+        OR t2.parent_id = ANY(?::bigint[])
+      )
+      ${visSql}
+    GROUP BY 1
+    `,
+    [ids, ids, ids, ids, ids, ids]
+  );
+  return rows
+    .filter((r) => r.taxon_id != null)
+    .map((r) => ({ taxon_id: Number(r.taxon_id), count: parseInt(r.count, 10) }));
 }
 
 async function countChildren(taxonId) {
@@ -130,11 +150,21 @@ async function countSpecimensByTaxon({ includePrivate = false } = {}) {
 }
 
 async function countSpecimens(taxonId, { includePrivate = false } = {}) {
-  const [{ count }] = await knex("specimens")
-    .where("taxon_id", taxonId)
-    .whereNull("deleted_at")
+  const [{ count }] = await knex("specimens as s")
+    .whereNull("s.deleted_at")
+    .whereRaw(
+      `s.taxon_id IN (
+        WITH RECURSIVE sub_taxa AS (
+          SELECT taxon_id FROM taxa WHERE taxon_id = ?
+          UNION ALL
+          SELECT c.taxon_id FROM taxa c JOIN sub_taxa st ON c.parent_id = st.taxon_id
+        )
+        SELECT taxon_id FROM sub_taxa
+      )`,
+      [taxonId]
+    )
     .modify((q) => {
-      if (!includePrivate) q.where("is_public", true);
+      if (!includePrivate) q.where("s.is_public", true);
     })
     .count("* as count");
   return parseInt(count, 10);

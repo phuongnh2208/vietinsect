@@ -110,17 +110,50 @@ export default function DnaFastaDetailPage() {
     { base: "G", label: "Guanine", pct: comp.percentages.G, count: comp.counts.G, color: "#1D4ED8" },
   ];
 
+  const handleGoBack = () => {
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate(isAdmin ? "/admin/dna" : "/dna");
+    }
+  };
+
   return (
     <div className="page-container page-content vi-page-enter">
+      {/* Top Back & Breadcrumb Bar */}
+      <div className="vi-header-nav-row" style={{ marginBottom: 14 }}>
+        <div className="vi-header-nav-left">
+          <button
+            type="button"
+            className="vi-back-page-btn"
+            onClick={handleGoBack}
+            title="Quay lại trang trước"
+          >
+            <Icon name="chevron-left" size={15} />
+            <span>Quay lại</span>
+          </button>
+
+          <nav className="vi-specimen-breadcrumb" aria-label="Breadcrumb">
+            <Link to={isAdmin ? "/admin/dashboard" : "/"}>Trang chủ</Link>
+            <Icon name="chevron-right" size={12} />
+            <Link to={isAdmin ? "/admin/dna" : "/dna"}>Kho dữ liệu DNA</Link>
+            <Icon name="chevron-right" size={12} />
+            <span className="breadcrumb-current">
+              {record.genbankAccession || record.boldProcessId || `DNA-${record.id}`}
+            </span>
+          </nav>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="page-header">
         <div>
           <div className="eyebrow">
             <Icon name="dna" size={14} />
-            SCR-22 · Trình xem Chuỗi Nucleotide FASTA · {record.geneMarker} Marker
+            Trình xem Chuỗi Nucleotide FASTA · {record.geneMarker} Marker
           </div>
           <h1 className="taxonomy-name" style={{ fontSize: "clamp(26px, 3vw, 40px)" }}>
-            {record.scientificName}
+            <em>{record.scientificName}</em>
           </h1>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
             <span
@@ -136,20 +169,18 @@ export default function DnaFastaDetailPage() {
               Nguồn: {record.sourceDb}
             </span>
             <span className={`status-badge ${record.isPublic ? "status-public" : "status-private"}`}>
-              {record.isPublic ? "PUBLIC" : "PRIVATE"}
+              {record.isPublic ? "PUBLIC OPEN DATA" : "INTERNAL ONLY"}
             </span>
           </div>
         </div>
 
         <div className="hero-actions" style={{ marginTop: 0 }}>
-          <Link to={isAdmin ? "/admin/dna" : "/dna"} className="button button-ghost">
-            ← Kho DNA
-          </Link>
           <button type="button" className="button button-ghost" onClick={handleCopyFasta}>
+            <Icon name="copy" size={16} />
             Sao chép FASTA
           </button>
           <button type="button" className="button button-secondary" onClick={handleDownloadFasta}>
-            <Icon name="file" size={16} />
+            <Icon name="download" size={16} />
             Tải tệp .fasta
           </button>
           {isAdmin ? (

@@ -119,7 +119,15 @@ export default function SpecimenImageGallery({
                 {currentImg.shotType ? currentImg.shotType.toUpperCase() : "FIELD OBSERVATION"}
               </span>
               {currentImg.isSpeciesReference && (
-                <span className="gallery-ref-badge">ẢNH THAM CHIẾU LOÀI</span>
+                <span className="gallery-ref-badge">
+                  {currentImg.referenceMatchRank === "Species"
+                    ? "ẢNH THAM CHIẾU CÙNG LOÀI"
+                    : `ẢNH ĐẠI DIỆN PHÂN LOẠI (${
+                        currentImg.referenceScientificName ||
+                        currentImg.referenceTaxonName ||
+                        currentImg.referenceMatchRank
+                      })`}
+                </span>
               )}
               {currentImg.licenseCode && (
                 <span className="gallery-license-badge">

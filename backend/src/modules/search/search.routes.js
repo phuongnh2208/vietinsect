@@ -3,8 +3,9 @@
 const express = require("express");
 const Joi = require("joi");
 const router = express.Router();
-const { optionalAdmin } = require("../../middleware/auth.middleware");
+const { optionalAdmin, requireAdmin } = require("../../middleware/auth.middleware");
 const esService = require("./elasticsearch.service");
+const esOutbox = require("./esOutbox.service");
 
 const MAX_RESULT_WINDOW = 10000;
 
@@ -68,6 +69,25 @@ router.get("/specimens", optionalAdmin, async (req, res, next) => {
       synonymNotice: result.synonymNotice,
       tookMs: result.tookMs,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/outbox/status", requireAdmin, async (req, res, next) => {
+  try {
+    const stats = await esOutbox.getOutboxStats();
+    res.json({ success: true, data: stats });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/outbox/retry-dead", requireAdmin, async (req, res, next) => {
+  try {
+    const limit = Math.min(500, Math.max(1, Number(req.body?.limit) || 100));
+    const requeued = await esOutbox.retryDeadOutbox(limit);
+    res.json({ success: true, data: { requeued } });
   } catch (err) {
     next(err);
   }

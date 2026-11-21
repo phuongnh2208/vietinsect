@@ -45,7 +45,7 @@ export default function LoginPage() {
           <BrandLogo showSubtitle={true} />
         </Link>
         <div className="auth-visual-copy">
-          <span className="hero-kicker">SCR-01 · Hệ Thống Quản Trị Dữ Liệu</span>
+          <span className="hero-kicker">Hệ Thống Quản Trị Dữ Liệu</span>
           <h1>Dữ Liệu Đa Dạng Sinh Học Côn Trùng Việt Nam</h1>
           <p>
             Nền tảng số hóa, lưu trữ và phân tích mẫu vật, hồ sơ danh pháp, bản đồ sinh thái và dữ liệu DNA phục vụ bảo tồn bền vững.

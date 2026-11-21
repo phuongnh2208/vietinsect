@@ -95,6 +95,14 @@ function nameLevels(sciName) {
   return levels;
 }
 
+const RANK_DEPTH = {
+  Order: 1,
+  Family: 2,
+  Genus: 3,
+  Species: 4,
+  Subspecies: 5,
+};
+
 // ─── Main relink logic ──────────────────────────────────────────────────────
 
 async function relinkBatch(rows) {
@@ -110,35 +118,56 @@ async function relinkBatch(rows) {
       continue;
     }
 
-    let found = null;
-    let foundRank = null;
+    const candidates = nameLevels(sciName);
+    let bestHit = null;
 
-    // 1. Ưu tiên khớp chính xác gbif_taxon_key
-    if (taxonKey != null && gbifKeyCache[String(taxonKey)]) {
-      const hit = gbifKeyCache[String(taxonKey)];
-      found = hit.taxon_id;
-      foundRank = hit.taxon_rank;
+    // 1. Ưu tiên khớp bậc Species theo tên loài nhị danh trước tiên
+    if (candidates.length > 0 && candidates[0].includes(" ")) {
+      const spHit = taxaCache[candidates[0]];
+      if (spHit && spHit.taxon_rank === "Species") {
+        bestHit = spHit;
+      }
     }
 
-    // 2. Fallback theo tên khoa học: Species → Genus
-    if (!found && sciName) {
-      const candidates = nameLevels(sciName);
+    // 2. Khớp theo gbif_taxon_key nếu sâu hơn hoặc chưa tìm được Species
+    if (taxonKey != null && gbifKeyCache[String(taxonKey)]) {
+      const keyHit = gbifKeyCache[String(taxonKey)];
+      if (
+        !bestHit ||
+        (RANK_DEPTH[keyHit.taxon_rank] || 0) > (RANK_DEPTH[bestHit.taxon_rank] || 0)
+      ) {
+        bestHit = keyHit;
+      }
+    }
+
+    // 3. Fallback theo tên khoa học: Species → Genus → Family
+    if (!bestHit && candidates.length > 0) {
       for (const candidate of candidates) {
         const hit = taxaCache[candidate];
         if (hit) {
-          found = hit.taxon_id;
-          foundRank = hit.taxon_rank;
+          bestHit = hit;
           break;
         }
       }
     }
 
-    if (!found || Number(found) === Number(row.current_taxon_id)) {
+    const currentDepth = RANK_DEPTH[row.current_rank] || 0;
+    const targetDepth = bestHit ? RANK_DEPTH[bestHit.taxon_rank] || 0 : 0;
+
+    if (
+      !bestHit ||
+      Number(bestHit.taxon_id) === Number(row.current_taxon_id) ||
+      targetDepth < currentDepth
+    ) {
       stats.unchanged++;
       continue;
     }
 
-    updates.push({ specimen_id: Number(row.specimen_id), taxon_id: Number(found), rank: foundRank });
+    updates.push({
+      specimen_id: Number(row.specimen_id),
+      taxon_id: Number(bestHit.taxon_id),
+      rank: bestHit.taxon_rank,
+    });
   }
 
   if (updates.length === 0) return;
@@ -187,7 +216,7 @@ async function main() {
   let baseQuery = knex("specimens as s")
     .join("taxa as t", "s.taxon_id", "t.taxon_id")
     .whereNull("s.deleted_at")
-    .whereIn("t.taxon_rank", ["Order"])
+    .whereIn("t.taxon_rank", ["Order", "Family", "Genus"])
     .where(function () {
       this.whereNotNull("s.gbif_scientific_name").orWhereNotNull("s.gbif_taxon_key");
     });

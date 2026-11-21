@@ -6,3 +6,5 @@ build/
 *.log
 .DS_Store
 backend/logs/
+coverage/
+backend/coverage/

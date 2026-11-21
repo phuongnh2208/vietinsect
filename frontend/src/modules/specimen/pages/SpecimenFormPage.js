@@ -58,7 +58,7 @@ export default function SpecimenFormPage({ mode = "create" }) {
         <div>
           <div className="eyebrow">
             <Icon name={isEdit ? "edit" : "plus"} size={14} />
-            {isEdit ? "SCR-07 · Chỉnh sửa mẫu vật" : "SCR-06 · Thêm mới mẫu vật"}
+            {isEdit ? "Chỉnh sửa mẫu vật" : "Thêm mới mẫu vật"}
           </div>
           <h1>{isEdit ? `Hiệu chỉnh hồ sơ ${initialData?.specimenCode || ""}` : "Nhập hồ sơ mẫu vật mới"}</h1>
           <p className="page-description">

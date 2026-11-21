@@ -144,7 +144,7 @@ export default function PublicPrivateControlPage() {
         <div>
           <div className="eyebrow">
             <Icon name="lock" size={14} />
-            SCR-29 · Kiểm soát Chia sẻ Công khai
+            Kiểm soát Chia sẻ Công khai
           </div>
           <h1>Quản lý Trạng thái Hiển thị Mẫu vật</h1>
           <p className="page-description">

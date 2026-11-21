@@ -4,6 +4,7 @@
  * phân quyền dữ liệu công khai / nội bộ và ghi lịch sử thay đổi (specimen_change_history).
  */
 const knex = require("../../config/knex");
+const { enqueueOutbox, enqueueOutboxBatch } = require("../search/esOutbox.service");
 
 function escapeLike(raw) {
   return String(raw || "").slice(0, 120).replace(/[%_\\]/g, "\\$&");
@@ -618,6 +619,13 @@ async function create(data, adminId) {
       is_public: data.isPublic ?? true,
     });
 
+    await enqueueOutbox(trx, {
+      entityType: "specimen",
+      entityId: reg.specimen_id,
+      op: "upsert",
+      priority: 0,
+    });
+
     return reg.specimen_id;
   });
 }
@@ -732,18 +740,41 @@ async function update(specimenId, current, data, adminId) {
     if (historyRows.length > 0) {
       await trx("specimen_change_history").insert(historyRows);
     }
+
+    const isPublicChanged = "is_public" in specUpdate;
+    await enqueueOutbox(trx, {
+      entityType: "specimen",
+      entityId: specimenId,
+      op: isPublicChanged ? "toggle_public" : "upsert",
+      priority: isPublicChanged ? 10 : 0,
+    });
   });
 }
 
 async function batchUpdatePublic(specimenIds, isPublic, adminId) {
-  return knex("specimens")
-    .whereIn("specimen_id", specimenIds)
-    .whereNull("deleted_at")
-    .update({
-      is_public: isPublic,
-      updated_by: adminId || null,
-      updated_at: knex.fn.now(),
-    });
+  return knex.transaction(async (trx) => {
+    const updated = await trx("specimens")
+      .whereIn("specimen_id", specimenIds)
+      .whereNull("deleted_at")
+      .update({
+        is_public: isPublic,
+        updated_by: adminId || null,
+        updated_at: trx.fn.now(),
+      });
+
+    if (updated > 0 && Array.isArray(specimenIds) && specimenIds.length > 0) {
+      await enqueueOutboxBatch(
+        trx,
+        specimenIds.map((id) => ({
+          entityType: "specimen",
+          entityId: id,
+          op: "toggle_public",
+          priority: 10,
+        })),
+      );
+    }
+    return updated;
+  });
 }
 
 async function softDelete(specimenId, adminId) {
@@ -765,6 +796,13 @@ async function softDelete(specimenId, adminId) {
           is_orphaned: true,
           updated_at: trx.fn.now(),
         });
+
+      await enqueueOutbox(trx, {
+        entityType: "specimen",
+        entityId: specimenId,
+        op: "soft_delete",
+        priority: 10,
+      });
     }
 
     return { deletedCount, orphanedDnaCount };
@@ -791,6 +829,13 @@ async function restore(specimenId, adminId) {
           is_orphaned: false,
           updated_at: trx.fn.now(),
         });
+
+      await enqueueOutbox(trx, {
+        entityType: "specimen",
+        entityId: specimenId,
+        op: "restore",
+        priority: 10,
+      });
     }
 
     return { restoredCount, unorphanedDnaCount };
@@ -1215,6 +1260,17 @@ async function batchUpdateFields(specimenIds, updates, adminId) {
         new_value: JSON.stringify(updates).slice(0, 240),
       }));
       await trx("specimen_change_history").insert(historyRows);
+
+      const isPublicChanged = "is_public" in specUpdate;
+      await enqueueOutboxBatch(
+        trx,
+        specimenIds.map((id) => ({
+          entityType: "specimen",
+          entityId: id,
+          op: isPublicChanged ? "toggle_public" : "upsert",
+          priority: isPublicChanged ? 10 : 0,
+        })),
+      );
     }
 
     return updatedCount;
@@ -1242,6 +1298,7 @@ async function bulkImportRows(rows, adminId) {
     }
 
     let insertedCount = 0;
+    const insertedIds = [];
     const errors = [];
 
     for (let i = 0; i < rows.length; i++) {
@@ -1322,6 +1379,19 @@ async function bulkImportRows(rows, adminId) {
       });
 
       insertedCount++;
+      insertedIds.push(reg.specimen_id);
+    }
+
+    if (insertedIds.length > 0) {
+      await enqueueOutboxBatch(
+        trx,
+        insertedIds.map((id) => ({
+          entityType: "specimen",
+          entityId: id,
+          op: "upsert",
+          priority: 0,
+        })),
+      );
     }
 
     return { insertedCount, errors };

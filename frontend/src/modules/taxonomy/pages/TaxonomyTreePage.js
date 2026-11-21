@@ -33,7 +33,7 @@ export default function TaxonomyTreePage() {
     <div className="page-container page-content vi-page-enter">
       <div className="page-header">
         <div>
-          <div className="eyebrow"><Icon name="tree" size={14} />SCR-12 · Phân loại học & Hồ sơ loài</div>
+          <div className="eyebrow"><Icon name="tree" size={14} />Phân loại học & Hồ sơ loài</div>
           <h1>Cây phân loại học</h1>
           <p className="page-description">Duyệt cấu trúc phân loại từ Kingdom đến Species, xem số lượng mẫu vật tại mỗi bậc taxon.</p>
         </div>

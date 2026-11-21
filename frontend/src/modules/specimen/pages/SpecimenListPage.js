@@ -275,7 +275,7 @@ export default function SpecimenListPage() {
         <div>
           <div className="eyebrow">
             <Icon name={isAdmin ? "database" : "search"} size={14} />
-            {isAdmin ? "SCR-05 · Quản lý Mẫu vật" : "SCR-15 · Cổng Dữ Liệu Mở"}
+            {isAdmin ? "Quản lý Mẫu vật" : "Cổng Tra cứu Dữ liệu Mở"}
           </div>
           <h1>{isAdmin ? "Danh sách quản lý mẫu vật" : "Tra cứu & Khai thác mẫu vật số"}</h1>
           <p className="page-description">
@@ -287,6 +287,7 @@ export default function SpecimenListPage() {
 
         <div className="hero-actions" style={{ marginTop: 0 }}>
           <button
+            type="button"
             className="button button-ghost"
             onClick={() => navigate(isAdmin ? "/admin/map" : "/map")}
           >
@@ -294,6 +295,7 @@ export default function SpecimenListPage() {
             Xem trên Bản đồ GIS
           </button>
           <button
+            type="button"
             className="button button-ghost"
             onClick={() => handleServerExport("dwca")}
             disabled={Boolean(exportingFmt)}
@@ -303,6 +305,7 @@ export default function SpecimenListPage() {
             {exportingFmt === "dwca" ? "Đang đóng gói..." : "DwC-A (.zip)"}
           </button>
           <button
+            type="button"
             className="button button-ghost"
             onClick={() => handleServerExport("xlsx")}
             disabled={Boolean(exportingFmt)}
@@ -311,6 +314,7 @@ export default function SpecimenListPage() {
             {exportingFmt === "xlsx" ? "Đang xuất..." : "Excel (.xlsx)"}
           </button>
           <button
+            type="button"
             className="button button-ghost"
             onClick={() => handleServerExport("geojson")}
             disabled={Boolean(exportingFmt)}
@@ -319,17 +323,37 @@ export default function SpecimenListPage() {
             {exportingFmt === "geojson" ? "Đang xuất..." : "GeoJSON"}
           </button>
           {isAdmin ? (
-            <button
-              className="button button-primary"
-              onClick={() => {
-                setEditingItem(null);
-                setModalOpen(true);
-              }}
-            >
-              <Icon name="plus" size={16} />
-              Thêm mẫu vật
-            </button>
-          ) : null}
+            <>
+              <Link to="/admin/specimens/import" className="button button-ghost">
+                <Icon name="upload" size={16} />
+                Nhập Excel / CSV
+              </Link>
+              <Link to="/admin/specimens/batch-edit" className="button button-ghost">
+                <Icon name="edit" size={16} />
+                Sửa hàng loạt
+              </Link>
+              <Link to="/admin/specimens/labels" className="button button-ghost">
+                <Icon name="printer" size={16} />
+                In nhãn mẫu
+              </Link>
+              <button
+                type="button"
+                className="button button-primary"
+                onClick={() => {
+                  setEditingItem(null);
+                  setModalOpen(true);
+                }}
+              >
+                <Icon name="plus" size={16} />
+                Thêm mẫu vật
+              </button>
+            </>
+          ) : (
+            <Link to="/search/advanced" className="button button-secondary">
+              <Icon name="filter" size={16} />
+              Tìm kiếm Nâng cao
+            </Link>
+          )}
         </div>
       </div>
 
@@ -351,13 +375,13 @@ export default function SpecimenListPage() {
 
           <article className="card metric-card">
             <div className="metric-head">
-              <span>Danh pháp ghi nhận</span>
+              <span>Loài đã số hóa</span>
               <span className="metric-icon">
                 <Icon name="leaf" size={16} />
               </span>
             </div>
             <div className="metric-value">
-              {(stats.distinctScientificNames || 0).toLocaleString()}
+              {(stats.taxa?.species || stats.distinctBinomialSpecies || 0).toLocaleString()}
             </div>
             <div className="metric-foot">
               {(stats.taxa?.families || 0).toLocaleString()} Họ · {(stats.taxa?.genera || 0).toLocaleString()} Giống
@@ -775,18 +799,18 @@ export default function SpecimenListPage() {
                             </div>
                           ) : null}
                         </td>
-                        <td style={{ whiteSpace: "nowrap", fontWeight: 600 }}>
+                        <td style={{ whiteSpace: "nowrap", fontWeight: 600, color: "#111111" }}>
                           {item.collectionDate || "—"}
                         </td>
-                        <td>
-                          <div style={{ fontWeight: 600 }}>
+                        <td style={{ color: "#111111" }}>
+                          <div style={{ fontWeight: 600, color: "#111111" }}>
                             {item.provinceNameVn || "Việt Nam (chưa gán tỉnh)"}
                           </div>
                           {item.localityDetail ? (
                             <div
                               style={{
                                 fontSize: 11,
-                                color: "var(--vi-muted)",
+                                color: "#555555",
                                 maxWidth: 220,
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
@@ -804,9 +828,17 @@ export default function SpecimenListPage() {
                           ) : null}
                         </td>
                         {visibleCols.coords ? (
-                          <td style={{ fontFamily: "monospace", fontSize: 12, whiteSpace: "nowrap" }}>
+                          <td
+                            style={{
+                              fontFamily: "monospace",
+                              fontSize: 12,
+                              whiteSpace: "nowrap",
+                              color: "#111111",
+                              fontWeight: 600,
+                            }}
+                          >
                             {item.latitude != null && item.longitude != null
-                              ? `${item.latitude.toFixed(4)}, ${item.longitude.toFixed(4)}`
+                              ? `${Number(item.latitude).toFixed(4)}°N, ${Number(item.longitude).toFixed(4)}°E`
                               : "—"}
                           </td>
                         ) : null}
@@ -948,7 +980,7 @@ export default function SpecimenListPage() {
             </button>
             <div className="eyebrow" style={{ marginBottom: 4 }}>
               <Icon name={editingItem ? "edit" : "plus"} size={14} />
-              {editingItem ? "SCR-07 · Hiệu chỉnh mẫu vật" : "SCR-06 · Nhập mẫu vật mới"}
+              {editingItem ? "Hiệu chỉnh mẫu vật" : "Nhập mẫu vật mới"}
             </div>
             <h2 style={{ marginTop: 4, marginBottom: 16 }}>
               {editingItem ? `Cập nhật ${editingItem.specimenCode}` : "Thêm hồ sơ mẫu vật mới"}

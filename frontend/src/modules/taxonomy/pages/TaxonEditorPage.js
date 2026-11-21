@@ -100,7 +100,7 @@ export default function TaxonEditorPage() {
     <div className="page-container page-content vi-page-enter">
       <div className="page-header">
         <div>
-          <div className="eyebrow"><Icon name="edit" size={14} />SCR-14 · Phân loại học & Hồ sơ loài</div>
+          <div className="eyebrow"><Icon name="edit" size={14} />Phân loại học & Hồ sơ loài</div>
           <h1>Quản lý danh pháp</h1>
           <p className="page-description">Thêm mới hoặc hiệu chỉnh các bậc taxon, quản lý accepted/synonym, xác thực tên qua Catalogue of Life, import danh lục Excel.</p>
         </div>

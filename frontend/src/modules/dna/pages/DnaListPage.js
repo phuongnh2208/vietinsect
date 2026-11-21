@@ -203,7 +203,7 @@ export default function DnaListPage() {
         <div>
           <div className="eyebrow">
             <Icon name="dna" size={14} />
-            SCR-20 · Dữ liệu Phân tử DNA & GenBank / BOLD
+            Dữ liệu Phân tử DNA & GenBank / BOLD
           </div>
           <h1>Kho lưu trữ trình tự mã vạch DNA</h1>
           <p className="page-description">

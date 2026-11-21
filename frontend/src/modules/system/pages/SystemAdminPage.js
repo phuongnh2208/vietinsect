@@ -119,7 +119,7 @@ export default function SystemAdminPage() {
         <div>
           <div className="eyebrow">
             <Icon name="settings" size={14} />
-            SCR-30 · Nhật ký Kiểm toán & Cấu hình Bảo mật Hệ thống
+            Nhật ký Kiểm toán & Cấu hình Bảo mật Hệ thống
           </div>
           <h1>Quản trị hệ thống & Khóa tích hợp</h1>
           <p className="page-description">

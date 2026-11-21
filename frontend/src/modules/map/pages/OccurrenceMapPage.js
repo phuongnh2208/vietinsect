@@ -448,7 +448,7 @@ export default function OccurrenceMapPage() {
         <div>
           <div className="eyebrow">
             <Icon name="map" size={14} />
-            SCR-18 · Hệ thống Thông tin Địa lý (PostGIS)
+            Hệ thống Thông tin Địa lý (PostGIS)
           </div>
           <h1>Bản đồ phân bố sinh thái côn trùng</h1>
           <p className="page-description">
@@ -491,6 +491,27 @@ export default function OccurrenceMapPage() {
             <Icon name="archive" size={16} />
             In Bản đồ
           </button>
+
+          {isAdmin && (
+            <>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => navigate("/admin/map/layers")}
+              >
+                <Icon name="layers" size={16} />
+                Lớp chuyên đề GIS
+              </button>
+              <button
+                type="button"
+                className="button button-primary"
+                onClick={() => navigate("/admin/ai/sdm")}
+              >
+                <Icon name="spark" size={16} />
+                Dự báo Phân bố SDM
+              </button>
+            </>
+          )}
         </div>
       </div>
 

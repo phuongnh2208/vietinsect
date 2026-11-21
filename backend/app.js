@@ -44,13 +44,18 @@ app.use(
   }),
 );
 
-// Health check (kèm trạng thái Elasticsearch — DEF-059)
+// Health check (kèm trạng thái Elasticsearch & Outbox — DEF-059, DEF-112)
+const { getOutboxStats } = require("./src/modules/search/esOutbox.service");
+
 app.get("/api/health", async (req, res) => {
-  const elasticsearch = await checkEsHealth();
+  const [elasticsearch, esOutbox] = await Promise.all([
+    checkEsHealth(),
+    getOutboxStats(),
+  ]);
   res.json({
     success: true,
     message: "VietInsect API đang hoạt động",
-    services: { elasticsearch },
+    services: { elasticsearch, esOutbox },
   });
 });
 
