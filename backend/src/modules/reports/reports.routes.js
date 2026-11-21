@@ -1,5 +1,7 @@
 "use strict";
 
+const crypto = require("crypto");
+const fs = require("fs");
 const express = require("express");
 const router = express.Router();
 const { optionalAdmin } = require("../../middleware/auth.middleware");
@@ -8,6 +10,16 @@ const labelService = require("../specimen/label.service");
 const { createExportJob, getExportJob } = require("./pdfGenerator.service");
 
 const LARGE_LABEL_THRESHOLD = 50;
+
+function resolveJobOwnerKey(req) {
+  if (req.admin && req.admin.adminId) {
+    return `admin:${req.admin.adminId}`;
+  }
+  const ip = req.ip || req.socket?.remoteAddress || "unknown";
+  const ua = req.headers["user-agent"] || "";
+  const hash = crypto.createHash("sha256").update(`${ip}|${ua}`).digest("hex").slice(0, 24);
+  return `anon:${hash}`;
+}
 
 /**
  * GET /api/reports/summary?format=pdf|xlsx&async=true|false
@@ -23,7 +35,7 @@ router.get("/summary", optionalAdmin, async (req, res, next) => {
     if (format === "xlsx" || format === "excel") {
       if (isAsync) {
         const job = createExportJob({
-          ownerKey: isAdmin ? `admin:${req.admin.adminId}` : "public",
+          ownerKey: resolveJobOwnerKey(req),
           filename: `vietinsect-summary-${stamp}.xlsx`,
           contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
           runFn: () => reportsService.generateSummaryExcel({ isAdmin }),
@@ -79,7 +91,7 @@ router.get("/checklist", optionalAdmin, async (req, res, next) => {
     if (format === "docx") {
       if (isAsync) {
         const job = createExportJob({
-          ownerKey: isAdmin ? `admin:${req.admin.adminId}` : "public",
+          ownerKey: resolveJobOwnerKey(req),
           filename: `vietinsect-checklist-${stamp}.docx`,
           contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
           runFn: () => reportsService.generateChecklistDocx(filters, { isAdmin }),
@@ -164,8 +176,8 @@ router.get("/jobs/:jobId", optionalAdmin, (req, res) => {
   if (!job) {
     return res.status(404).json({ success: false, code: "JOB_NOT_FOUND", message: "Không tìm thấy tiến trình xuất" });
   }
-  const callerKey = req.admin ? `admin:${req.admin.adminId}` : "public";
-  if (job.ownerKey !== callerKey && !req.admin) {
+  const callerKey = resolveJobOwnerKey(req);
+  if (job.ownerKey !== callerKey) {
     return res.status(403).json({ success: false, code: "FORBIDDEN", message: "Không có quyền truy cập" });
   }
   return res.json({
@@ -186,16 +198,19 @@ router.get("/jobs/:jobId", optionalAdmin, (req, res) => {
  */
 router.get("/jobs/:jobId/download", optionalAdmin, (req, res) => {
   const job = getExportJob(req.params.jobId);
-  if (!job || job.status !== "done" || !job.buffer) {
-    return res.status(404).json({ success: false, code: "JOB_NOT_READY", message: "File chưa sẵn sàng" });
+  if (!job) {
+    return res.status(404).json({ success: false, code: "JOB_NOT_FOUND", message: "Không tìm thấy tiến trình xuất" });
   }
-  const callerKey = req.admin ? `admin:${req.admin.adminId}` : "public";
-  if (job.ownerKey !== callerKey && !req.admin) {
+  const callerKey = resolveJobOwnerKey(req);
+  if (job.ownerKey !== callerKey) {
     return res.status(403).json({ success: false, code: "FORBIDDEN", message: "Không có quyền truy cập" });
+  }
+  if (job.status !== "done" || !job.filePath || !fs.existsSync(job.filePath)) {
+    return res.status(404).json({ success: false, code: "JOB_NOT_READY", message: "File chưa sẵn sàng" });
   }
   res.setHeader("Content-Type", job.contentType);
   res.setHeader("Content-Disposition", `attachment; filename="${job.filename}"`);
-  return res.send(job.buffer);
+  return res.send(fs.readFileSync(job.filePath));
 });
 
 module.exports = router;

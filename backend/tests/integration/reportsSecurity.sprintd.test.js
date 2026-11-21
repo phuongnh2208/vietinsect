@@ -2,14 +2,20 @@
 
 jest.setTimeout(60000);
 
+const fs = require("fs");
+const os = require("os");
+const request = require("supertest");
 const pdfParse = require("pdf-parse");
+const app = require("../../app");
 const pdfGenerator = require("../../src/modules/reports/pdfGenerator.service");
 const labelService = require("../../src/modules/specimen/label.service");
 const reportsService = require("../../src/modules/reports/reports.service");
+const { closeRateLimiterRedis } = require("../../src/middleware/rateLimiter");
 
 describe("Sprint D Group 1 Security Hardening", () => {
   afterAll(async () => {
     await pdfGenerator.closeBrowser();
+    await closeRateLimiterRedis();
   });
 
   it("1. SSRF & HTML Injection: escapes <img/iframe/script> in labels and blocks 127.0.0.1:9200 requests in Puppeteer", async () => {
@@ -60,5 +66,33 @@ describe("Sprint D Group 1 Security Hardening", () => {
 
     // DOCX text strips illegal XML control characters
     expect(reportsService.sanitizeDocxText("Safe\x00\x07<xml>&text")).toBe("Safe<xml>&text");
+  });
+
+  it("3. Background export job: UUID jobId, owner isolation (403 for others), temp dir outside webroot, auto-cleanup on TTL", async () => {
+    const created = pdfGenerator.createExportJob({
+      ownerKey: "admin:1",
+      filename: "test.pdf",
+      contentType: "application/pdf",
+      runFn: async () => Buffer.from("%PDF-1.4 test"),
+      ttlMs: 60000,
+    });
+    expect(created.jobId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+
+    // Wait for async job to write temp file
+    await new Promise((r) => setTimeout(r, 80));
+    const job = pdfGenerator.getExportJob(created.jobId);
+    expect(job.status).toBe("done");
+    expect(job.filePath.startsWith(os.tmpdir())).toBe(true);
+    expect(fs.existsSync(job.filePath)).toBe(true);
+
+    // Non-owner anonymous request gets 403
+    const forbiddenRes = await request(app).get(`/api/reports/jobs/${created.jobId}`);
+    expect(forbiddenRes.status).toBe(403);
+
+    // TTL expiry removes temp file and job entry
+    const removed = pdfGenerator.cleanupExpiredJobs(Date.now() + 120000);
+    expect(removed).toBeGreaterThanOrEqual(1);
+    expect(fs.existsSync(job.filePath)).toBe(false);
+    expect(pdfGenerator.getExportJob(created.jobId)).toBeNull();
   });
 });

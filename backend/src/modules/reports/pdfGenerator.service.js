@@ -2,6 +2,8 @@
 
 const crypto = require("crypto");
 const fs = require("fs");
+const os = require("os");
+const path = require("path");
 const puppeteer = require("puppeteer");
 const logger = require("../../config/logger");
 const systemRepository = require("../system/system.repository");
@@ -23,9 +25,11 @@ let activeRenders = 0;
 let blockedRequestCount = 0;
 const waitQueue = [];
 
-// Background export job store (in-memory with TTL cleanup)
+// Background export job store (file tạm lưu ngoài webroot, tự xóa sau TTL)
 const exportJobs = new Map();
 const MAX_JOBS = 100;
+const EXPORT_TMP_DIR = path.join(os.tmpdir(), "vietinsect-reports");
+const DEFAULT_JOB_TTL_MS = Math.max(60000, Number(process.env.REPORT_JOB_TTL_MS) || 15 * 60 * 1000);
 
 function escapeHtml(str) {
   return String(str ?? "")
@@ -318,25 +322,52 @@ async function renderHtmlToPdf(
   }
 }
 
+function removeJobFile(job) {
+  if (job && job.filePath && fs.existsSync(job.filePath)) {
+    try {
+      fs.unlinkSync(job.filePath);
+    } catch (_) {
+      // ignore
+    }
+  }
+}
+
+function cleanupExpiredJobs(nowMs = Date.now()) {
+  let removed = 0;
+  for (const [id, job] of exportJobs.entries()) {
+    if (job.expiresAt && nowMs >= job.expiresAt) {
+      removeJobFile(job);
+      exportJobs.delete(id);
+      removed += 1;
+    }
+  }
+  return removed;
+}
+
 /**
  * Tạo background job cho xuất báo cáo/nhãn kích thước lớn.
+ * - jobId: UUID v4 ngẫu nhiên
+ * - file tạm lưu tại EXPORT_TMP_DIR (ngoài webroot), tự xóa sau ttlMs
  */
-function createExportJob({ ownerKey, filename, contentType, runFn }) {
+function createExportJob({ ownerKey, filename, contentType, runFn, ttlMs = DEFAULT_JOB_TTL_MS }) {
+  cleanupExpiredJobs();
   const jobId = crypto.randomUUID();
   const job = {
     jobId,
-    ownerKey: ownerKey || "public",
+    ownerKey: ownerKey || "anon:unknown",
     filename,
     contentType,
     status: "pending",
     createdAt: new Date().toISOString(),
     completedAt: null,
+    expiresAt: Date.now() + ttlMs,
     error: null,
-    buffer: null,
+    filePath: null,
   };
 
   if (exportJobs.size >= MAX_JOBS) {
     const oldestKey = exportJobs.keys().next().value;
+    removeJobFile(exportJobs.get(oldestKey));
     exportJobs.delete(oldestKey);
   }
   exportJobs.set(jobId, job);
@@ -344,9 +375,14 @@ function createExportJob({ ownerKey, filename, contentType, runFn }) {
   setImmediate(async () => {
     job.status = "processing";
     try {
-      job.buffer = await runFn();
+      const buf = await runFn();
+      fs.mkdirSync(EXPORT_TMP_DIR, { recursive: true });
+      const filePath = path.join(EXPORT_TMP_DIR, `${jobId}.bin`);
+      fs.writeFileSync(filePath, buf);
+      job.filePath = filePath;
       job.status = "done";
       job.completedAt = new Date().toISOString();
+      job.expiresAt = Date.now() + ttlMs;
     } catch (err) {
       job.status = "failed";
       job.error = err?.message || "Export failed";
@@ -364,6 +400,7 @@ function createExportJob({ ownerKey, filename, contentType, runFn }) {
 }
 
 function getExportJob(jobId) {
+  cleanupExpiredJobs();
   return exportJobs.get(jobId) || null;
 }
 
@@ -385,7 +422,9 @@ module.exports = {
   getOrgReportConfig,
   renderHtmlToPdf,
   closeBrowser,
+  EXPORT_TMP_DIR,
   createExportJob,
   getExportJob,
+  cleanupExpiredJobs,
   getQueueStats,
 };
