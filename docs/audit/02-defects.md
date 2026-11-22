@@ -654,30 +654,6 @@
 - **Công:** M
 - **Trạng thái:** Đã sửa (migration `022_create_readonly_sql_role.js` + bắt buộc `DB_READONLY_ROLE` 503 + AST parser `node-sql-parser` + function whitelist)
 
-### DEF-108 · Medium · Data
-- **Vi phạm:** F-GI-06 / SCR-25 (thống kê độ giàu loài theo tỉnh chính xác).
-- **Hiện trạng:** `backend/src/modules/specimen/specimen.repository.js:993` (`getAnalytics` → `richnessPromise`) dùng `COUNT(*)::int AS specimen_count` trên `FROM provinces p LEFT JOIN specimens s ...`, khiến tỉnh không có mẫu vật vẫn bị đếm là `1` thay vì `0`.
-- **Kỳ vọng:** Tỉnh không có mẫu vật phải trả về `specimen_count = 0`.
-- **Đề xuất:** Sửa `COUNT(*)::int` thành `COUNT(s.specimen_id)::int`.
-- **Công:** S
-- **Trạng thái:** Đã sửa – commit `862388e`
-
-### DEF-109 · Medium · Security
-- **Vi phạm:** §5.2 (chống DoS body size lớn trên toàn bộ API).
-- **Hiện trạng:** `backend/app.js:31` đặt `express.json({ limit: "10mb" })` toàn cục thay vì chỉ giới hạn riêng cho `/api/specimens/bulk-import`.
-- **Kỳ vọng:** Giữ giới hạn mặc định (`100kb`) cho toàn bộ API (ví dụ `POST /api/auth/login` 1MB trả `413`); chỉ áp dụng `10mb` cho `POST /api/specimens/bulk-import`.
-- **Đề xuất:** Tách parser `10mb` vào route `/bulk-import`.
-- **Công:** S
-- **Trạng thái:** Đã sửa – commit `8aa4c33`
-
-### DEF-110 · Medium · Data
-- **Vi phạm:** F-TX / đồng bộ dữ liệu Materialized View.
-- **Hiện trạng:** Kết quả grep toàn bộ `backend/src/` cho thấy không có chỗ nào gọi `REFRESH MATERIALIZED VIEW [CONCURRENTLY] mv_taxon_dwc_flat` tự động khi thêm/sửa/xóa `taxa` hoặc theo cron.
-- **Kỳ vọng:** Tự động refresh `mv_taxon_dwc_flat` sau thao tác ghi `taxa` hoặc qua cron job định kỳ.
-- **Đề xuất:** Thêm trigger/job `REFRESH MATERIALIZED VIEW CONCURRENTLY mv_taxon_dwc_flat` ở sprint kế tiếp.
-- **Công:** S
-- **Trạng thái:** Đã sửa (debounced `REFRESH MATERIALIZED VIEW CONCURRENTLY` + `make refresh-views`) – commit `0934015`
-
 ---
 
 ### Thống kê lũy kế toàn bộ cuộc kiểm toán (Bước 0 → Bước 5)
@@ -698,16 +674,30 @@
 
 
 
-### DEF-111 · Medium · Data
+### DEF-116 · Medium · Data
 - **Vi phạm:** Nhất quán lineage phân loại (homonym / sai Bộ tổ tiên).
 - **Hiện trạng:** Mẫu vật `specimen_id=130396` đang gắn `Order = Plecoptera`, nhưng `gbif_scientific_name = Anisoptera` (là Phân bộ / Chi thuộc `Odonata`). Script relink đã chặn không tự động sửa (`homonym_order_mismatch(plecoptera!=odonata)`).
 - **Kỳ vọng:** Mẫu vật được đối chiếu lại bản ghi GBIF gốc (`gbif_occurrence_id`) để xác định đúng Bộ (`Odonata` hay `Plecoptera`).
 - **Đề xuất:** Kiểm tra bản ghi gốc trên GBIF và cập nhật thủ công hoặc qua pipeline Bước 2 (lưu `gbif_raw`).
 - **Công:** XS
 
-### DEF-112 · High · Data
+### DEF-117 · High · Data
 - **Vi phạm:** Kiểm toán dữ liệu xóa mềm (`audit_logs` cho hành động xóa hàng loạt).
 - **Hiện trạng:** Có **2.020** mẫu vật có `deleted_at = 2026-11-18 09:38:03.379427+00` (cùng 1 micro giây, `distinct_minutes = 1`) nhưng **không có bất kỳ bản ghi `DELETE` nào tương ứng trong `audit_logs`** tại thời điểm đó — dấu hiệu bị xóa mềm bởi một câu lệnh/script SQL bulk trực tiếp ngoài API.
 - **Kỳ vọng:** Xác định rõ nguồn gốc đợt xóa mềm 2.020 mẫu vật (dọn dữ liệu rác, test hay sự cố) và ghi nhận biên bản kiểm toán.
 - **Đề xuất:** Không tự động khôi phục hay chạm vào 2.020 bản ghi này; chờ chủ sở hữu dữ liệu xác nhận nguồn gốc.
 - **Công:** S
+
+### DEF-118 · Medium · Data
+- **Vi phạm:** Toàn vẹn danh mục phân loại (`taxa` trùng lặp tên Chi).
+- **Hiện trạng:** Bảng `taxa` có nhiều bản ghi bậc `Genus` trùng tên `Conocephalus` (nhiều nhánh/homonym), khiến 19 mẫu nhị danh sạch (`Conocephalus maculatus`, `Conocephalus melaenus`) chưa thể tạo loài tự động an toàn ở Bước 1.
+- **Kỳ vọng:** Mỗi chi hợp lệ trong cùng một Bộ chỉ có duy nhất một bản ghi `accepted` chuẩn, các bản ghi trùng được hợp nhất hoặc đánh dấu `synonym` trỏ về `accepted_taxon_id`.
+- **Đề xuất:** Rà soát và hợp nhất các bản ghi `Genus` trùng tên trong bảng `taxa`.
+- **Công:** S
+
+### DEF-119 · Low · Data
+- **Vi phạm:** Nhất quán phân loại khi xuất Darwin Core Archive (DwC-A).
+- **Hiện trạng:** Bảng `taxa` dùng Catalogue of Life (CoL) làm backbone nên một số loài có họ khác với GBIF Backbone (ví dụ *Supella longipalpa*: CoL = `Ectobiidae`, GBIF = `Pseudophyllodromiidae`).
+- **Kỳ vọng:** Khi xuất DwC-A, cần ghi rõ nguồn phân loại (CoL backbone) và xử lý nhất quán giữa `family` của hệ thống với `gbif_raw`.
+- **Đề xuất:** Chuẩn hóa metadata `eml.xml` và tài liệu mapping DwC-A nêu rõ CoL backbone.
+- **Công:** XS

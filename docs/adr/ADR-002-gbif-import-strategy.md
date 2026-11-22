@@ -1,0 +1,22 @@
+# ADR-002: Chiến lược tải dữ liệu GBIF (Search API Slicing vs Download API)
+
+## Trạng thái
+Accepted (2026-11-22)
+
+## Bối cảnh
+Hệ thống VietInsect cần đồng bộ dữ liệu mẫu vật côn trùng tại Việt Nam (`country=VN`, `classKey=216` / `Insecta`) từ GBIF.
+GBIF Occurrence Search API (`/v1/occurrence/search`) áp dụng giới hạn cứng `offset + limit <= 100,000` (và thực tế có thể timeout ở deep-paging > 9,000 bản ghi/truy vấn).
+
+## Quyết định
+1. **Khi chưa cấu hình `GBIF_USERNAME` / `GBIF_PASSWORD` trong `.env`:**
+   - Sử dụng GBIF Occurrence Search API với:
+     - `User-Agent` nhận diện rõ (`VietInsect-GBIF-Importer/2.0 (vietinsect.vast.vn)`).
+     - Throttle mặc định (`>= 400ms`/request) + exponential backoff khi gặp HTTP 429/5xx.
+     - Chia nhỏ truy vấn theo lát `order` → `year` → `basisOfRecord` → `datasetKey` (mỗi lát `< 9,000` bản ghi) để không chạm ngưỡng `offset = 100,000`.
+   - Lưu toàn bộ JSON gốc vào MongoDB collection `gbif_raw` (`_id = gbifID`) theo C-10 để tránh gọi lại API khi cần trích xuất thêm trường.
+2. **Khi tải số lượng lớn (toàn quốc > 100.000 bản ghi) và đã có `GBIF_USERNAME` / `GBIF_PASSWORD`:**
+   - Chuyển sang **GBIF Asynchronous Download API** (`/v1/occurrence/download/request`, định dạng `DWCA`) để nhận file `.zip` chuẩn Darwin Core Archive không bị giới hạn offset và có DOI trích dẫn chính thức.
+
+## Hệ quả
+- Không cần lưu credential GBIF trong repo; chạy an toàn trong môi trường dev/test.
+- Giới hạn của Search API (tối đa 100.000 bản ghi/lát, không tự cấp DOI download) được kiểm soát hoàn toàn bằng cơ chế chia lát.

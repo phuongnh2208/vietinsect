@@ -85,6 +85,13 @@ async function fetchSpecimensForExport(filters = {}, { isAdmin = false } = {}) {
       "sr.institution_code",
       "sr.recorded_by",
       "sr.occurrence_remarks",
+      "sr.coordinate_uncertainty_m",
+      "sr.identified_by",
+      "sr.date_identified",
+      "sr.license",
+      "sr.references_url",
+      "sr.rights_holder",
+      "sr.dataset_name",
       "s.gbif_scientific_name",
       "t1.scientific_name as taxon_name",
       "t1.taxon_rank",
@@ -173,6 +180,11 @@ function buildMetaXml() {
     <field index="28" term="http://rs.tdwg.org/dwc/terms/preparations" />
     <field index="29" term="http://rs.tdwg.org/dwc/terms/occurrenceRemarks" />
     <field index="30" term="http://purl.org/dc/terms/license" />
+    <field index="31" term="http://rs.tdwg.org/dwc/terms/identifiedBy" />
+    <field index="32" term="http://rs.tdwg.org/dwc/terms/dateIdentified" />
+    <field index="33" term="http://purl.org/dc/terms/references" />
+    <field index="34" term="http://purl.org/dc/terms/rightsHolder" />
+    <field index="35" term="http://rs.tdwg.org/dwc/terms/datasetName" />
   </core>
   <extension encoding="UTF-8" fieldsTerminatedBy="\\t" linesTerminatedBy="\\n" fieldsEnclosedBy="" ignoreHeaderLines="1" rowType="http://rs.gbif.org/terms/1.0/Multimedia">
     <files>
@@ -265,6 +277,11 @@ async function generateDwcaZip(filters = {}, { isAdmin = false } = {}) {
     "preparations",
     "occurrenceRemarks",
     "license",
+    "identifiedBy",
+    "dateIdentified",
+    "references",
+    "rightsHolder",
+    "datasetName",
   ];
 
   const occLines = [occHeaders.join("\t")];
@@ -294,7 +311,11 @@ async function generateDwcaZip(filters = {}, { isAdmin = false } = {}) {
         r.locality_detail || "",
         r.latitude != null ? Number(r.latitude).toFixed(6) : "",
         r.longitude != null ? Number(r.longitude).toFixed(6) : "",
-        r.gps_accuracy_m != null ? Number(r.gps_accuracy_m) : "",
+        r.coordinate_uncertainty_m != null
+          ? Number(r.coordinate_uncertainty_m)
+          : r.gps_accuracy_m != null
+            ? Number(r.gps_accuracy_m)
+            : "",
         formatDateIso(r.collection_date),
         r.sex || "",
         r.individual_count || 1,
@@ -303,7 +324,12 @@ async function generateDwcaZip(filters = {}, { isAdmin = false } = {}) {
         r.life_stage_label_vn || "",
         r.status_label_vn || "",
         r.occurrence_remarks || r.notes || "",
-        LICENSE_URI_MAP["cc-by"],
+        r.license || LICENSE_URI_MAP["cc-by"],
+        r.identified_by || "",
+        formatDateIso(r.date_identified),
+        r.references_url || "",
+        r.rights_holder || "",
+        r.dataset_name || "",
       ]
         .map(sanitizeTsvCell)
         .join("\t"),
