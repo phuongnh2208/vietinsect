@@ -134,7 +134,7 @@ function applyFilters(qb, filters, { includePrivate = false, needRegistryJoin = 
     );
   }
 
-  // Tìm kiếm từ khóa đa trường
+  // Tìm kiếm từ khóa đa trường (tên loài, mã mẫu, địa điểm gồm tỉnh/huyện/xã/chi tiết, người thu)
   if (filters.q && filters.q.trim()) {
     const safe = `%${escapeLike(filters.q.trim())}%`;
     qb.andWhere((sub) => {
@@ -142,7 +142,13 @@ function applyFilters(qb, filters, { includePrivate = false, needRegistryJoin = 
         .whereRaw("s.gbif_scientific_name ILIKE ? ESCAPE '\\'", [safe])
         .orWhereRaw("s.common_name_vn ILIKE ? ESCAPE '\\'", [safe])
         .orWhereRaw("s.common_name_en ILIKE ? ESCAPE '\\'", [safe])
-        .orWhereRaw("s.locality_detail ILIKE ? ESCAPE '\\'", [safe]);
+        .orWhereRaw("s.locality_detail ILIKE ? ESCAPE '\\'", [safe])
+        .orWhereRaw("s.district ILIKE ? ESCAPE '\\'", [safe])
+        .orWhereRaw("s.commune ILIKE ? ESCAPE '\\'", [safe])
+        .orWhereRaw(
+          "EXISTS (SELECT 1 FROM provinces p_q WHERE p_q.province_id = s.province_id AND (p_q.province_name_vn ILIKE ? ESCAPE '\\' OR p_q.province_name_en ILIKE ? ESCAPE '\\'))",
+          [safe, safe],
+        );
       if (needRegistryJoin) {
         sub
           .orWhereRaw("sr.specimen_code ILIKE ? ESCAPE '\\'", [safe])
@@ -533,6 +539,17 @@ async function findById(specimenId, { includePrivate = false } = {}) {
       "sr.institution_code",
       "sr.recorded_by",
       "sr.occurrence_remarks",
+      "sr.coordinate_uncertainty_m",
+      "sr.identified_by",
+      "sr.date_identified",
+      "sr.license",
+      "sr.references_url",
+      "sr.rights_holder",
+      "sr.dataset_name",
+      "sr.gbif_issues",
+      "sr.gbif_family",
+      "sr.gbif_genus",
+      "sr.gbif_species",
       "t1.scientific_name as taxon_name",
       "t1.taxon_rank as taxon_rank",
       "t1.slug as taxon_slug",
@@ -607,40 +624,29 @@ async function findById(specimenId, { includePrivate = false } = {}) {
     { id: row.parent3_id, rank: row.parent3_rank, name: row.parent3_name },
   ].filter((a) => a.id != null);
 
-  // Fallback ảnh tham chiếu theo hệ thống phân loại (Species → Genus → Family → Order)
+  // Chỉ fallback ảnh tham chiếu ở đúng bậc Species (cùng loài), KHÔNG leo lên Genus/Family/Order
+  // để tránh mọi mẫu vật trong cùng một Bộ bị gắn nhầm cùng một nhóm ảnh đại diện của Bộ.
   let speciesImages = [];
-  if (images.length === 0 && ancestorChain.length > 0) {
-    for (const anc of ancestorChain) {
-      const foundImgs = await knex({ img: "specimen_images" })
-        .join({ s2: "specimens" }, "img.specimen_id", "s2.specimen_id")
-        .whereNot("s2.specimen_id", specimenId)
-        .whereNull("s2.deleted_at")
-        .whereRaw(
-          `s2.taxon_id IN (
-            WITH RECURSIVE sub_taxa AS (
-              SELECT taxon_id FROM taxa WHERE taxon_id = ?
-              UNION ALL
-              SELECT c.taxon_id FROM taxa c JOIN sub_taxa st ON c.parent_id = st.taxon_id
-            )
-            SELECT taxon_id FROM sub_taxa
-          )`,
-          [anc.id]
-        )
-        .modify((q) => {
-          if (!includePrivate) q.where("img.is_public", true).where("s2.is_public", true);
-        })
-        .select("img.*", "s2.gbif_scientific_name as reference_scientific_name")
-        .orderBy("img.uploaded_at", "desc")
-        .limit(6);
+  const speciesAnc = ancestorChain.find((a) => a.rank === "Species");
+  if (images.length === 0 && speciesAnc) {
+    const foundImgs = await knex({ img: "specimen_images" })
+      .join({ s2: "specimens" }, "img.specimen_id", "s2.specimen_id")
+      .whereNot("s2.specimen_id", specimenId)
+      .whereNull("s2.deleted_at")
+      .where("s2.taxon_id", speciesAnc.id)
+      .modify((q) => {
+        if (!includePrivate) q.where("img.is_public", true).where("s2.is_public", true);
+      })
+      .select("img.*", "s2.gbif_scientific_name as reference_scientific_name")
+      .orderBy("img.uploaded_at", "desc")
+      .limit(6);
 
-      if (foundImgs.length > 0) {
-        speciesImages = foundImgs.map((img) => ({
-          ...img,
-          reference_match_rank: anc.rank,
-          reference_taxon_name: anc.name,
-        }));
-        break;
-      }
+    if (foundImgs.length > 0) {
+      speciesImages = foundImgs.map((img) => ({
+        ...img,
+        reference_match_rank: speciesAnc.rank,
+        reference_taxon_name: speciesAnc.name,
+      }));
     }
   }
 

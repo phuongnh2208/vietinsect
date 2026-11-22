@@ -69,8 +69,19 @@ function toSpecimenDetailDto(row, { isAdmin = false } = {}) {
     lifeStageId: row.life_stage_id != null ? Number(row.life_stage_id) : null,
     statusId: row.status_id != null ? Number(row.status_id) : null,
     gpsAccuracyM: row.gps_accuracy_m != null ? Number(row.gps_accuracy_m) : null,
-    storageNumber: row.storage_number || null,
-    notes: row.notes || null,
+    coordinateUncertaintyM: row.coordinate_uncertainty_m != null ? Number(row.coordinate_uncertainty_m) : null,
+    identifiedBy: row.identified_by || null,
+    dateIdentified: formatDateOnly(row.date_identified),
+    license: row.license || null,
+    referencesUrl: row.references_url || null,
+    rightsHolder: row.rights_holder || null,
+    datasetName: row.dataset_name || null,
+    gbifFamily: row.gbif_family || null,
+    gbifGenus: row.gbif_genus || null,
+    gbifSpecies: row.gbif_species || null,
+    gbifIssues: isAdmin ? (row.gbif_issues || null) : undefined,
+    storageNumber: isAdmin ? (row.storage_number || null) : null,
+    notes: isAdmin ? (row.notes || null) : null,
     gbifLink:
       row.gbif_occurrence_id && /^\d+$/.test(String(row.gbif_occurrence_id).replace(/^gbif:/, ""))
         ? `https://www.gbif.org/occurrence/${String(row.gbif_occurrence_id).replace(/^gbif:/, "")}`

@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Icon from "../../../components/ui/Icon";
 
 export default function SpecimenTaxonomyHierarchy({
@@ -10,33 +11,34 @@ export default function SpecimenTaxonomyHierarchy({
   taxonRank,
   isAdmin = false,
 }) {
-  const basePath = isAdmin ? "/admin/specimens" : "/specimens/search";
+  const { t } = useTranslation();
+  const basePath = isAdmin ? "/admin/search" : "/search";
 
   const ranks = [
-    { rank: "Giới (Kingdom)", name: "Animalia", term: "kingdom" },
-    { rank: "Ngành (Phylum)", name: "Arthropoda", term: "phylum" },
-    { rank: "Lớp (Class)", name: "Insecta", term: "class" },
+    { rank: t("specimenDetail.rankKingdom"), name: "Animalia", term: "kingdom" },
+    { rank: t("specimenDetail.rankPhylum"), name: "Arthropoda", term: "phylum" },
+    { rank: t("specimenDetail.rankClass"), name: "Insecta", term: "class" },
     {
-      rank: "Bộ (Order)",
+      rank: t("specimenDetail.rankOrder"),
       name: orderName,
       term: "order",
       link: orderName ? `${basePath}?order=${encodeURIComponent(orderName)}` : null,
     },
     {
-      rank: "Họ (Family)",
+      rank: t("specimenDetail.rankFamily"),
       name: familyName,
       term: "family",
-      link: familyName ? `${basePath}?q=${encodeURIComponent(familyName)}` : null,
+      link: familyName ? `${basePath}?family=${encodeURIComponent(familyName)}` : null,
     },
     {
-      rank: "Giống/Chi (Genus)",
+      rank: t("specimenDetail.rankGenus"),
       name: genusName,
       term: "genus",
-      link: genusName ? `${basePath}?q=${encodeURIComponent(genusName)}` : null,
+      link: genusName ? `${basePath}?genus=${encodeURIComponent(genusName)}` : null,
       italic: true,
     },
     {
-      rank: "Loài (Species)",
+      rank: t("specimenDetail.rankSpecies"),
       name: scientificName,
       term: "species",
       italic: true,
@@ -49,11 +51,11 @@ export default function SpecimenTaxonomyHierarchy({
       <div className="taxonomy-header">
         <div className="taxonomy-header-title">
           <Icon name="tree" size={16} />
-          <span>Vị trí phân loại học (Taxonomic Classification)</span>
+          <span>{t("specimenDetail.taxonomyTitle")}</span>
         </div>
         {taxonRank && (
           <span className="taxonomy-rank-badge">
-            Bậc định danh: <strong>{taxonRank}</strong>
+            {t("specimenDetail.identifiedRank")} <strong>{taxonRank}</strong>
           </span>
         )}
       </div>
