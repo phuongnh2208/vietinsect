@@ -27,6 +27,8 @@ const DRY_RUN = args.includes("--dry-run");
 const ORDER_NAME = (() => { const i = args.indexOf("--order"); return i !== -1 ? args[i + 1] : "Blattodea"; })();
 const MAX_LIMIT = (() => { const i = args.indexOf("--limit"); return i !== -1 ? parseInt(args[i + 1], 10) : 1000; })();
 const NEW_OCC_OUT = (() => { const i = args.indexOf("--new-occ-out"); return i !== -1 ? args[i + 1] : null; })();
+const REVIEW_CSV_OUT = (() => { const i = args.indexOf("--review-out"); return i !== -1 ? args[i + 1] : null; })();
+const ROLLBACK_JSON_OUT = (() => { const i = args.indexOf("--rollback-out"); return i !== -1 ? args[i + 1] : null; })();
 
 const ORDER_KEYS = {
   coleoptera: 1470, lepidoptera: 797, hymenoptera: 1457, diptera: 811,
@@ -160,16 +162,45 @@ async function main() {
     }
 
     const touchedIds = [];
+    const reviewNeeded = [];
+    const rollbackLog = [];
+
     for (let i = 0; i < transformed.length; i += 100) {
       const chunk = transformed.slice(i, i + 100);
       await knex.transaction(async (trx) => {
         for (const rec of chunk) {
+          // Check existing record for review CSV & rollback snapshot
+          const prev = await trx("specimen_registry as sr")
+            .join("specimens as s", "s.specimen_id", "sr.specimen_id")
+            .where("sr.gbif_occurrence_id", rec.occId)
+            .select("sr.specimen_id", "sr.license", "sr.identified_by", "s.is_public", "s.locality_detail")
+            .first();
+
           const res = await upsertGbifRecord(trx, rec);
           if (res.action === "inserted") {
             stats.inserted++;
             newOccIds.push(rec.occId);
           } else {
             stats.updated++;
+            if (prev) {
+              rollbackLog.push({
+                specimen_id: Number(prev.specimen_id),
+                gbif_occurrence_id: rec.occId,
+                old_license: prev.license,
+                old_identified_by: prev.identified_by,
+                old_locality_detail: prev.locality_detail,
+              });
+              const lic = rec.normalizedLicense;
+              if (prev.is_public && (lic === "UNKNOWN" || lic.includes("ND"))) {
+                reviewNeeded.push({
+                  specimen_id: Number(prev.specimen_id),
+                  gbif_occurrence_id: rec.occId,
+                  dataset: rec.registry.dataset_name || rec.registry.gbif_dataset_key || "",
+                  license: rec.registry.license || "UNKNOWN",
+                  is_public: true,
+                });
+              }
+            }
           }
           touchedIds.push(res.specimenId);
         }
@@ -208,6 +239,19 @@ async function main() {
       fs.writeFileSync(NEW_OCC_OUT, newOccIds.join("\n") + "\n", "utf8");
       console.log(`📝 Wrote ${newOccIds.length} new gbif_occurrence_id(s) to ${NEW_OCC_OUT}`);
     }
+    if (REVIEW_CSV_OUT && reviewNeeded.length > 0) {
+      const lines = ["specimen_id,gbif_occurrence_id,dataset,license,is_public"];
+      for (const r of reviewNeeded) {
+        lines.push(`${r.specimen_id},"${r.gbif_occurrence_id}","${String(r.dataset).replace(/"/g, '""')}","${r.license}",${r.is_public}`);
+      }
+      fs.writeFileSync(REVIEW_CSV_OUT, lines.join("\n") + "\n", "utf8");
+      console.log(`⚠️ Wrote ${reviewNeeded.length} license review rows to ${REVIEW_CSV_OUT}`);
+    }
+    if (ROLLBACK_JSON_OUT && rollbackLog.length > 0) {
+      fs.writeFileSync(ROLLBACK_JSON_OUT, JSON.stringify(rollbackLog, null, 2), "utf8");
+      console.log(`📝 Wrote ${rollbackLog.length} rollback entries to ${ROLLBACK_JSON_OUT}`);
+    }
+    stats.licenseReviewNeeded = reviewNeeded.length;
 
     if (mongoClient) await mongoClient.close();
   }
