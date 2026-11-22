@@ -22,6 +22,17 @@ const LICENSE_URI_MAP = {
   "cc-by-nc-sa": "https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode",
 };
 
+function resolveOccurrenceLicenseUri(rawLicense) {
+  if (!rawLicense) return "";
+  const key = String(rawLicense).trim().toLowerCase().replace(/\s+/g, "-");
+  return LICENSE_URI_MAP[key] || String(rawLicense).trim();
+}
+
+function isNonCommercialLicense(rawLicense) {
+  if (!rawLicense) return false;
+  return String(rawLicense).toLowerCase().includes("nc");
+}
+
 function formatDateIso(val) {
   if (!val) return "";
   if (val instanceof Date) {
@@ -286,6 +297,8 @@ async function generateDwcaZip(filters = {}, { isAdmin = false } = {}) {
 
   const occLines = [occHeaders.join("\t")];
   for (const r of rows) {
+    // Bản ghi NC không được gộp vào gói DwC-A gắn giấy phép CC BY
+    if (isNonCommercialLicense(r.license)) continue;
     const sciName = r.gbif_scientific_name || r.taxon_name || "Insecta";
     const occId = r.gbif_occurrence_id || `urn:catalog:VAST:VIETINSECT:${r.specimen_code}`;
     occLines.push(
@@ -324,7 +337,7 @@ async function generateDwcaZip(filters = {}, { isAdmin = false } = {}) {
         r.life_stage_label_vn || "",
         r.status_label_vn || "",
         r.occurrence_remarks || r.notes || "",
-        r.license || LICENSE_URI_MAP["cc-by"],
+        resolveOccurrenceLicenseUri(r.license),
         r.identified_by || "",
         formatDateIso(r.date_identified),
         r.references_url || "",

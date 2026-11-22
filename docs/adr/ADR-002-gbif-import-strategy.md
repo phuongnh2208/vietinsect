@@ -20,3 +20,13 @@ GBIF Occurrence Search API (`/v1/occurrence/search`) áp dụng giới hạn c�
 ## Hệ quả
 - Không cần lưu credential GBIF trong repo; chạy an toàn trong môi trường dev/test.
 - Giới hạn của Search API (tối đa 100.000 bản ghi/lát, không tự cấp DOI download) được kiểm soát hoàn toàn bằng cơ chế chia lát.
+
+
+## Chính sách giấy phép bản ghi (Occurrence License)
+- **Dữ liệu mới:** `CC0`, `CC BY`, `CC BY-SA`, `CC BY-NC`, `CC BY-NC-SA` → `is_public = true`, lưu và hiển thị `license` theo từng bản ghi.
+- **Giấy phép trống / `UNKNOWN` / `All rights reserved` / `ND`:** → `is_public = false` chờ Admin duyệt.
+- **Xuất DwC-A / GBIF:** Giữ nguyên `license` của từng bản ghi trong `occurrence.txt` (không gán cứng `CC BY` chung); bản ghi có giấy phép `NC` bị loại khỏi gói DwC-A xuất bản dưới giấy phép `CC BY`.
+
+## Dữ liệu cá nhân & Quyền riêng tư (SRS §6.2 / Nghị định 13/2023/NĐ-CP)
+- Các trường `identified_by`, `rights_holder`, `recorded_by` chứa tên/tài khoản người đóng góp (VD tài khoản iNaturalist) được giữ lại và hiển thị công khai nhằm tuân thủ nghĩa vụ ghi nguồn bắt buộc của giấy phép Creative Commons (CC BY / CC BY-SA / CC BY-NC).
+- Hệ thống yêu cầu bổ sung cơ chế cho phép Admin ẩn/che tên người đóng góp theo yêu cầu chính đáng (theo Nghị định 13/2023/NĐ-CP) — đã ghi nhận thành `DEF-120` trong `docs/audit/02-defects.md`.

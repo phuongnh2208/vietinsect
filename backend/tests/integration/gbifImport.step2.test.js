@@ -87,7 +87,7 @@ describe("Step 2 - GBIF Import Upgrade (Darwin Core 22 fields, Admin-safe Upsert
     expect(rec.registry.gbif_species).toBe("Supella longipalpa");
   });
 
-  test("missing fields produce NULL (no fake values) and NC/unknown license defaults to is_public=false", () => {
+  test("missing fields produce NULL (no fake values); CC BY-NC is public; unknown/empty license defaults to is_public=false", () => {
     const minimalNc = {
       gbifID: 9999999001,
       occurrenceID: "https://example.org/occ/nc-test",
@@ -98,22 +98,31 @@ describe("Step 2 - GBIF Import Upgrade (Darwin Core 22 fields, Admin-safe Upsert
       license: "http://creativecommons.org/licenses/by-nc/4.0/legalcode",
     };
 
-    const rec = transformGbifRecord(minimalNc, {
-      taxaLookup: { byName: new Map(), byGbifKey: new Map(), orderByName: new Map([["blattodea", 11]]) },
-    });
+    const minimalUnknown = {
+      ...minimalNc,
+      gbifID: 9999999002,
+      occurrenceID: "https://example.org/occ/unknown-test",
+      license: null,
+    };
+
+    const lookup = { byName: new Map(), byGbifKey: new Map(), orderByName: new Map([["blattodea", 11]]) };
+    const recNc = transformGbifRecord(minimalNc, { taxaLookup: lookup });
+    const recUnknown = transformGbifRecord(minimalUnknown, { taxaLookup: lookup });
 
     expect(normalizeOccurrenceLicense(minimalNc.license)).toBe("CC BY-NC");
-    expect(shouldBePublicByLicense("CC BY-NC")).toBe(false);
+    expect(shouldBePublicByLicense("CC BY-NC")).toBe(true);
+    expect(shouldBePublicByLicense("CC BY-NC-SA")).toBe(true);
     expect(shouldBePublicByLicense("UNKNOWN")).toBe(false);
-    expect(rec.specimenBase.is_public).toBe(false);
-    expect(rec.specimenBase.locality_detail).toBeNull();
-    expect(rec.registry.identified_by).toBeNull();
-    expect(rec.registry.date_identified).toBeNull();
-    expect(rec.registry.coordinate_uncertainty_m).toBeNull();
-    expect(rec.registry.references_url).toBeNull();
-    expect(rec.registry.rights_holder).toBeNull();
-    expect(rec.registry.dataset_name).toBeNull();
-    expect(rec.registry.gbif_issues).toBeNull();
+    expect(recNc.specimenBase.is_public).toBe(true);
+    expect(recUnknown.specimenBase.is_public).toBe(false);
+    expect(recNc.specimenBase.locality_detail).toBeNull();
+    expect(recNc.registry.identified_by).toBeNull();
+    expect(recNc.registry.date_identified).toBeNull();
+    expect(recNc.registry.coordinate_uncertainty_m).toBeNull();
+    expect(recNc.registry.references_url).toBeNull();
+    expect(recNc.registry.rights_holder).toBeNull();
+    expect(recNc.registry.dataset_name).toBeNull();
+    expect(recNc.registry.gbif_issues).toBeNull();
   });
 
   test("upsert is idempotent (no duplicates) and NEVER overwrites Admin-edited fields", async () => {

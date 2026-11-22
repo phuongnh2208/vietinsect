@@ -701,3 +701,11 @@
 - **Kỳ vọng:** Khi xuất DwC-A, cần ghi rõ nguồn phân loại (CoL backbone) và xử lý nhất quán giữa `family` của hệ thống với `gbif_raw`.
 - **Đề xuất:** Chuẩn hóa metadata `eml.xml` và tài liệu mapping DwC-A nêu rõ CoL backbone.
 - **Công:** XS
+
+
+### DEF-120 · Low · Privacy/Compliance
+- **Vi phạm:** SRS §6.2 & Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân.
+- **Hiện trạng:** Các trường `recorded_by`, `identified_by`, `rights_holder` (tên/tài khoản người dùng iNaturalist) được hiển thị công khai để đáp ứng yêu cầu ghi nguồn CC BY, nhưng chưa có cờ/cơ chế để Admin ẩn tên người đóng góp khi có yêu cầu rút/ẩn thông tin cá nhân.
+- **Kỳ vọng:** Admin có thể bật cờ ẩn tên người đóng góp trên từng mẫu vật/tài khoản, hiển thị thay thế dạng `"Contributor (redacted)"` trên giao diện công khai.
+- **Đề xuất:** Bổ sung cột/cờ `hide_contributor_name` và API quản trị ẩn tên theo yêu cầu.
+- **Công:** S

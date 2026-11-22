@@ -68,11 +68,18 @@ function normalizeOccurrenceLicense(raw) {
 }
 
 /**
- * Bản ghi có giấy phép NC / ND / UNKNOWN mặc định is_public = false chờ Admin duyệt.
- * Chỉ CC0, CC BY, CC BY-SA được public mặc định.
+ * Chính sách giấy phép bản ghi (occurrence license):
+ * - CC0, CC BY, CC BY-SA, CC BY-NC, CC BY-NC-SA -> is_public = true cho dữ liệu mới (hiển thị license theo từng bản ghi)
+ * - Trống / UNKNOWN / All rights reserved / ND -> is_public = false chờ Admin duyệt
  */
 function shouldBePublicByLicense(normalizedLicense) {
-  return normalizedLicense === "CC0" || normalizedLicense === "CC BY" || normalizedLicense === "CC BY-SA";
+  return (
+    normalizedLicense === "CC0" ||
+    normalizedLicense === "CC BY" ||
+    normalizedLicense === "CC BY-SA" ||
+    normalizedLicense === "CC BY-NC" ||
+    normalizedLicense === "CC BY-NC-SA"
+  );
 }
 
 function normalizeSex(sex) {
