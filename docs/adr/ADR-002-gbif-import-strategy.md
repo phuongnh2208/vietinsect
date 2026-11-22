@@ -30,3 +30,9 @@ GBIF Occurrence Search API (`/v1/occurrence/search`) áp dụng giới hạn c�
 ## Dữ liệu cá nhân & Quyền riêng tư (SRS §6.2 / Nghị định 13/2023/NĐ-CP)
 - Các trường `identified_by`, `rights_holder`, `recorded_by` chứa tên/tài khoản người đóng góp (VD tài khoản iNaturalist) được giữ lại và hiển thị công khai nhằm tuân thủ nghĩa vụ ghi nguồn bắt buộc của giấy phép Creative Commons (CC BY / CC BY-SA / CC BY-NC).
 - Hệ thống yêu cầu bổ sung cơ chế cho phép Admin ẩn/che tên người đóng góp theo yêu cầu chính đáng (theo Nghị định 13/2023/NĐ-CP) — đã ghi nhận thành `DEF-120` trong `docs/audit/02-defects.md`.
+
+
+## Chính sách ảnh (Bước 3 – Kế hoạch) & Nghĩa vụ CC BY-SA
+- Sử dụng giấy phép của **từng ảnh** (`multimedia[].license`), không dùng giấy phép của bản ghi occurrence.
+- Chỉ tải về MinIO ảnh có giấy phép `CC0`, `CC BY`, `CC BY-SA`; ảnh `NC`/`ND`/không rõ không tải về MinIO (chỉ lưu URL nguồn + ghi nguồn).
+- **Nghĩa vụ CC BY-SA (ShareAlike):** Mọi bản phái sinh/chỉnh sửa từ ảnh `CC BY-SA` phải được chia sẻ lại dưới cùng giấy phép `CC BY-SA` tương ứng và giữ nguyên thông tin ghi nguồn (`creator`, `rights_holder`, `license`, `source_url`, `publisher`).

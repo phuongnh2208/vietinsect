@@ -8,39 +8,7 @@ const {
   shouldBePublicByLicense,
 } = require("../../scripts/lib/gbifTransform");
 
-// Fixture JSON chính xác của bản ghi GBIF 6885436349 (Supella longipalpa, Hồ Chí Minh)
-const FIXTURE_6885436349 = {
-  gbifID: 6885436349,
-  occurrenceID: "https://www.inaturalist.org/observations/412244579",
-  datasetKey: "50c9509d-22c7-4a22-a47d-8c48425ef4a7",
-  datasetName: "iNaturalist research-grade observations",
-  basisOfRecord: "HUMAN_OBSERVATION",
-  catalogNumber: "412244579",
-  institutionCode: "iNaturalist",
-  recordedBy: "insect ID",
-  identifiedBy: "insect ID",
-  dateIdentified: "2026-11-01T19:29:15Z",
-  eventDate: "2026-10-30T22:13:52",
-  year: 2026,
-  month: 10,
-  day: 30,
-  countryCode: "VN",
-  stateProvince: "Hồ Chí Minh city",
-  verbatimLocality: "Alley 2 Ap Bac, Tan Binh, Ho Chi Minh City, VN",
-  decimalLatitude: 10.799024,
-  decimalLongitude: 106.642643,
-  coordinateUncertaintyInMeters: 27004,
-  order: "Blattodea",
-  family: "Pseudophyllodromiidae",
-  genus: "Supella",
-  species: "Supella longipalpa",
-  scientificName: "Supella (Supella) longipalpa (Fabricius, 1798)",
-  speciesKey: 1995029,
-  license: "http://creativecommons.org/licenses/by/4.0/legalcode",
-  references: "https://www.inaturalist.org/observations/412244579",
-  rightsHolder: "insect ID",
-  issues: ["CONTINENT_DERIVED_FROM_COORDINATES", "COORDINATE_ROUNDED", "TAXON_MATCH_HIGHERRANK"],
-};
+const FIXTURE_6885436349 = require("../fixtures/gbif_6885436349.json");
 
 describe("Step 2 - GBIF Import Upgrade (Darwin Core 22 fields, Admin-safe Upsert, License Policy)", () => {
   const createdSpecimenIds = [];
@@ -82,7 +50,7 @@ describe("Step 2 - GBIF Import Upgrade (Darwin Core 22 fields, Admin-safe Upsert
     expect(rec.registry.rights_holder).toBe("insect ID");
     expect(rec.registry.dataset_name).toBe("iNaturalist research-grade observations");
     expect(JSON.parse(rec.registry.gbif_issues)).toContain("COORDINATE_ROUNDED");
-    expect(rec.registry.gbif_family).toBe("Pseudophyllodromiidae");
+    expect(rec.registry.gbif_family).toBe("Ectobiidae");
     expect(rec.registry.gbif_genus).toBe("Supella");
     expect(rec.registry.gbif_species).toBe("Supella longipalpa");
   });

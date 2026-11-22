@@ -697,9 +697,9 @@
 
 ### DEF-119 · Low · Data
 - **Vi phạm:** Nhất quán phân loại khi xuất Darwin Core Archive (DwC-A).
-- **Hiện trạng:** Bảng `taxa` dùng Catalogue of Life (CoL) làm backbone nên một số loài có họ khác với GBIF Backbone (ví dụ *Supella longipalpa*: CoL = `Ectobiidae`, GBIF = `Pseudophyllodromiidae`).
+- **Hiện trạng:** Bảng `taxa` dùng Catalogue of Life (CoL) làm backbone nên một số loài có họ khác với GBIF Backbone; ngoài ra trang web GBIF hiển thị theo CoL interpretation (ví dụ *Supella longipalpa* trên web GBIF hiện `Pseudophyllodromiidae`, nhưng GBIF Occurrence API `/v1/occurrence/6885436349` trả `family = Ectobiidae`).
 - **Kỳ vọng:** Khi xuất DwC-A, cần ghi rõ nguồn phân loại (CoL backbone) và xử lý nhất quán giữa `family` của hệ thống với `gbif_raw`.
-- **Đề xuất:** Chuẩn hóa metadata `eml.xml` và tài liệu mapping DwC-A nêu rõ CoL backbone.
+- **Đề xuất:** Chuẩn hóa metadata `eml.xml` và tài liệu mapping DwC-A nêu rõ CoL backbone; giữ nguyên `gbif_family` đúng giá trị trả về từ GBIF API.
 - **Công:** XS
 
 
