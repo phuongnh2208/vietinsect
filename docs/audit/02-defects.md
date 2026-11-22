@@ -696,3 +696,18 @@
 
 
 
+
+
+### DEF-111 · Medium · Data
+- **Vi phạm:** Nhất quán lineage phân loại (homonym / sai Bộ tổ tiên).
+- **Hiện trạng:** Mẫu vật `specimen_id=130396` đang gắn `Order = Plecoptera`, nhưng `gbif_scientific_name = Anisoptera` (là Phân bộ / Chi thuộc `Odonata`). Script relink đã chặn không tự động sửa (`homonym_order_mismatch(plecoptera!=odonata)`).
+- **Kỳ vọng:** Mẫu vật được đối chiếu lại bản ghi GBIF gốc (`gbif_occurrence_id`) để xác định đúng Bộ (`Odonata` hay `Plecoptera`).
+- **Đề xuất:** Kiểm tra bản ghi gốc trên GBIF và cập nhật thủ công hoặc qua pipeline Bước 2 (lưu `gbif_raw`).
+- **Công:** XS
+
+### DEF-112 · High · Data
+- **Vi phạm:** Kiểm toán dữ liệu xóa mềm (`audit_logs` cho hành động xóa hàng loạt).
+- **Hiện trạng:** Có **2.020** mẫu vật có `deleted_at = 2026-11-18 09:38:03.379427+00` (cùng 1 micro giây, `distinct_minutes = 1`) nhưng **không có bất kỳ bản ghi `DELETE` nào tương ứng trong `audit_logs`** tại thời điểm đó — dấu hiệu bị xóa mềm bởi một câu lệnh/script SQL bulk trực tiếp ngoài API.
+- **Kỳ vọng:** Xác định rõ nguồn gốc đợt xóa mềm 2.020 mẫu vật (dọn dữ liệu rác, test hay sự cố) và ghi nhận biên bản kiểm toán.
+- **Đề xuất:** Không tự động khôi phục hay chạm vào 2.020 bản ghi này; chờ chủ sở hữu dữ liệu xác nhận nguồn gốc.
+- **Công:** S

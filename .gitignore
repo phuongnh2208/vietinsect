@@ -8,3 +8,8 @@ build/
 backend/logs/
 coverage/
 backend/coverage/
+*.dump
+backups/
+backend/preview_changes.csv
+backend/relink_conflicts.csv
+backend/unmatched_taxa.csv
