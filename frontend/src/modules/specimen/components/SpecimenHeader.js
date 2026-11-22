@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Icon from "../../../components/ui/Icon";
 import { getOrderColor } from "../specimen.constants";
 
@@ -11,6 +12,7 @@ export default function SpecimenHeader({
   onOpenLabelModal,
   onCopyText,
 }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
@@ -26,11 +28,11 @@ export default function SpecimenHeader({
   };
 
   const handleShare = () => {
-    onCopyText(window.location.href, "Đã sao chép liên kết hồ sơ mẫu vật");
+    onCopyText(window.location.href, t("specimenDetail.copiedLink"));
   };
 
   const handleCopyCode = () => {
-    onCopyText(specimen.specimenCode, `Đã sao chép mã ${specimen.specimenCode}`);
+    onCopyText(specimen.specimenCode, t("specimenDetail.copiedCode", { code: specimen.specimenCode }));
   };
 
   const handleDownloadDwc = () => {
@@ -58,7 +60,7 @@ export default function SpecimenHeader({
       institutionCode: specimen.institutionCode,
       collectionCode: specimen.catalogNumber,
       datasetKey: specimen.gbifDatasetKey,
-      license: "CC BY 4.0",
+      license: specimen.license || null,
       retrievedAt: new Date().toISOString(),
     };
     const blob = new Blob([JSON.stringify(dwcJson, null, 2)], {
@@ -81,16 +83,16 @@ export default function SpecimenHeader({
             type="button"
             className="vi-back-page-btn"
             onClick={handleGoBack}
-            title="Quay lại trang trước"
+            title={t("common.back")}
           >
             <Icon name="chevron-left" size={15} />
-            <span>Quay lại</span>
+            <span>{t("common.back")}</span>
           </button>
 
           <nav className="vi-specimen-breadcrumb" aria-label="Breadcrumb">
-            <Link to={isAdmin ? "/admin/dashboard" : "/"}>Trang chủ</Link>
+            <Link to={isAdmin ? "/admin/dashboard" : "/"}>{t("navigation.home")}</Link>
             <Icon name="chevron-right" size={12} />
-            <Link to={listFallbackPath}>Bộ sưu tập Mẫu vật</Link>
+            <Link to={listFallbackPath}>{t("specimenDetail.collection")}</Link>
             <Icon name="chevron-right" size={12} />
             <span className="breadcrumb-current">{specimen.specimenCode}</span>
           </nav>
@@ -102,7 +104,7 @@ export default function SpecimenHeader({
         <div className="specimen-title-left">
           <div className="specimen-id-chip">
             <Icon name="bug" size={13} />
-            <span>HỒ SƠ MẪU VẬT DARWIN CORE</span>
+            <span>{t("specimenDetail.darwinCoreRecord")}</span>
             <span className="specimen-code-tag">{specimen.specimenCode}</span>
           </div>
 
@@ -112,7 +114,7 @@ export default function SpecimenHeader({
 
           {specimen.commonNameVn && (
             <div className="specimen-common-name">
-              <span>Tên tiếng Việt: </span>
+              <span>{t("specimenDetail.commonNameLabel")}</span>
               <strong>{specimen.commonNameVn}</strong>
             </div>
           )}
@@ -123,18 +125,18 @@ export default function SpecimenHeader({
               className="taxonomy-badge"
               style={{ backgroundColor: orderColor, color: "#FFFFFF", borderColor: "#111111" }}
             >
-              Bộ: {specimen.orderName || "Insecta"}
+              {t("specimenDetail.orderPrefix")}: {specimen.orderName || "Insecta"}
             </span>
 
             {specimen.familyName && (
               <span className="taxonomy-badge family-badge">
-                Họ: {specimen.familyName}
+                {t("specimenDetail.familyPrefix")}: {specimen.familyName}
               </span>
             )}
 
             {specimen.genusName && (
               <span className="taxonomy-badge genus-badge">
-                Giống: <em>{specimen.genusName}</em>
+                {t("specimenDetail.genusPrefix")}: <em>{specimen.genusName}</em>
               </span>
             )}
 
@@ -150,7 +152,6 @@ export default function SpecimenHeader({
                 target="_blank"
                 rel="noreferrer"
                 className="taxonomy-badge gbif-link-badge"
-                title="Mở bản ghi gốc trên cổng dữ liệu quốc tế GBIF"
               >
                 GBIF #{String(specimen.gbifOccurrenceId).replace(/^gbif:/, "")} ↗
               </a>
@@ -158,37 +159,34 @@ export default function SpecimenHeader({
           </div>
         </div>
 
-        {/* 3. Action Toolbar: User chỉ thấy nút công khai, Admin thấy thêm nút quản trị */}
+        {/* 3. Action Toolbar */}
         <div className="specimen-actions-toolbar">
           <div className="actions-group-public">
             <button
               type="button"
               className="button button-sm button-ghost"
               onClick={handleCopyCode}
-              title="Sao chép mã định danh mẫu vật"
             >
               <Icon name="copy" size={14} />
-              Mã ID
+              {t("specimenDetail.copyId")}
             </button>
 
             <button
               type="button"
               className="button button-sm button-ghost"
               onClick={handleShare}
-              title="Sao chép liên kết chia sẻ"
             >
               <Icon name="share" size={14} />
-              Chia sẻ
+              {t("specimenDetail.share")}
             </button>
 
             <button
               type="button"
               className="button button-sm button-ghost"
               onClick={handleDownloadDwc}
-              title="Tải tệp JSON chuẩn Darwin Core"
             >
               <Icon name="download" size={14} />
-              Xuất DwC
+              {t("specimenDetail.exportDwc")}
             </button>
           </div>
 
@@ -198,40 +196,36 @@ export default function SpecimenHeader({
                 type="button"
                 className="button button-sm button-ghost"
                 onClick={onOpenLabelModal}
-                title="Xem và in nhãn tiêu bản cắm kim bảo tàng"
               >
                 <Icon name="printer" size={14} />
-                In nhãn
+                {t("specimenDetail.printLabel")}
               </button>
 
               <button
                 type="button"
                 className="button button-sm button-ghost"
                 onClick={onTogglePublic}
-                title="Chuyển đổi trạng thái Công khai / Nội bộ"
               >
                 <Icon name={specimen.isPublic ? "lock" : "globe"} size={14} />
-                {specimen.isPublic ? "Ẩn nội bộ" : "Công khai"}
+                {specimen.isPublic ? t("specimenDetail.hideInternal") : t("common.public")}
               </button>
 
               <button
                 type="button"
                 className="button button-sm button-primary"
                 onClick={() => navigate(`/admin/specimens/edit?id=${specimen.id}`)}
-                title="Chỉnh sửa thông tin mẫu vật"
               >
                 <Icon name="edit" size={14} />
-                Chỉnh sửa
+                {t("common.edit")}
               </button>
 
               <button
                 type="button"
                 className="button button-sm button-danger"
                 onClick={() => setDeleteConfirmOpen(true)}
-                title="Xóa mềm mẫu vật khỏi hệ thống"
               >
                 <Icon name="trash" size={14} />
-                Xóa
+                {t("common.delete")}
               </button>
             </div>
           )}
