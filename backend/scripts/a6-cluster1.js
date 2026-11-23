@@ -25,6 +25,7 @@ const { transformGbifRecord, upsertGbifRecord } = require("./lib/gbifTransform")
 const args = process.argv.slice(2);
 const NO_INSERT = args.includes("--no-insert");
 const START_ORDER = (() => { const i = args.indexOf("--start-order"); return i !== -1 ? args[i + 1] : null; })();
+const ONLY_ORDER = (() => { const i = args.indexOf("--only-order"); return i !== -1 ? args[i + 1] : null; })();
 
 const httpsAgent = new https.Agent({ keepAlive: false, family: 4 });
 const HEADERS = { "User-Agent": "VietInsect-GBIF-Importer/2.0 (vietinsect.vast.vn)" };
@@ -46,6 +47,7 @@ const CLUSTER1_ORDERS = [
   { order: "Ephemeroptera", taxonKey: 1225, expected: 83 },
   { order: "Dermaptera",    taxonKey: 1224, expected: 59 },
   { order: "Hemiptera",     taxonKey: 809,  expected: 38 },
+  { order: "Odonata",       taxonKey: 789,  expected: 6982 },
 ];
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
@@ -142,10 +144,13 @@ async function main() {
     mongoCol = mongoClient.db().collection("gbif_raw");
   }
 
-  const startIdx = START_ORDER
-    ? Math.max(0, CLUSTER1_ORDERS.findIndex((o) => o.order.toLowerCase() === START_ORDER.toLowerCase()))
-    : 0;
-  const activeOrders = CLUSTER1_ORDERS.slice(startIdx);
+  const activeOrders = ONLY_ORDER
+    ? CLUSTER1_ORDERS.filter((o) => o.order.toLowerCase() === ONLY_ORDER.toLowerCase())
+    : CLUSTER1_ORDERS.slice(
+        START_ORDER
+          ? Math.max(0, CLUSTER1_ORDERS.findIndex((o) => o.order.toLowerCase() === START_ORDER.toLowerCase()))
+          : 0
+      );
 
   // Preload existing gbif_occurrence_id set for --no-insert mode
   const existingOccSet = new Set(
