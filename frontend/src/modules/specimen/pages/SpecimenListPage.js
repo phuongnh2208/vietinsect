@@ -1,11 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Icon from "../../../components/ui/Icon";
 import LoadingState from "../../../components/ui/LoadingState";
 import EmptyState from "../../../components/ui/EmptyState";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { useToast } from "../../../components/ui/ToastProvider";
 import useIsAdminContext from "../../../hooks/useIsAdminContext";
+import { formatNumber } from "../../../utils/formatters";
+import getApiErrorMessage from "../../../utils/apiError";
 import specimenService from "../specimen.service";
 import SpecimenForm from "../components/SpecimenForm";
 import {
@@ -16,6 +19,7 @@ import {
 } from "../specimen.constants";
 
 export default function SpecimenListPage() {
+  const { t, i18n } = useTranslation();
   const isAdmin = useIsAdminContext();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -25,6 +29,7 @@ export default function SpecimenListPage() {
   const [qInput, setQInput] = useState(() => searchParams.get("q") || "");
   const [filters, setFilters] = useState(() => ({
     q: searchParams.get("q") || "",
+    taxonId: searchParams.get("taxonId") || "",
     order: searchParams.get("order") || "",
     provinceId: searchParams.get("provinceId") || "",
     basisOfRecord: searchParams.get("basisOfRecord") || "",
@@ -66,11 +71,11 @@ export default function SpecimenListPage() {
 
   // Tải danh mục & thống kê tổng quan
   const refreshStats = useCallback(() => {
-    specimenService.getStats().then(setStats).catch(() => {});
+    specimenService.getStats().then(setStats).catch(() => { });
   }, []);
 
   useEffect(() => {
-    specimenService.getLookups().then(setLookups).catch(() => {});
+    specimenService.getLookups().then(setLookups).catch(() => { });
     refreshStats();
   }, [refreshStats]);
 
@@ -93,6 +98,7 @@ export default function SpecimenListPage() {
     try {
       const queryPayload = {
         ...filters,
+        taxonId: filters.taxonId ? Number(filters.taxonId) : undefined,
         isPublic:
           isAdmin && filters.isPublic !== "" ? filters.isPublic === "true" : undefined,
         lat: showSpatialFilter && filters.lat !== "" ? Number(filters.lat) : undefined,
@@ -108,10 +114,10 @@ export default function SpecimenListPage() {
       setSelectedIds([]);
       setStatus("success");
     } catch (err) {
-      setErrorMsg(err.response?.data?.message || "Không thể tải danh sách mẫu vật");
+      setErrorMsg(getApiErrorMessage(err, t));
       setStatus("error");
     }
-  }, [filters, isAdmin, showSpatialFilter]);
+  }, [filters, isAdmin, showSpatialFilter, t]);
 
   useEffect(() => {
     fetchList();
@@ -121,10 +127,11 @@ export default function SpecimenListPage() {
   useEffect(() => {
     const nextParams = {};
     if (filters.q) nextParams.q = filters.q;
+    if (filters.taxonId) nextParams.taxonId = filters.taxonId;
     if (filters.order) nextParams.order = filters.order;
     if (filters.provinceId) nextParams.provinceId = filters.provinceId;
     setSearchParams(nextParams, { replace: true });
-  }, [filters.q, filters.order, filters.provinceId, setSearchParams]);
+  }, [filters.q, filters.taxonId, filters.order, filters.provinceId, setSearchParams]);
 
   const updateFilter = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
@@ -135,6 +142,7 @@ export default function SpecimenListPage() {
     setShowSpatialFilter(false);
     setFilters({
       q: "",
+      taxonId: "",
       order: "",
       provinceId: "",
       basisOfRecord: "",
@@ -275,13 +283,11 @@ export default function SpecimenListPage() {
         <div>
           <div className="eyebrow">
             <Icon name={isAdmin ? "database" : "search"} size={14} />
-            {isAdmin ? "Quản lý Mẫu vật" : "Cổng Tra cứu Dữ liệu Mở"}
+            {isAdmin ? t("specimen.title") : t("specimen.publicPortalEyebrow")}
           </div>
-          <h1>{isAdmin ? "Danh sách quản lý mẫu vật" : "Tra cứu & Khai thác mẫu vật số"}</h1>
+          <h1>{isAdmin ? t("specimen.adminHeading") : t("specimen.publicHeading")}</h1>
           <p className="page-description">
-            {isAdmin
-              ? "Quản trị tập trung kho mẫu vật Darwin Core / GBIF, kiểm soát chia sẻ công khai và truy vấn không gian PostGIS."
-              : "Khám phá cơ sở dữ liệu mẫu vật côn trùng Việt Nam với bộ lọc phân loại học, tỉnh thành và bán kính tọa độ GPS."}
+            {isAdmin ? t("specimen.adminDesc") : t("specimen.publicDesc")}
           </p>
         </div>
 
@@ -292,17 +298,16 @@ export default function SpecimenListPage() {
             onClick={() => navigate(isAdmin ? "/admin/map" : "/map")}
           >
             <Icon name="map" size={16} />
-            Xem trên Bản đồ GIS
+            {t("specimen.viewOnMap")}
           </button>
           <button
             type="button"
             className="button button-ghost"
             onClick={() => handleServerExport("dwca")}
             disabled={Boolean(exportingFmt)}
-            title="Xuất gói Darwin Core Archive (.zip) chuẩn GBIF (tự động loại ảnh NC/ND)"
           >
             <Icon name="archive" size={16} />
-            {exportingFmt === "dwca" ? "Đang đóng gói..." : "DwC-A (.zip)"}
+            {exportingFmt === "dwca" ? t("specimen.packaging") : "DwC-A (.zip)"}
           </button>
           <button
             type="button"
@@ -311,7 +316,7 @@ export default function SpecimenListPage() {
             disabled={Boolean(exportingFmt)}
           >
             <Icon name="file" size={16} />
-            {exportingFmt === "xlsx" ? "Đang xuất..." : "Excel (.xlsx)"}
+            {exportingFmt === "xlsx" ? t("specimen.exporting") : "Excel (.xlsx)"}
           </button>
           <button
             type="button"
@@ -320,21 +325,21 @@ export default function SpecimenListPage() {
             disabled={Boolean(exportingFmt)}
           >
             <Icon name="globe" size={16} />
-            {exportingFmt === "geojson" ? "Đang xuất..." : "GeoJSON"}
+            {exportingFmt === "geojson" ? t("specimen.exporting") : "GeoJSON"}
           </button>
           {isAdmin ? (
             <>
               <Link to="/admin/specimens/import" className="button button-ghost">
                 <Icon name="upload" size={16} />
-                Nhập Excel / CSV
+                {t("specimen.importExcel")}
               </Link>
               <Link to="/admin/specimens/batch-edit" className="button button-ghost">
                 <Icon name="edit" size={16} />
-                Sửa hàng loạt
+                {t("specimen.batchEdit")}
               </Link>
               <Link to="/admin/specimens/labels" className="button button-ghost">
                 <Icon name="printer" size={16} />
-                In nhãn mẫu
+                {t("specimen.printLabels")}
               </Link>
               <button
                 type="button"
@@ -345,13 +350,13 @@ export default function SpecimenListPage() {
                 }}
               >
                 <Icon name="plus" size={16} />
-                Thêm mẫu vật
+                {t("specimen.addSpecimen")}
               </button>
             </>
           ) : (
             <Link to="/search/advanced" className="button button-secondary">
               <Icon name="filter" size={16} />
-              Tìm kiếm Nâng cao
+              {t("navigation.advancedSearch")}
             </Link>
           )}
         </div>
@@ -362,53 +367,59 @@ export default function SpecimenListPage() {
         <div className="metric-grid" style={{ marginBottom: 20 }}>
           <article className="card metric-card">
             <div className="metric-head">
-              <span>Tổng mẫu vật</span>
+              <span>{t("specimen.totalSpecimens")}</span>
               <span className="metric-icon">
                 <Icon name="bug" size={16} />
               </span>
             </div>
-            <div className="metric-value">{(stats.totalSpecimens || 0).toLocaleString()}</div>
+            <div className="metric-value">{formatNumber(stats.totalSpecimens || 0, i18n.language)}</div>
             <div className="metric-foot">
-              {(stats.withCoordinates || 0).toLocaleString()} mẫu có tọa độ GPS
+              {t("specimen.withGps", { count: formatNumber(stats.withCoordinates || 0, i18n.language) })}
             </div>
           </article>
 
           <article className="card metric-card">
             <div className="metric-head">
-              <span>Loài đã số hóa</span>
+              <span>{t("specimen.digitizedSpecies")}</span>
               <span className="metric-icon">
                 <Icon name="leaf" size={16} />
               </span>
             </div>
             <div className="metric-value">
-              {(stats.taxa?.species || stats.distinctBinomialSpecies || 0).toLocaleString()}
+              {formatNumber(stats.taxa?.species || stats.distinctBinomialSpecies || 0, i18n.language)}
             </div>
             <div className="metric-foot">
-              {(stats.taxa?.families || 0).toLocaleString()} Họ · {(stats.taxa?.genera || 0).toLocaleString()} Giống
+              {t("specimen.familiesGenera", {
+                families: formatNumber(stats.taxa?.families || 0, i18n.language),
+                genera: formatNumber(stats.taxa?.genera || 0, i18n.language),
+              })}
             </div>
           </article>
 
           <article className="card metric-card">
             <div className="metric-head">
-              <span>Độ phủ địa lý</span>
+              <span>{t("specimen.geoCoverage")}</span>
               <span className="metric-icon">
                 <Icon name="map" size={16} />
               </span>
             </div>
             <div className="metric-value">{stats.provincesCovered || 0} / 34</div>
-            <div className="metric-foot">Tỉnh / Thành phố chuẩn hóa</div>
+            <div className="metric-foot">{t("specimen.standardizedProvinces")}</div>
           </article>
 
           <article className="card metric-card">
             <div className="metric-head">
-              <span>Kết quả khớp lọc</span>
+              <span>{t("specimen.matchingResults")}</span>
               <span className="metric-icon">
                 <Icon name="filter" size={16} />
               </span>
             </div>
-            <div className="metric-value">{(pagination.total || 0).toLocaleString()}</div>
+            <div className="metric-value">{formatNumber(pagination.total || 0, i18n.language)}</div>
             <div className="metric-foot">
-              Trang {pagination.page} / {Math.max(1, pagination.totalPages)}
+              {t("specimen.pageOf", {
+                page: pagination.page,
+                total: Math.max(1, pagination.totalPages),
+              })}
             </div>
           </article>
         </div>
@@ -418,13 +429,13 @@ export default function SpecimenListPage() {
       <section className="card panel" style={{ marginBottom: 18 }}>
         <div className="vi-filter-grid">
           <div className="form-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="flt-q">Từ khóa (Tên loài, Mã số, Địa điểm, Người thu)</label>
+            <label htmlFor="flt-q">{t("specimen.keywordLabel")}</label>
             <div style={{ position: "relative" }}>
               <input
                 id="flt-q"
                 value={qInput}
                 onChange={(e) => setQInput(e.target.value)}
-                placeholder="VD: Papilio, GBIF-, Cúc Phương..."
+                placeholder={t("specimen.keywordPlaceholder")}
               />
               {qInput ? (
                 <button
@@ -432,7 +443,7 @@ export default function SpecimenListPage() {
                   className="icon-button"
                   style={{ position: "absolute", right: 4, top: 4, width: 32, height: 32 }}
                   onClick={() => setQInput("")}
-                  aria-label="Xóa từ khóa"
+                  aria-label={t("specimen.clearKeyword")}
                 >
                   <Icon name="close" size={14} />
                 </button>
@@ -441,29 +452,36 @@ export default function SpecimenListPage() {
           </div>
 
           <div className="form-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="flt-order">Bộ côn trùng (Order)</label>
+            <label htmlFor="flt-order">{t("specimen.order")}</label>
             <select
               id="flt-order"
               value={filters.order}
               onChange={(e) => updateFilter("order", e.target.value)}
             >
-              <option value="">Tất cả 16 Bộ</option>
-              {lookups.orders.map((o) => (
-                <option key={o.id} value={o.scientificName}>
-                  {o.scientificName} {o.vernacularNameVn ? `(${o.vernacularNameVn})` : ""}
-                </option>
-              ))}
+              <option value="">{t("specimen.allOrders")}</option>
+              {lookups.orders.map((o) => {
+                const localizedName = t(`orders.${o.scientificName}`, {
+                  defaultValue: i18n.language.startsWith("en")
+                    ? o.vernacularNameEn || ""
+                    : o.vernacularNameVn || "",
+                });
+                return (
+                  <option key={o.id} value={o.scientificName}>
+                    {o.scientificName} {localizedName ? `(${localizedName})` : ""}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
           <div className="form-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="flt-prov">Tỉnh / Thành phố</label>
+            <label htmlFor="flt-prov">{t("specimen.province")}</label>
             <select
               id="flt-prov"
               value={filters.provinceId}
               onChange={(e) => updateFilter("provinceId", e.target.value)}
             >
-              <option value="">Tất cả tỉnh/thành</option>
+              <option value="">{t("specimen.allProvinces")}</option>
               {lookups.provinces.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nameVn}
@@ -473,13 +491,13 @@ export default function SpecimenListPage() {
           </div>
 
           <div className="form-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="flt-basis">Nguồn bản ghi (DwC)</label>
+            <label htmlFor="flt-basis">{t("specimen.basisOfRecord")}</label>
             <select
               id="flt-basis"
               value={filters.basisOfRecord}
               onChange={(e) => updateFilter("basisOfRecord", e.target.value)}
             >
-              <option value="">Tất cả nguồn</option>
+              <option value="">{t("specimen.allSources")}</option>
               {Object.entries(BASIS_OF_RECORD_LABELS).map(([code, label]) => (
                 <option key={code} value={code}>
                   {label}
@@ -489,7 +507,7 @@ export default function SpecimenListPage() {
           </div>
 
           <div className="form-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="flt-from">Từ ngày</label>
+            <label htmlFor="flt-from">{t("specimen.dateFrom")}</label>
             <input
               id="flt-from"
               type="date"
@@ -499,7 +517,7 @@ export default function SpecimenListPage() {
           </div>
 
           <div className="form-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="flt-to">Đến ngày</label>
+            <label htmlFor="flt-to">{t("specimen.dateTo")}</label>
             <input
               id="flt-to"
               type="date"
@@ -510,15 +528,15 @@ export default function SpecimenListPage() {
 
           {isAdmin ? (
             <div className="form-field" style={{ marginBottom: 0 }}>
-              <label htmlFor="flt-pub">Trạng thái chia sẻ</label>
+              <label htmlFor="flt-pub">{t("specimen.sharingStatus")}</label>
               <select
                 id="flt-pub"
                 value={filters.isPublic}
                 onChange={(e) => updateFilter("isPublic", e.target.value)}
               >
-                <option value="">Tất cả (Public + Nội bộ)</option>
-                <option value="true">Đang Công khai</option>
-                <option value="false">Đang Ẩn nội bộ</option>
+                <option value="">{t("specimen.allSharing")}</option>
+                <option value="true">{t("specimen.currentlyPublic")}</option>
+                <option value="false">{t("specimen.currentlyPrivate")}</option>
               </select>
             </div>
           ) : null}
@@ -533,11 +551,11 @@ export default function SpecimenListPage() {
               onClick={() => setShowSpatialFilter((v) => !v)}
             >
               <Icon name="map" size={14} />
-              Truy vấn bán kính GPS (PostGIS)
+              {t("specimen.spatialQuery")}
             </button>
 
             <button type="button" className="button button-sm button-ghost" onClick={resetFilters}>
-              Đặt lại bộ lọc
+              {t("specimen.resetFilters")}
             </button>
           </div>
 
@@ -549,13 +567,13 @@ export default function SpecimenListPage() {
                 const [sortBy, sortOrder] = e.target.value.split(":");
                 setFilters((prev) => ({ ...prev, sortBy, sortOrder, page: 1 }));
               }}
-              aria-label="Sắp xếp theo"
+              aria-label={t("search.sortBy")}
             >
-              <option value="collectionDate:desc">Ngày thu mẫu (Mới nhất)</option>
-              <option value="collectionDate:asc">Ngày thu mẫu (Cũ nhất)</option>
-              <option value="scientificName:asc">Tên khoa học (A → Z)</option>
-              <option value="individualCount:desc">Số lượng cá thể (Cao → Thấp)</option>
-              <option value="specimenId:desc">Mã bản ghi mới nhập</option>
+              <option value="collectionDate:desc">{t("specimen.sortDateDesc")}</option>
+              <option value="collectionDate:asc">{t("specimen.sortDateAsc")}</option>
+              <option value="scientificName:asc">{t("specimen.sortNameAsc")}</option>
+              <option value="individualCount:desc">{t("specimen.sortCountDesc")}</option>
+              <option value="specimenId:desc">{t("specimen.sortNewest")}</option>
             </select>
 
             <button
@@ -564,7 +582,7 @@ export default function SpecimenListPage() {
               onClick={() => setColMenuOpen((v) => !v)}
             >
               <Icon name="layers" size={14} />
-              Cột hiển thị
+              {t("specimen.columns")}
             </button>
 
             {colMenuOpen ? (
@@ -575,7 +593,7 @@ export default function SpecimenListPage() {
                     checked={visibleCols.basis}
                     onChange={(e) => setVisibleCols((c) => ({ ...c, basis: e.target.checked }))}
                   />
-                  Nguồn bản ghi (DwC)
+                  {t("specimen.basisOfRecord")}
                 </label>
                 <label>
                   <input
@@ -583,7 +601,7 @@ export default function SpecimenListPage() {
                     checked={visibleCols.coords}
                     onChange={(e) => setVisibleCols((c) => ({ ...c, coords: e.target.checked }))}
                   />
-                  Tọa độ GPS (Lat/Lon)
+                  {t("specimen.colCoords")}
                 </label>
                 <label>
                   <input
@@ -593,7 +611,7 @@ export default function SpecimenListPage() {
                       setVisibleCols((c) => ({ ...c, collector: e.target.checked }))
                     }
                   />
-                  Người thu mẫu
+                  {t("specimen.colCollector")}
                 </label>
               </div>
             ) : null}
@@ -604,7 +622,7 @@ export default function SpecimenListPage() {
         {showSpatialFilter ? (
           <div className="vi-spatial-box">
             <div className="vi-spatial-presets">
-              <span>Điểm nóng đa dạng sinh học:</span>
+              <span>{t("specimen.hotspots")}</span>
               {SPATIAL_PRESETS.map((preset) => (
                 <button
                   key={preset.label}
@@ -626,27 +644,27 @@ export default function SpecimenListPage() {
             </div>
             <div className="vi-form-grid-3" style={{ marginTop: 10 }}>
               <div className="form-field" style={{ marginBottom: 0 }}>
-                <label>Tâm Vĩ độ (Latitude)</label>
+                <label>{t("specimen.centerLat")}</label>
                 <input
                   type="number"
                   step="any"
                   value={filters.lat}
                   onChange={(e) => updateFilter("lat", e.target.value)}
-                  placeholder="VD: 20.3167"
+                  placeholder="20.3167"
                 />
               </div>
               <div className="form-field" style={{ marginBottom: 0 }}>
-                <label>Tâm Kinh độ (Longitude)</label>
+                <label>{t("specimen.centerLon")}</label>
                 <input
                   type="number"
                   step="any"
                   value={filters.lon}
                   onChange={(e) => updateFilter("lon", e.target.value)}
-                  placeholder="VD: 105.6083"
+                  placeholder="105.6083"
                 />
               </div>
               <div className="form-field" style={{ marginBottom: 0 }}>
-                <label>Bán kính tìm kiếm (km)</label>
+                <label>{t("specimen.radiusKm")}</label>
                 <input
                   type="number"
                   min="1"
@@ -663,7 +681,7 @@ export default function SpecimenListPage() {
       {/* Thanh tác vụ hàng loạt Admin */}
       {isAdmin && selectedIds.length > 0 ? (
         <div className="vi-batch-bar">
-          <strong>Đã chọn {selectedIds.length} mẫu vật</strong>
+          <strong>{t("specimen.selectedCount", { count: selectedIds.length })}</strong>
           <div style={{ display: "flex", gap: 8 }}>
             <button
               type="button"
@@ -671,21 +689,21 @@ export default function SpecimenListPage() {
               onClick={() => handleBatchPublic(true)}
             >
               <Icon name="check" size={14} />
-              Công khai ({selectedIds.length})
+              {t("specimen.makePublic", { count: selectedIds.length })}
             </button>
             <button
               type="button"
               className="button button-sm button-warning"
               onClick={() => handleBatchPublic(false)}
             >
-              Ẩn nội bộ ({selectedIds.length})
+              {t("specimen.makePrivate", { count: selectedIds.length })}
             </button>
             <button
               type="button"
               className="button button-sm button-ghost"
               onClick={() => setSelectedIds([])}
             >
-              Bỏ chọn
+              {t("specimen.deselect")}
             </button>
           </div>
         </div>
@@ -694,26 +712,26 @@ export default function SpecimenListPage() {
       {/* Data Table */}
       <section className="card" style={{ overflow: "hidden" }}>
         {status === "loading" ? (
-          <LoadingState label="Đang truy vấn cơ sở dữ liệu mẫu vật..." />
+          <LoadingState label={t("specimen.loadingList")} />
         ) : status === "error" ? (
           <EmptyState
             icon="alert"
-            title="Lỗi truy vấn dữ liệu"
+            title={t("specimen.queryError")}
             description={errorMsg}
             action={
               <button className="button button-ghost" onClick={fetchList}>
-                Thử lại
+                {t("specimen.retry")}
               </button>
             }
           />
         ) : items.length === 0 ? (
           <EmptyState
             icon="search"
-            title="Không tìm thấy mẫu vật phù hợp"
-            description="Hãy thử nới rộng điều kiện lọc, từ khóa hoặc bán kính không gian."
+            title={t("specimen.emptyTitle")}
+            description={t("specimen.emptyDescription")}
             action={
               <button className="button button-ghost" onClick={resetFilters}>
-                Xóa bộ lọc
+                {t("search.clearFilters")}
               </button>
             }
           />
@@ -729,20 +747,20 @@ export default function SpecimenListPage() {
                           type="checkbox"
                           checked={allChecked}
                           onChange={toggleSelectAll}
-                          aria-label="Chọn tất cả trang này"
+                          aria-label={t("common.all")}
                         />
                       </th>
                     ) : null}
-                    <th>Mã mẫu vật</th>
-                    <th>Tên khoa học / Định danh</th>
-                    <th>Bộ / Họ</th>
-                    <th>Ngày thu</th>
-                    <th>Tỉnh thành / Địa điểm</th>
-                    {visibleCols.coords ? <th>Tọa độ GPS</th> : null}
-                    {visibleCols.basis ? <th>Nguồn DwC</th> : null}
-                    {visibleCols.collector ? <th>Người thu</th> : null}
-                    {isAdmin ? <th>Hiển thị</th> : null}
-                    <th style={{ textAlign: "right" }}>Thao tác</th>
+                    <th>{t("specimen.colCatalog")}</th>
+                    <th>{t("specimen.colSciName")}</th>
+                    <th>{t("specimen.colOrderFamily")}</th>
+                    <th>{t("specimen.colDate")}</th>
+                    <th>{t("specimen.colProvinceLocality")}</th>
+                    {visibleCols.coords ? <th>{t("specimen.colGps")}</th> : null}
+                    {visibleCols.basis ? <th>{t("specimen.colSource")}</th> : null}
+                    {visibleCols.collector ? <th>{t("specimen.colCollectorShort")}</th> : null}
+                    {isAdmin ? <th>{t("specimen.colVisibility")}</th> : null}
+                    <th style={{ textAlign: "right" }}>{t("specimen.colActions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -804,7 +822,7 @@ export default function SpecimenListPage() {
                         </td>
                         <td style={{ color: "#111111" }}>
                           <div style={{ fontWeight: 600, color: "#111111" }}>
-                            {item.provinceNameVn || "Việt Nam (chưa gán tỉnh)"}
+                            {item.provinceNameVn || t("specimen.unassignedProvince")}
                           </div>
                           {item.localityDetail ? (
                             <div
@@ -823,7 +841,7 @@ export default function SpecimenListPage() {
                           ) : null}
                           {item.distanceKm !== undefined ? (
                             <span style={{ fontSize: 11, color: "#2E7D32", fontWeight: 700 }}>
-                              Cách tâm {item.distanceKm} km
+                              {t("specimen.distanceFromCenter", { km: item.distanceKm })}
                             </span>
                           ) : null}
                         </td>
@@ -873,7 +891,7 @@ export default function SpecimenListPage() {
                             className="button button-sm button-ghost"
                             style={{ marginRight: isAdmin ? 6 : 0 }}
                           >
-                            Chi tiết
+                            {t("common.details")}
                           </Link>
                           {isAdmin ? (
                             <>
@@ -916,12 +934,11 @@ export default function SpecimenListPage() {
             {/* Pagination Footer */}
             <div className="vi-pagination-bar">
               <div style={{ fontSize: 13, color: "var(--vi-muted)" }}>
-                Hiển thị{" "}
-                <strong>
-                  {(pagination.page - 1) * pagination.limit + 1}–
-                  {Math.min(pagination.page * pagination.limit, pagination.total)}
-                </strong>{" "}
-                trên tổng số <strong>{pagination.total.toLocaleString()}</strong> mẫu vật
+                {t("specimen.showingRange", {
+                  from: (pagination.page - 1) * pagination.limit + 1,
+                  to: Math.min(pagination.page * pagination.limit, pagination.total),
+                  total: formatNumber(pagination.total, i18n.language),
+                })}
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -931,11 +948,11 @@ export default function SpecimenListPage() {
                   onChange={(e) =>
                     setFilters((prev) => ({ ...prev, limit: Number(e.target.value), page: 1 }))
                   }
-                  aria-label="Số dòng mỗi trang"
+                  aria-label={t("common.page")}
                 >
-                  <option value={25}>25 / trang</option>
-                  <option value={50}>50 / trang</option>
-                  <option value={100}>100 / trang</option>
+                  <option value={25}>{t("specimen.perPage", { n: 25 })}</option>
+                  <option value={50}>{t("specimen.perPage", { n: 50 })}</option>
+                  <option value={100}>{t("specimen.perPage", { n: 100 })}</option>
                 </select>
 
                 <button
@@ -944,7 +961,7 @@ export default function SpecimenListPage() {
                   disabled={pagination.page <= 1}
                   onClick={() => setFilters((prev) => ({ ...prev, page: prev.page - 1 }))}
                 >
-                  ← Trang trước
+                  {t("specimen.prevPage")}
                 </button>
                 <span style={{ fontSize: 13, fontWeight: 800, padding: "0 8px" }}>
                   {pagination.page} / {pagination.totalPages}
@@ -955,7 +972,7 @@ export default function SpecimenListPage() {
                   disabled={pagination.page >= pagination.totalPages}
                   onClick={() => setFilters((prev) => ({ ...prev, page: prev.page + 1 }))}
                 >
-                  Trang sau →
+                  {t("specimen.nextPage")}
                 </button>
               </div>
             </div>
@@ -974,16 +991,18 @@ export default function SpecimenListPage() {
             <button
               className="icon-button dialog-close"
               onClick={() => setModalOpen(false)}
-              aria-label="Đóng"
+              aria-label={t("common.close")}
             >
               <Icon name="close" size={18} />
             </button>
             <div className="eyebrow" style={{ marginBottom: 4 }}>
               <Icon name={editingItem ? "edit" : "plus"} size={14} />
-              {editingItem ? "Hiệu chỉnh mẫu vật" : "Nhập mẫu vật mới"}
+              {editingItem ? t("specimen.editEyebrow") : t("specimen.createEyebrow")}
             </div>
             <h2 style={{ marginTop: 4, marginBottom: 16 }}>
-              {editingItem ? `Cập nhật ${editingItem.specimenCode}` : "Thêm hồ sơ mẫu vật mới"}
+              {editingItem
+                ? t("specimen.updateTitle", { code: editingItem.specimenCode })
+                : t("specimen.createModalTitle")}
             </h2>
             <SpecimenForm
               initialData={editingItem}
@@ -1001,10 +1020,13 @@ export default function SpecimenListPage() {
       {/* Hộp thoại xác nhận xóa */}
       <ConfirmDialog
         open={Boolean(pendingDelete)}
-        title="Xóa bản ghi mẫu vật?"
+        title={t("specimen.deleteRecordTitle")}
         message={
           pendingDelete
-            ? `Bạn sắp xóa mềm mẫu vật ${pendingDelete.specimenCode} (${pendingDelete.scientificName}). Bản ghi sẽ được ẩn khỏi hệ thống nhưng vẫn lưu vết kiểm toán.`
+            ? t("specimen.deleteRecordMessage", {
+              code: pendingDelete.specimenCode,
+              name: pendingDelete.scientificName,
+            })
             : ""
         }
         variant="danger"

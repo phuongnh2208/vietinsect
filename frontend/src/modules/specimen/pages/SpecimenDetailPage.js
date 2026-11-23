@@ -94,7 +94,7 @@ export default function SpecimenDetailPage() {
     return (
       <div className="page-container page-content">
         <div className="card panel" style={{ padding: "48px 24px" }}>
-          <LoadingState label="Đang tải hồ sơ mẫu vật Darwin Core..." />
+          <LoadingState label={t("specimenDetail.loadingDetail")} />
         </div>
       </div>
     );
@@ -106,14 +106,14 @@ export default function SpecimenDetailPage() {
         <div className="card panel">
           <EmptyState
             icon="alert"
-            title="Không tìm thấy bản ghi mẫu vật"
+            title={t("specimenDetail.errorNotFound")}
             description={errorMsg}
             action={
               <button
                 className="button button-primary"
                 onClick={() => navigate(isAdmin ? "/admin/specimens" : "/specimens/search")}
               >
-                Quay về danh sách mẫu vật
+                {t("specimenDetail.backToList")}
               </button>
             }
           />
@@ -182,6 +182,7 @@ export default function SpecimenDetailPage() {
           orderName={specimen.orderName}
           provinceNameVn={specimen.provinceNameVn}
           localityDetail={specimen.localityDetail}
+          license={specimen.license}
           onCopyCoordinates={handleCopyCoordinates}
         />
       </div>

@@ -515,7 +515,9 @@ export default function OccurrenceMapPage() {
     });
 
     // Event delegation for specimen detail, popup close, and protected area radius buttons inside Leaflet popups
-    map.getContainer().addEventListener("click", (evt) => {
+    const container = map.getContainer();
+    const handleContainerClick = (evt) => {
+      if (mapRef.current !== map || !map._mapPane) return;
       const btn = evt.target.closest("[data-specimen-id]");
       if (btn) {
         const spId = btn.getAttribute("data-specimen-id");
@@ -535,9 +537,12 @@ export default function OccurrenceMapPage() {
         setViewMode("radius");
         setRadiusPin({ lat, lon, radiusKm: rKm });
         map.closePopup();
-        map.flyTo([lat, lon], 9);
+        if (Number.isFinite(lat) && Number.isFinite(lon)) {
+          map.flyTo([lat, lon], 9);
+        }
       }
-    });
+    };
+    container.addEventListener("click", handleContainerClick);
 
     mapRef.current = map;
     tileLayerRef.current = tile;
@@ -546,6 +551,7 @@ export default function OccurrenceMapPage() {
     parksLayerGroupRef.current = parksGroup;
 
     return () => {
+      container.removeEventListener("click", handleContainerClick);
       map.remove();
       mapRef.current = null;
     };

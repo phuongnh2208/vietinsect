@@ -3,6 +3,19 @@
 // expect(element).toHaveTextContent(/react/i)
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
+import fs from 'fs';
+import path from 'path';
+import i18n from './i18n';
+
+const localesDir = path.resolve(__dirname, '../public/locales');
+try {
+  const viJson = JSON.parse(fs.readFileSync(path.join(localesDir, 'vi.json'), 'utf8'));
+  const enJson = JSON.parse(fs.readFileSync(path.join(localesDir, 'en.json'), 'utf8'));
+  i18n.addResourceBundle('vi', 'translation', viJson, true, true);
+  i18n.addResourceBundle('en', 'translation', enJson, true, true);
+} catch {
+  // Ignore if locales files are unavailable in isolated test runs
+}
 
 if (typeof HTMLCanvasElement !== 'undefined') {
   HTMLCanvasElement.prototype.getContext = function getContextStub() {

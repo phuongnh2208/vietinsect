@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ResponsiveContainer,
   Treemap,
@@ -15,6 +16,7 @@ import Icon from "../../../components/ui/Icon";
 import HomeMapHero from "../components/HomeMapHero";
 import specimenService from "../../specimen/specimen.service";
 import { getOrderColor } from "../../specimen/specimen.constants";
+import { formatNumber } from "../../../utils/formatters";
 
 const DEFAULT_HERO_IMAGE = process.env.PUBLIC_URL + "/Hero1.png";
 
@@ -110,6 +112,7 @@ function PublicOrderTreemapCell(props) {
 }
 
 export default function PublicHomePage() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState(null);
@@ -130,20 +133,62 @@ export default function PublicHomePage() {
   }, [loadPublicStats]);
 
   const dynamicCards = useMemo(() => {
-    if (!stats) return portalCards;
-    const spCount = stats.distinctSpeciesTaxa ?? stats.distinctBinomialSpecies ?? 0;
-    const totalProvinces = stats.totalProvinces ?? 0;
-    return portalCards.map((c, idx) => {
-      if (idx === 0)
-        return { ...c, badge: `${(stats.totalSpecimens ?? 0).toLocaleString("vi-VN")} mẫu mở` };
-      if (idx === 1)
-        return { ...c, badge: `${stats.provincesCovered ?? 0} / ${totalProvinces} tỉnh thành` };
-      if (idx === 2)
-        return { ...c, badge: `${(stats.dnaCount ?? 0).toLocaleString("vi-VN")} trình tự COI` };
-      if (idx === 3) return { ...c, badge: `${spCount.toLocaleString("vi-VN")} loài` };
-      return c;
-    });
-  }, [stats]);
+    const base = [
+      {
+        title: t("home.card1Title"),
+        desc: t("home.card1Desc"),
+        link: "/specimens/search",
+        actionText: t("home.card1Action"),
+        badge: stats
+          ? t("home.card1Badge", { count: formatNumber(stats.totalSpecimens ?? 0, i18n.language) })
+          : "—",
+        imageSrc:
+          "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80",
+      },
+      {
+        title: t("home.card2Title"),
+        desc: t("home.card2Desc"),
+        link: "/map",
+        actionText: t("home.card2Action"),
+        badge: stats
+          ? t("home.card2Badge", {
+              covered: stats.provincesCovered ?? 0,
+              total: stats.totalProvinces ?? 0,
+            })
+          : "—",
+        imageSrc:
+          "https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80",
+      },
+      {
+        title: t("home.card3Title"),
+        desc: t("home.card3Desc"),
+        link: "/dna",
+        actionText: t("home.card3Action"),
+        badge: stats
+          ? t("home.card3Badge", { count: formatNumber(stats.dnaCount ?? 0, i18n.language) })
+          : "—",
+        imageSrc:
+          "https://images.unsplash.com/photo-1530026405186-ed1f139313f8?auto=format&fit=crop&w=800&q=80",
+      },
+      {
+        title: t("home.card4Title"),
+        desc: t("home.card4Desc"),
+        link: "/taxonomy",
+        actionText: t("home.card4Action"),
+        badge: stats
+          ? t("home.card4Badge", {
+              count: formatNumber(
+                stats.distinctSpeciesTaxa ?? stats.distinctBinomialSpecies ?? 0,
+                i18n.language
+              ),
+            })
+          : "—",
+        imageSrc:
+          "https://images.unsplash.com/photo-1508873696983-2df5293cb32b?auto=format&fit=crop&w=800&q=80",
+      },
+    ];
+    return base;
+  }, [stats, t, i18n.language]);
 
   const orderChartData = useMemo(() => {
     const raw = stats?.byOrder || [];
@@ -209,17 +254,17 @@ export default function PublicHomePage() {
 
             <div className="hero-search-overlay">
               <form className="hero-pill-search-form" onSubmit={handleSearchSubmit}>
-                <button type="submit" className="pill-search-icon-btn" aria-label="Tìm kiếm">
+                <button type="submit" className="pill-search-icon-btn" aria-label={t("common.search")}>
                   <Icon name="search" size={20} strokeWidth={2.4} />
                 </button>
 
                 <input
                   type="text"
                   className="pill-search-input"
-                  placeholder="Tìm kiếm loài, mẫu vật, họ, bộ hoặc địa phương..."
+                  placeholder={t("home.searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  aria-label="Tìm kiếm dữ liệu côn trùng"
+                  aria-label={t("common.search")}
                 />
 
                 {searchQuery && (
@@ -227,7 +272,7 @@ export default function PublicHomePage() {
                     type="button"
                     className="pill-clear-btn"
                     onClick={handleClearSearch}
-                    aria-label="Xóa từ khóa"
+                    aria-label={t("common.reset")}
                   >
                     <Icon name="close" size={16} strokeWidth={2.4} />
                   </button>
@@ -237,16 +282,16 @@ export default function PublicHomePage() {
           </TechnicalFrame>
 
           <div className="hero-editorial-footer">
-            <h1 className="hero-manifesto-title">FREE AND OPEN ACCESS TO BIODIVERSITY DATA</h1>
+            <h1 className="hero-manifesto-title">{t("home.heroTitle")}</h1>
             <div className="hero-quick-links">
               <Link to="/taxonomy" className="hero-sublink">
-                Cây phân loại học
+                {t("navigation.taxonomyTree")}
               </Link>
               <Link to="/dna" className="hero-sublink">
-                Kho mã vạch DNA
+                {t("navigation.dnaBarcode")}
               </Link>
               <Link to="/specimens/search" className="hero-sublink highlight">
-                Khám phá Kho mẫu vật →
+                {t("home.browseSpecimens")} →
               </Link>
             </div>
           </div>
@@ -262,14 +307,14 @@ export default function PublicHomePage() {
               style={{ cursor: "pointer" }}
               onClick={() => navigate("/specimens/search")}
             >
-              <span className="stat-label">MẪU VẬT CÔNG KHAI</span>
+              <span className="stat-label">{t("home.statSpecimens")}</span>
               <strong className="stat-number">
-                {stats ? (stats.totalSpecimens ?? 0).toLocaleString("vi-VN") : "—"}
+                {stats ? formatNumber(stats.totalSpecimens ?? 0, i18n.language) : "—"}
               </strong>
               <span className="stat-sub">
                 {stats
-                  ? `${(stats.withCoordinates ?? 0).toLocaleString("vi-VN")} mẫu có tọa độ GPS`
-                  : "Đang tải số liệu..."}
+                  ? `${formatNumber(stats.withCoordinates ?? 0, i18n.language)} GPS`
+                  : t("common.loading")}
               </span>
             </div>
 
@@ -278,72 +323,66 @@ export default function PublicHomePage() {
               style={{ cursor: "pointer" }}
               onClick={() => navigate("/taxonomy")}
             >
-              <span className="stat-label">LOÀI ĐÃ SỐ HÓA</span>
+              <span className="stat-label">{t("home.statSpecies")}</span>
               <strong className="stat-number">
                 {stats
-                  ? (
-                      stats.distinctSpeciesTaxa ??
-                      stats.distinctBinomialSpecies ??
-                      0
-                    ).toLocaleString("vi-VN")
+                  ? formatNumber(
+                      stats.distinctSpeciesTaxa ?? stats.distinctBinomialSpecies ?? 0,
+                      i18n.language
+                    )
                   : "—"}
               </strong>
               <span className="stat-sub">
                 {stats
-                  ? `${(stats.taxa?.families ?? 0).toLocaleString("vi-VN")} Họ · ${(
-                      stats.taxa?.genera ?? 0
-                    ).toLocaleString("vi-VN")} Giống`
-                  : "Đang tải số liệu..."}
+                  ? `${formatNumber(stats.taxa?.families ?? 0, i18n.language)} ${t("specimen.family")} · ${formatNumber(
+                      stats.taxa?.genera ?? 0,
+                      i18n.language
+                    )} ${t("specimen.genus")}`
+                  : t("common.loading")}
               </span>
             </div>
 
             <div className="stat-box" style={{ cursor: "pointer" }} onClick={() => navigate("/map")}>
-              <span className="stat-label">ĐỘ PHỦ ĐỊA LÝ VIỆT NAM</span>
+              <span className="stat-label">{t("navigation.gisMap")}</span>
               <strong className="stat-number">
                 {stats
                   ? `${stats.provincesCovered ?? 0} / ${stats.totalProvinces ?? 0}`
                   : "—"}
               </strong>
-              <span className="stat-sub">Tỉnh / Thành phố chuẩn hóa (PostGIS)</span>
+              <span className="stat-sub">{t("specimen.province")} (PostGIS)</span>
             </div>
 
             <div className="stat-box" style={{ cursor: "pointer" }} onClick={() => navigate("/dna")}>
-              <span className="stat-label">TÀI NGUYÊN DNA & HÌNH ẢNH</span>
+              <span className="stat-label">{t("home.statDna")}</span>
               <strong className="stat-number">
-                {stats ? (stats.dnaCount ?? 0).toLocaleString("vi-VN") : "—"}
+                {stats ? formatNumber(stats.dnaCount ?? 0, i18n.language) : "—"}
               </strong>
               <span className="stat-sub">
                 {stats
-                  ? `Chuỗi Barcode COI · ${(stats.imageCount ?? 0).toLocaleString(
-                      "vi-VN"
-                    )} ảnh mẫu vật`
-                  : "Đang tải số liệu..."}
+                  ? `COI · ${formatNumber(stats.imageCount ?? 0, i18n.language)} ${t("home.statMedia")}`
+                  : t("common.loading")}
               </span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 3. DASHBOARD TRỰC QUAN CHO NGƯỜI DÙNG: TREEMAP BỘ CÔN TRÙNG (F-DB-02) & TOP TỈNH THÀNH */}
+      {/* 3. DASHBOARD TRỰC QUAN CHO NGƯỜI DÙNG */}
       <section className="editorial-discovery-section" style={{ paddingBottom: 16 }}>
         <div className="editorial-container">
           <div className="section-header-editorial">
-            <span className="editorial-kicker">THỐNG KÊ ĐA DẠNG SINH HỌC THỜI GIAN THỰC</span>
-            <h2 className="editorial-section-title">Cấu Trúc Phân Loại & Phân Bố Địa Phương</h2>
-            <p className="editorial-section-desc">
-              Dữ liệu tổng hợp trực tiếp từ kho mẫu vật mở Việt Nam. Nhấp vào từng Bộ côn trùng hoặc
-              Tỉnh/Thành phố để tra cứu chi tiết các mẫu vật tương ứng.
-            </p>
+            <span className="editorial-kicker">{t("home.realtimeKicker")}</span>
+            <h2 className="editorial-section-title">{t("home.taxonomyDistTitle")}</h2>
+            <p className="editorial-section-desc">{t("home.taxonomyDistDesc")}</p>
           </div>
 
           <div className="dashboard-grid" style={{ alignItems: "stretch" }}>
-            {/* Treemap / BarChart 16 Bộ côn trùng (F-DB-02) */}
             <section className="card panel" style={{ display: "flex", flexDirection: "column" }}>
               <div className="panel-title">
                 <div>
-                  <h2>Phân bố theo Bộ côn trùng (Insecta Orders)</h2>
+                  <h2>{t("home.orderDistTitle")}</h2>
                   <span style={{ fontSize: 12, color: "#555555" }}>
-                    Nhấp vào ô để tra cứu mẫu vật theo Bộ ({orderChartData.length} Bộ ghi nhận)
+                    {t("home.orderDistSub", { count: orderChartData.length })}
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
@@ -363,7 +402,7 @@ export default function PublicHomePage() {
                     }`}
                     onClick={() => setChartMode("bar")}
                   >
-                    Biểu đồ Cột
+                    {t("home.barChart")}
                   </button>
                 </div>
               </div>
@@ -387,10 +426,8 @@ export default function PublicHomePage() {
                       >
                         <RechartsTooltip
                           formatter={(val, _name, item) => [
-                            `${Number(val).toLocaleString("vi-VN")} mẫu (${
-                              item?.payload?.pct || 0
-                            }%)`,
-                            "Số lượng mẫu công khai",
+                            `${formatNumber(val, i18n.language)} (${item?.payload?.pct || 0}%)`,
+                            t("home.publicSpecimensCount"),
                           ]}
                         />
                       </Treemap>
@@ -411,8 +448,8 @@ export default function PublicHomePage() {
                         />
                         <RechartsTooltip
                           formatter={(val) => [
-                            `${Number(val).toLocaleString("vi-VN")} mẫu vật`,
-                            "Số lượng",
+                            formatNumber(val, i18n.language),
+                            t("home.quantity"),
                           ]}
                         />
                         <Bar
@@ -438,14 +475,14 @@ export default function PublicHomePage() {
             <section className="card panel" style={{ display: "flex", flexDirection: "column" }}>
               <div className="panel-title">
                 <div>
-                  <h2>Điểm nóng phân bố theo Tỉnh / Thành phố</h2>
+                  <h2>{t("home.hotspotsTitle")}</h2>
                   <span style={{ fontSize: 12, color: "#555555" }}>
-                    Top 8 địa phương ghi nhận nhiều mẫu vật nhất trên 34 tỉnh/thành
+                    {t("home.hotspotsSub")}
                   </span>
                 </div>
                 <Link to="/map" className="button button-sm button-ghost">
                   <Icon name="map" size={14} />
-                  Bản đồ GIS →
+                  {t("navigation.gisMap")} →
                 </Link>
               </div>
 
@@ -471,7 +508,7 @@ export default function PublicHomePage() {
                         #{index + 1} · {prov.province_name_vn}
                       </span>
                       <strong style={{ fontFamily: "monospace", color: "#0F3820" }}>
-                        {prov.countNum.toLocaleString("vi-VN")} mẫu
+                        {t("home.specimensUnit", { count: formatNumber(prov.countNum, i18n.language) })}
                       </strong>
                     </div>
                     <div className="progress-track" style={{ height: 8 }}>
@@ -491,7 +528,7 @@ export default function PublicHomePage() {
         </div>
       </section>
 
-      {/* 4. GIS DISTRIBUTION SECTION (Bản đồ Leaflet 34 tỉnh/thành tương tác — F-DB-03) */}
+      {/* 4. GIS DISTRIBUTION SECTION */}
       <section className="editorial-map-section">
         <div className="editorial-container">
           <div className="map-solid-frame">
@@ -507,13 +544,13 @@ export default function PublicHomePage() {
             <section className="card panel">
               <div className="panel-title">
                 <div>
-                  <h2>Mẫu vật công khai mới ghi nhận</h2>
+                  <h2>{t("home.recentSpecimensTitle")}</h2>
                   <span style={{ fontSize: 12, color: "#555555" }}>
-                    Các bản ghi mẫu vật chuẩn Darwin Core vừa được cập nhật lên cổng dữ liệu mở
+                    {t("home.recentSpecimensSub")}
                   </span>
                 </div>
                 <Link to="/specimens/search" className="button button-sm button-primary">
-                  Tra cứu toàn bộ {(stats.totalSpecimens || 0).toLocaleString("vi-VN")} mẫu vật →
+                  {t("home.browseAllCount", { count: formatNumber(stats.totalSpecimens || 0, i18n.language) })}
                 </Link>
               </div>
 
@@ -521,12 +558,12 @@ export default function PublicHomePage() {
                 <table className="vi-data-table">
                   <thead>
                     <tr>
-                      <th>Mã định danh</th>
-                      <th>Tên khoa học</th>
-                      <th>Bậc phân loại</th>
-                      <th>Tỉnh / Thành phố</th>
-                      <th>Ngày thu mẫu</th>
-                      <th style={{ textAlign: "right" }}>Hồ sơ</th>
+                      <th>{t("specimen.catalogNumber")}</th>
+                      <th>{t("specimen.scientificName")}</th>
+                      <th>{t("taxonomy.rank")}</th>
+                      <th>{t("specimen.province")}</th>
+                      <th>{t("specimen.eventDate")}</th>
+                      <th style={{ textAlign: "right" }}>{t("home.colRecord")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -549,7 +586,7 @@ export default function PublicHomePage() {
                         <td>
                           <span className="status-badge status-public">{sp.taxonRank}</span>
                         </td>
-                        <td style={{ fontWeight: 600 }}>{sp.provinceNameVn || "Việt Nam"}</td>
+                        <td style={{ fontWeight: 600 }}>{sp.provinceNameVn || "Vietnam"}</td>
                         <td style={{ fontFamily: "monospace", fontSize: 12 }}>
                           {sp.collectionDate || "—"}
                         </td>
@@ -558,7 +595,7 @@ export default function PublicHomePage() {
                             to={`/specimens/${sp.id}`}
                             className="button button-sm button-ghost"
                           >
-                            Xem chi tiết →
+                            {t("home.viewDetails")}
                           </Link>
                         </td>
                       </tr>
@@ -575,12 +612,9 @@ export default function PublicHomePage() {
       <section className="editorial-discovery-section">
         <div className="editorial-container">
           <div className="section-header-editorial">
-            <span className="editorial-kicker">KHOA HỌC DỮ LIỆU ĐA DẠNG SINH HỌC</span>
-            <h2 className="editorial-section-title">Các Phân Hệ Nghiên Cứu Chuyên Sâu</h2>
-            <p className="editorial-section-desc">
-              Hệ thống cung cấp công cụ toàn diện từ số hóa mẫu vật thực địa, phân tích phân tử, GIS
-              không gian đến cây phân loại học chuẩn quốc tế.
-            </p>
+            <span className="editorial-kicker">{t("home.modulesKicker")}</span>
+            <h2 className="editorial-section-title">{t("home.modulesTitle")}</h2>
+            <p className="editorial-section-desc">{t("home.modulesDesc")}</p>
           </div>
 
           <div className="editorial-cards-grid">

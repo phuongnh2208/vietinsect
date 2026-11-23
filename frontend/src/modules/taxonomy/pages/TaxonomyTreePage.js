@@ -10,7 +10,7 @@ import TaxonomyTreeView from "../components/TaxonomyTreeView";
 import ExternalLinkBadges from "../components/ExternalLinkBadges";
 
 export default function TaxonomyTreePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isAdmin = useIsAdminContext();
   const navigate = useNavigate();
   const tree = useTaxonomyStore((state) => state.tree);
@@ -32,7 +32,7 @@ export default function TaxonomyTreePage() {
     setSelectedNode(node);
   };
 
-  const notProvided = t("common.notProvided", "Chưa cung cấp");
+  const notProvided = t("media.notProvided");
 
   return (
     <div className="page-container page-content vi-page-enter" data-testid="taxonomy-tree-page">
@@ -41,12 +41,10 @@ export default function TaxonomyTreePage() {
         <div>
           <div className="eyebrow">
             <Icon name="tree" size={13} />
-            <span>HỆ THỐNG PHÂN LOẠI HỌC &amp; DANH PHÁP ICZN</span>
+            <span>{t("taxonomy.eyebrow")}</span>
           </div>
-          <h1 className="vi-compact-h1">Cây phân loại học Côn trùng Việt Nam</h1>
-          <p className="vi-compact-subtitle">
-            Khám phá cấu trúc phân cấp từ Giới (Kingdom) đến Loài (Species), tra cứu nhanh số nhánh con và tiêu bản lưu trữ.
-          </p>
+          <h1 className="vi-compact-h1">{t("taxonomy.treeTitle")}</h1>
+          <p className="vi-compact-subtitle">{t("taxonomy.treeSubtitle")}</p>
         </div>
         {isAdmin ? (
           <div className="hero-actions" style={{ marginTop: 0 }}>
@@ -56,7 +54,7 @@ export default function TaxonomyTreePage() {
               onClick={() => navigate("/admin/taxonomy/editor")}
             >
               <Icon name="edit" size={15} />
-              <span>Quản lý danh pháp</span>
+              <span>{t("taxonomy.manageNomenclature")}</span>
             </button>
           </div>
         ) : null}
@@ -64,13 +62,13 @@ export default function TaxonomyTreePage() {
 
       {treeStatus === "loading" || treeStatus === "idle" ? (
         <div className="card panel">
-          <LoadingState label="Đang tải cây phân loại học..." />
+          <LoadingState label={t("taxonomy.loadingTree")} />
         </div>
       ) : treeStatus === "error" ? (
         <div className="card panel">
           <EmptyState
             icon="alert"
-            title="Không tải được cây phân loại"
+            title={t("taxonomy.loadErrorTitle")}
             description={treeError}
             action={
               <button
@@ -79,7 +77,7 @@ export default function TaxonomyTreePage() {
                 onClick={() => fetchTree({ force: true })}
               >
                 <Icon name="arrow-up-right" size={16} />
-                Thử lại
+                {t("specimen.retry")}
               </button>
             }
           />
@@ -88,8 +86,8 @@ export default function TaxonomyTreePage() {
         <div className="card panel">
           <EmptyState
             icon="tree"
-            title="Chưa có dữ liệu phân loại"
-            description="Bắt đầu bằng cách thêm taxon gốc (Kingdom) trong Quản lý danh pháp."
+            title={t("taxonomy.emptyTitle")}
+            description={t("taxonomy.emptyDesc")}
           />
         </div>
       ) : (
@@ -123,7 +121,7 @@ export default function TaxonomyTreePage() {
 
                 <dl className="vi-sci-dl" style={{ marginTop: 12 }}>
                   <div className="vi-sci-row">
-                    <dt>Tên khoa học</dt>
+                    <dt>{t("taxonomy.scientificName")}</dt>
                     <dd>
                       <strong>
                         <em>{selectedNode.scientificName}</em>
@@ -131,11 +129,11 @@ export default function TaxonomyTreePage() {
                     </dd>
                   </div>
                   <div className="vi-sci-row">
-                    <dt>Bậc phân loại (Rank)</dt>
+                    <dt>{t("taxonomy.rank")}</dt>
                     <dd>{selectedNode.rank || notProvided}</dd>
                   </div>
                   <div className="vi-sci-row">
-                    <dt>Tên thường gọi (VN / EN)</dt>
+                    <dt>{t("taxonomy.vernacularBoth")}</dt>
                     <dd>
                       {selectedNode.vernacularNameVn || selectedNode.vernacularNameEn
                         ? `${selectedNode.vernacularNameVn || notProvided} / ${
@@ -145,26 +143,26 @@ export default function TaxonomyTreePage() {
                     </dd>
                   </div>
                   <div className="vi-sci-row">
-                    <dt>Đơn vị phân loại cha (Parent)</dt>
+                    <dt>{t("taxonomy.parentTaxon")}</dt>
                     <dd>
                       {selectedNode.parentName ||
-                        (selectedNode.parentId ? `Taxon #${selectedNode.parentId}` : "Gốc (Root)")}
+                        (selectedNode.parentId ? `Taxon #${selectedNode.parentId}` : t("taxonomy.rootNode"))}
                     </dd>
                   </div>
                   <div className="vi-sci-row">
-                    <dt>Số nhánh phân loại con</dt>
+                    <dt>{t("taxonomy.childCountLabel")}</dt>
                     <dd>
-                      <strong>{(selectedNode.childCount || 0).toLocaleString("vi-VN")}</strong> đơn vị con
+                      <strong>{t("taxonomy.childUnits", { count: (selectedNode.childCount || 0).toLocaleString(i18n.language.startsWith("en") ? "en-US" : "vi-VN") })}</strong>
                     </dd>
                   </div>
                   <div className="vi-sci-row">
-                    <dt>Số mẫu vật liên kết</dt>
+                    <dt>{t("taxonomy.linkedSpecimensLabel")}</dt>
                     <dd>
-                      <strong>{(selectedNode.specimenCount || 0).toLocaleString("vi-VN")}</strong> mẫu vật
+                      <strong>{t("taxonomy.specimenUnits", { count: (selectedNode.specimenCount || 0).toLocaleString(i18n.language.startsWith("en") ? "en-US" : "vi-VN") })}</strong>
                     </dd>
                   </div>
                   <div className="vi-sci-row">
-                    <dt>Trạng thái danh pháp</dt>
+                    <dt>{t("taxonomy.status")}</dt>
                     <dd>{(selectedNode.taxonomicStatus || "accepted").toUpperCase()}</dd>
                   </div>
                 </dl>
@@ -191,7 +189,7 @@ export default function TaxonomyTreePage() {
                       style={{ width: "100%", justifyContent: "center" }}
                     >
                       <Icon name="arrow-up-right" size={15} />
-                      <span>Xem hồ sơ loài đầy đủ</span>
+                      <span>{t("taxonomy.viewFullProfile")}</span>
                     </Link>
                   ) : null}
 
@@ -206,36 +204,37 @@ export default function TaxonomyTreePage() {
                   >
                     <Icon name="bug" size={15} />
                     <span>
-                      Xem {(selectedNode.specimenCount || 0).toLocaleString("vi-VN")} mẫu vật thuộc nhánh này →
+                      {t("taxonomy.viewBranchSpecimens", {
+                        count: (selectedNode.specimenCount || 0).toLocaleString(i18n.language.startsWith("en") ? "en-US" : "vi-VN"),
+                      })}
                     </span>
                   </Link>
                 </div>
               </div>
             ) : (
-              /* Helpful Introductory Guide when no node is selected yet */
               <div className="vi-tax-intro-guide" data-testid="taxonomy-intro-guide">
-                <div className="eyebrow">HƯỚNG DẪN KHAI THÁC DANH PHÁP</div>
+                <div className="eyebrow">{t("taxonomy.guideEyebrow")}</div>
                 <h2 className="vi-tax-detail-title" style={{ marginTop: 4 }}>
-                  Trình duyệt Cây Phân loại Học
+                  {t("taxonomy.guideTitle")}
                 </h2>
                 <p className="vi-compact-subtitle" style={{ marginTop: 6 }}>
-                  Chọn bất kỳ nút phân loại nào ở bảng bên trái hoặc dùng ô tìm kiếm nhanh để xem thông tin định danh, số nhánh con và liên kết hồ sơ loài.
+                  {t("taxonomy.guideDesc")}
                 </p>
 
                 <dl className="vi-sci-dl" style={{ marginTop: 14 }}>
                   <div className="vi-sci-row">
-                    <dt>Cấu trúc 7 bậc chính</dt>
+                    <dt>{t("taxonomy.guideStructure")}</dt>
                     <dd>Kingdom → Phylum → Class → Order → Family → Genus → Species</dd>
                   </div>
                   <div className="vi-sci-row">
-                    <dt>Số nhánh gốc hiện tại</dt>
+                    <dt>{t("taxonomy.guideRoots")}</dt>
                     <dd>
-                      <strong>{tree.length}</strong> nhánh gốc đang hiển thị
+                      <strong>{t("taxonomy.guideRootsCount", { count: tree.length })}</strong>
                     </dd>
                   </div>
                   <div className="vi-sci-row">
-                    <dt>Thao tác mở rộng</dt>
-                    <dd>Nhấn biểu tượng mũi tên (▸) để tải động (lazy-load) các bậc phân loại con.</dd>
+                    <dt>{t("taxonomy.guideExpand")}</dt>
+                    <dd>{t("taxonomy.guideExpandDesc")}</dd>
                   </div>
                 </dl>
               </div>

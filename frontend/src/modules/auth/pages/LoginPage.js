@@ -6,6 +6,7 @@ import useAuthStore from "../../../stores/auth.store";
 import authService from "../../../services/auth.service";
 import BrandLogo from "../../../components/ui/BrandLogo";
 import Icon from "../../../components/ui/Icon";
+import LanguageSwitcher from "../../../components/ui/LanguageSwitcher";
 import { useToast } from "../../../components/ui/ToastProvider";
 
 export default function LoginPage() {
@@ -58,7 +59,13 @@ export default function LoginPage() {
 
       <section className="auth-form-pane">
         <div className="auth-card vi-page-enter">
-          <div className="eyebrow"><Icon name="shield" size={14} />{t("common.admin")} Workspace</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <div className="eyebrow" style={{ marginBottom: 0 }}>
+              <Icon name="shield" size={14} />
+              {t("common.admin")}
+            </div>
+            <LanguageSwitcher variant="single" />
+          </div>
           <h1 className="auth-title">{t("auth.loginTitle")}</h1>
           <p className="auth-description">{t("auth.loginDescription")}</p>
 
@@ -71,7 +78,7 @@ export default function LoginPage() {
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
                 autoComplete="username"
-                placeholder="Nhập tài khoản quản trị..."
+                placeholder={t("form.enterValue")}
                 required
               />
             </div>
@@ -83,7 +90,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete="current-password"
-                placeholder="Nhập mật khẩu..."
+                placeholder={t("form.enterValue")}
                 required
               />
             </div>

@@ -17,6 +17,7 @@ import Icon from "../../../components/ui/Icon";
 import LoadingState from "../../../components/ui/LoadingState";
 import specimenService from "../../specimen/specimen.service";
 import { getOrderColor } from "../../specimen/specimen.constants";
+import { formatNumber, getIntlLocale } from "../../../utils/formatters";
 
 const ESRI_STREET_URL =
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
@@ -87,7 +88,7 @@ function OrderTreemapCell(props) {
 }
 
 export default function AdminDashboardPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -139,38 +140,39 @@ export default function AdminDashboardPage() {
   const metrics = [
     {
       key: "specimen",
-      label: t("dashboard.specimen", "Tổng mẫu vật số hóa"),
-      value: totalSpecimens.toLocaleString("vi-VN"),
-      foot: `${publicSpecimens.toLocaleString("vi-VN")} mẫu Công khai · ${Math.max(
-        0,
-        totalSpecimens - publicSpecimens
-      ).toLocaleString("vi-VN")} Nội bộ`,
+      label: t("dashboard.specimen"),
+      value: formatNumber(totalSpecimens, i18n.language),
+      foot: `${formatNumber(publicSpecimens, i18n.language)} ${t("common.public")} · ${formatNumber(
+        Math.max(0, totalSpecimens - publicSpecimens),
+        i18n.language
+      )} ${t("common.private")}`,
       icon: "bug",
       onClick: () => navigate("/admin/specimens"),
     },
     {
       key: "species",
-      label: t("dashboard.species", "Tổng loài đã số hóa"),
-      value: speciesCount.toLocaleString("vi-VN"),
-      foot: `${(stats?.taxa?.families || 0).toLocaleString("vi-VN")} Họ · ${(
-        stats?.taxa?.genera || 0
-      ).toLocaleString("vi-VN")} Giống (${(stats?.taxa?.total || 0).toLocaleString("vi-VN")} Taxon)`,
+      label: t("dashboard.species"),
+      value: formatNumber(speciesCount, i18n.language),
+      foot: `${formatNumber(stats?.taxa?.families || 0, i18n.language)} ${t("specimen.family")} · ${formatNumber(
+        stats?.taxa?.genera || 0,
+        i18n.language
+      )} ${t("specimen.genus")}`,
       icon: "leaf",
       onClick: () => navigate("/admin/taxonomy"),
     },
     {
       key: "media",
-      label: "Tổng ảnh mẫu vật (MinIO)",
-      value: (stats?.imageCount ?? 0).toLocaleString("vi-VN"),
-      foot: `${stats?.provincesCovered ?? 0} / ${stats?.totalProvinces ?? 0} Tỉnh thành có dữ liệu`,
+      label: t("dashboard.media"),
+      value: formatNumber(stats?.imageCount ?? 0, i18n.language),
+      foot: `${stats?.provincesCovered ?? 0} / ${stats?.totalProvinces ?? 0} ${t("specimen.province")}`,
       icon: "image",
       onClick: () => navigate("/admin/media"),
     },
     {
       key: "dna",
-      label: t("dashboard.dna", "Tổng chuỗi mã vạch DNA"),
-      value: (stats?.dnaCount || 0).toLocaleString("vi-VN"),
-      foot: "Chuẩn Barcode COI · Liên kết NCBI & BOLD",
+      label: t("dashboard.dna"),
+      value: formatNumber(stats?.dnaCount || 0, i18n.language),
+      foot: "COI Barcode · NCBI & BOLD",
       icon: "dna",
       onClick: () => navigate("/admin/dna"),
     },
@@ -218,7 +220,7 @@ export default function AdminDashboardPage() {
             )}
             {lastUpdated && (
               <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 600, color: "#2E7D32" }}>
-                · Cập nhật tự động (30s): {lastUpdated.toLocaleTimeString("vi-VN")}
+                · {lastUpdated.toLocaleTimeString(getIntlLocale(i18n.language))}
               </span>
             )}
           </p>
@@ -228,10 +230,10 @@ export default function AdminDashboardPage() {
             type="button"
             className="button button-ghost"
             onClick={() => loadStats(false)}
-            title="Làm mới dữ liệu ngay"
+            title={t("common.refresh")}
           >
             <Icon name="refresh" size={16} />
-            Làm mới
+            {t("common.refresh")}
           </button>
           <button
             type="button"
@@ -239,7 +241,7 @@ export default function AdminDashboardPage() {
             onClick={() => navigate("/admin/map")}
           >
             <Icon name="map" size={16} />
-            Bản đồ GIS
+            {t("navigation.gisMap")}
           </button>
           <button
             type="button"
@@ -247,7 +249,7 @@ export default function AdminDashboardPage() {
             onClick={() => navigate("/admin/specimens")}
           >
             <Icon name="database" size={16} />
-            Quản lý mẫu vật
+            {t("specimen.title")}
           </button>
         </div>
       </div>

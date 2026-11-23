@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Icon from "../../../components/ui/Icon";
+import { formatNumber } from "../../../utils/formatters";
 import taxonomyService from "../taxonomy.service";
 import useTaxonomyStore from "../taxonomy.store";
 
@@ -16,6 +18,7 @@ function TreeNode({
   selectedNodeId,
   onSelect,
 }) {
+  const { t, i18n } = useTranslation();
   const [visibleLimit, setVisibleLimit] = useState(INITIAL_CHILD_CAP);
   const hasChildren = (node.children && node.children.length > 0) || (node.childCount || 0) > 0;
   const expanded = expandedIds[node.id] !== undefined ? expandedIds[node.id] : depth < 3;
@@ -73,19 +76,19 @@ function TreeNode({
 
         <div className="vi-tree-metrics">
           {node.childCount > 0 ? (
-            <span className="vi-tree-child-pill" title="Số đơn vị phân loại con">
-              {node.childCount.toLocaleString("vi-VN")} nhánh
+            <span className="vi-tree-child-pill" title={t("taxonomy.childCountLabel")}>
+              {t("taxonomy.branchesCount", { count: formatNumber(node.childCount, i18n.language) })}
             </span>
           ) : null}
-          <span className="vi-tree-spec-pill" title="Số mẫu vật liên kết">
-            {(node.specimenCount || 0).toLocaleString("vi-VN")} mẫu
+          <span className="vi-tree-spec-pill" title={t("taxonomy.linkedSpecimensLabel")}>
+            {t("taxonomy.specimensShort", { count: formatNumber(node.specimenCount || 0, i18n.language) })}
           </span>
         </div>
       </div>
 
       {expanded && isLoadingChildren ? (
         <div className="vi-tree-loading-row" style={{ paddingLeft: (depth + 1) * 16 + 28 }}>
-          Đang tải các nhánh con...
+          {t("taxonomy.loadingChildren")}
         </div>
       ) : null}
 
@@ -128,6 +131,7 @@ export default function TaxonomyTreeView({
   expandedIds,
   onToggleExpanded,
 }) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [rankFilter, setRankFilter] = useState("All");
   const [searching, setSearching] = useState(false);
@@ -172,12 +176,12 @@ export default function TaxonomyTreeView({
           <Icon name="search" size={15} />
           <input
             type="text"
-            aria-label="Tìm nhanh tên khoa học trong cây phân loại"
+            aria-label={t("common.search")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Tìm nhanh tên khoa học (Order, Family, Genus, Species)..."
+            placeholder={t("taxonomy.searchPlaceholder")}
           />
-          {searching ? <span className="vi-search-spinner">Đang tìm...</span> : null}
+          {searching ? <span className="vi-search-spinner">{t("taxonomy.searching")}</span> : null}
           {query ? (
             <button
               type="button"
@@ -218,13 +222,13 @@ export default function TaxonomyTreeView({
 
         <select
           className="vi-compact-select"
-          aria-label="Lọc theo bậc phân loại"
+          aria-label={t("taxonomy.rank")}
           value={rankFilter}
           onChange={(e) => setRankFilter(e.target.value)}
         >
           {RANKS.map((r) => (
             <option key={r} value={r}>
-              {r === "All" ? "Tất cả bậc (All Ranks)" : `Bậc: ${r}`}
+              {r === "All" ? t("taxonomy.allRanks") : t("taxonomy.rankPrefix", { rank: r })}
             </option>
           ))}
         </select>

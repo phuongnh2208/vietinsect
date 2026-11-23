@@ -1,7 +1,9 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import Icon from "../../../components/ui/Icon";
 
 export default function SpecimenAiSection({ aiResults = null }) {
+  const { t } = useTranslation();
   if (!aiResults) return null;
 
   return (
@@ -10,13 +12,13 @@ export default function SpecimenAiSection({ aiResults = null }) {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name="sparkles" size={18} />
           <div>
-            <h3>Định danh Tự động bằng Trí tuệ Nhân tạo (AI Vision)</h3>
-            <span className="ai-subtitle">Mô hình EfficientNet-B4 · Huấn luyện trên mẫu côn trùng Đông Nam Á</span>
+            <h3>{t("specimenDetail.aiSectionTitle")}</h3>
+            <span className="ai-subtitle">EfficientNet-B4</span>
           </div>
         </div>
         {aiResults.confidenceScore && (
           <span className="status-badge" style={{ background: "#EEF6EE", color: "#15803D", borderColor: "#15803D" }}>
-            Độ tin cậy: {(aiResults.confidenceScore * 100).toFixed(1)}%
+            {t("ai.confidence")}: {(aiResults.confidenceScore * 100).toFixed(1)}%
           </span>
         )}
       </div>
@@ -24,7 +26,7 @@ export default function SpecimenAiSection({ aiResults = null }) {
       <div className="ai-results-body">
         {aiResults.topPredictions?.length > 0 && (
           <div className="ai-top-predictions">
-            <h4>Top-5 loài có độ tương đồng hình thái cao nhất:</h4>
+            <h4>{t("specimenDetail.aiTop5")}</h4>
             <div className="ai-predictions-list">
               {aiResults.topPredictions.map((pred, i) => (
                 <div key={i} className="ai-prediction-row">

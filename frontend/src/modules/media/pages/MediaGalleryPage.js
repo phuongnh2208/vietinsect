@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Icon from "../../../components/ui/Icon";
 import EmptyState from "../../../components/ui/EmptyState";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { useToast } from "../../../components/ui/ToastProvider";
 import useIsAdminContext from "../../../hooks/useIsAdminContext";
+import { formatNumber } from "../../../utils/formatters";
+import getApiErrorMessage from "../../../utils/apiError";
 import mediaService, { ALLOWED_MEDIA_LICENSES } from "../media.service";
 import specimenService from "../../specimen/specimen.service";
 import { getOrderColor } from "../../specimen/specimen.constants";
@@ -17,6 +20,7 @@ import SpecimenImageViewerModal from "../components/SpecimenImageViewerModal";
  * - Image Gallery placed immediately below so the first row of specimen images is visible at 1440×900 without scrolling.
  */
 export default function MediaGalleryPage() {
+  const { t, i18n } = useTranslation();
   const isAdmin = useIsAdminContext();
   const { toast } = useToast();
 
@@ -106,12 +110,12 @@ export default function MediaGalleryPage() {
       setPagination(res.pagination || { total: 0, page: 1, limit: 24, totalPages: 0 });
       setStatus("success");
     } catch (err) {
-      const msg = err?.response?.data?.message || "Không thể tải thư viện hình ảnh";
+      const msg = getApiErrorMessage(err, t);
       setErrorMsg(msg);
       toast(msg, "error");
       setStatus("error");
     }
-  }, [filters, toast]);
+  }, [filters, toast, t]);
 
   useEffect(() => {
     fetchMedia();
@@ -184,35 +188,33 @@ export default function MediaGalleryPage() {
         <div className="vi-media-title-block">
           <div className="eyebrow" style={{ marginBottom: 2 }}>
             <Icon name="image" size={13} />
-            <span>THƯ VIỆN HÌNH ẢNH</span>
+            <span>{t("media.eyebrow")}</span>
           </div>
-          <h1 className="vi-media-compact-h1">Thư viện hình ảnh côn trùng Việt Nam</h1>
-          <p className="vi-media-compact-desc">
-            Tư liệu ảnh tiêu bản và thực địa lưu trữ trên cụm MinIO nội bộ, chuẩn hóa giấy phép Creative Commons.
-          </p>
+          <h1 className="vi-media-compact-h1">{t("media.heading")}</h1>
+          <p className="vi-media-compact-desc">{t("media.subtitle")}</p>
         </div>
 
         <div className="vi-media-inline-stats" data-testid="media-compact-stats">
           <div className="vi-inline-stat-item">
-            <span className="vi-inline-stat-label">Tổng ảnh</span>
+            <span className="vi-inline-stat-label">{t("media.totalImages")}</span>
             <strong className="vi-inline-stat-val">
-              {(stats?.totalImages ?? pagination.total ?? 0).toLocaleString("vi-VN")}
+              {formatNumber(stats?.totalImages ?? pagination.total ?? 0, i18n.language)}
             </strong>
           </div>
           <div className="vi-inline-stat-item">
-            <span className="vi-inline-stat-label">Mẫu vật có ảnh</span>
+            <span className="vi-inline-stat-label">{t("media.specimensWithMedia")}</span>
             <strong className="vi-inline-stat-val">
-              {(stats?.specimensWithMedia ?? 0).toLocaleString("vi-VN")}
+              {formatNumber(stats?.specimensWithMedia ?? 0, i18n.language)}
             </strong>
           </div>
           <div className="vi-inline-stat-item">
-            <span className="vi-inline-stat-label">Chuẩn GBIF</span>
+            <span className="vi-inline-stat-label">{t("media.gbifReady")}</span>
             <strong className="vi-inline-stat-val">
-              {(stats?.dwcaExportable ?? 0).toLocaleString("vi-VN")}
+              {formatNumber(stats?.dwcaExportable ?? 0, i18n.language)}
             </strong>
           </div>
           <div className="vi-inline-stat-item">
-            <span className="vi-inline-stat-label">Lưu trữ</span>
+            <span className="vi-inline-stat-label">{t("media.storage")}</span>
             <strong className="vi-inline-stat-val">MinIO VN</strong>
           </div>
 
@@ -223,33 +225,33 @@ export default function MediaGalleryPage() {
               onClick={() => setUploadOpen(true)}
             >
               <Icon name="upload" size={14} />
-              <span>Tải ảnh lên</span>
+              <span>{t("media.uploadBtn")}</span>
             </button>
           ) : null}
         </div>
       </header>
 
       {/* C & H: Compact Sticky Horizontal Filter Toolbar */}
-      <section className="vi-media-sticky-toolbar" aria-label="Bộ lọc thư viện ảnh">
+      <section className="vi-media-sticky-toolbar" aria-label={t("search.filters")}>
         <div className="vi-media-toolbar-row">
           <div className="vi-media-search-input-wrap">
             <Icon name="search" size={14} />
             <input
               type="text"
-              aria-label="Tìm theo tên khoa học hoặc mã mẫu vật"
+              aria-label={t("common.search")}
               value={qInput}
               onChange={(e) => setQInput(e.target.value)}
-              placeholder="Tìm tên loài, mã mẫu vật, tác giả..."
+              placeholder={t("media.searchPlaceholder")}
             />
           </div>
 
           <select
             className="vi-compact-select"
-            aria-label="Lọc theo bộ côn trùng"
+            aria-label={t("specimen.order")}
             value={filters.order}
             onChange={(e) => setFilters((p) => ({ ...p, order: e.target.value, page: 1 }))}
           >
-            <option value="">Tất cả Bộ (Order)</option>
+            <option value="">{t("media.allOrders")}</option>
             {lookups.orders.map((o) => (
               <option key={o.id} value={o.scientificName}>
                 {o.scientificName}
@@ -259,11 +261,11 @@ export default function MediaGalleryPage() {
 
           <select
             className="vi-compact-select"
-            aria-label="Lọc theo tỉnh thành"
+            aria-label={t("specimen.province")}
             value={filters.provinceId}
             onChange={(e) => setFilters((p) => ({ ...p, provinceId: e.target.value, page: 1 }))}
           >
-            <option value="">Tất cả tỉnh/thành</option>
+            <option value="">{t("media.allProvinces")}</option>
             {lookups.provinces.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.nameVn}
@@ -273,24 +275,24 @@ export default function MediaGalleryPage() {
 
           <select
             className="vi-compact-select"
-            aria-label="Lọc theo góc chụp"
+            aria-label={t("media.shotTypeLabel")}
             value={filters.shotType}
             onChange={(e) => setFilters((p) => ({ ...p, shotType: e.target.value, page: 1 }))}
           >
-            <option value="">Tất cả góc chụp</option>
-            <option value="habitus">Toàn thân (Habitus)</option>
-            <option value="dorsal">Mặt lưng (Dorsal)</option>
-            <option value="lateral">Mặt bên (Lateral)</option>
-            <option value="field">Thực địa (Field)</option>
+            <option value="">{t("media.allShotTypes")}</option>
+            <option value="habitus">{t("media.shotHabitus")}</option>
+            <option value="dorsal">{t("media.shotDorsal")}</option>
+            <option value="lateral">{t("media.shotLateral")}</option>
+            <option value="field">{t("media.shotField")}</option>
           </select>
 
           <select
             className="vi-compact-select"
-            aria-label="Lọc theo giấy phép"
+            aria-label={t("media.licenseLabel")}
             value={filters.licenseCode}
             onChange={(e) => setFilters((p) => ({ ...p, licenseCode: e.target.value, page: 1 }))}
           >
-            <option value="">Tất cả giấy phép</option>
+            <option value="">{t("media.allLicenses")}</option>
             {ALLOWED_MEDIA_LICENSES.map((lic) => (
               <option key={lic.code} value={lic.code}>
                 {lic.code.toUpperCase()}
@@ -303,7 +305,7 @@ export default function MediaGalleryPage() {
             className="button button-sm button-ghost"
             onClick={() => setShowAdvancedFilters((v) => !v)}
           >
-            {showAdvancedFilters ? "Ẩn lọc phụ" : "Lọc phụ"}
+            {showAdvancedFilters ? t("media.hideAdvFilters") : t("media.advFilters")}
           </button>
 
           <button
@@ -311,7 +313,7 @@ export default function MediaGalleryPage() {
             className="button button-sm button-ghost"
             onClick={handleResetFilters}
           >
-            Đặt lại
+            {t("common.reset")}
           </button>
         </div>
 
@@ -325,7 +327,7 @@ export default function MediaGalleryPage() {
                   setFilters((p) => ({ ...p, dwcaOnly: e.target.checked, page: 1 }))
                 }
               />
-              <span>Chỉ ảnh xuất gói DwC-A (CC0 / CC BY 4.0)</span>
+              <span>{t("media.dwcaOnly")}</span>
             </label>
             <label className="vi-compact-check-label">
               <input
@@ -335,7 +337,7 @@ export default function MediaGalleryPage() {
                   setFilters((p) => ({ ...p, voucheredOnly: e.target.checked, page: 1 }))
                 }
               />
-              <span>Chỉ ảnh gắn tiêu bản bảo tàng (Preserved Voucher)</span>
+              <span>{t("media.voucheredOnly")}</span>
             </label>
           </div>
         ) : null}
@@ -355,11 +357,11 @@ export default function MediaGalleryPage() {
         <div className="card panel">
           <EmptyState
             icon="alert"
-            title="Lỗi tải thư viện hình ảnh"
+            title={t("media.loadErrorTitle")}
             description={errorMsg}
             action={
               <button type="button" className="button button-sm button-primary" onClick={fetchMedia}>
-                Thử lại
+                {t("specimen.retry")}
               </button>
             }
           />
@@ -368,15 +370,15 @@ export default function MediaGalleryPage() {
         <div className="card panel">
           <EmptyState
             icon="layers"
-            title="Không có hình ảnh khớp bộ lọc"
-            description="Thử đặt lại bộ lọc hoặc thay đổi từ khóa tìm kiếm."
+            title={t("media.emptyTitle")}
+            description={t("media.emptyDesc")}
             action={
               <button
                 type="button"
                 className="button button-sm button-secondary"
                 onClick={handleResetFilters}
               >
-                Đặt lại bộ lọc
+                {t("specimen.resetFilters")}
               </button>
             }
           />
@@ -407,7 +409,7 @@ export default function MediaGalleryPage() {
                     ) : (
                       <div className="vi-media-broken-fallback">
                         <Icon name="image" size={24} />
-                        <span>Ảnh không khả dụng</span>
+                        <span>{t("media.unavailable")}</span>
                       </div>
                     )}
 
@@ -424,7 +426,7 @@ export default function MediaGalleryPage() {
                     </span>
 
                     <div className="vi-media-hover-overlay">
-                      <span>Phóng to ảnh</span>
+                      <span>{t("media.zoomImage")}</span>
                     </div>
                   </div>
 
@@ -445,13 +447,13 @@ export default function MediaGalleryPage() {
                         {img.specimenCode || `#${img.specimenId}`}
                       </Link>
                       <span className="vi-media-prov-text">
-                        {img.provinceNameVn || "Việt Nam"}
+                        {img.provinceNameVn || "Vietnam"}
                       </span>
                       {isAdmin ? (
                         <button
                           type="button"
                           className="vi-media-del-btn"
-                          title="Xóa ảnh khỏi MinIO"
+                          title={t("common.delete")}
                           onClick={() => setPendingDelete(img)}
                         >
                           <Icon name="close" size={12} />
@@ -466,8 +468,11 @@ export default function MediaGalleryPage() {
 
           <div className="card vi-pagination-bar" style={{ marginTop: 14, padding: "10px 16px" }}>
             <div style={{ fontSize: 12, color: "var(--vi-muted)" }}>
-              Trang <strong>{pagination.page}</strong> / <strong>{pagination.totalPages || 1}</strong> · Tổng{" "}
-              <strong>{(pagination.total || 0).toLocaleString("vi-VN")}</strong> ảnh
+              {t("media.paginationSummary", {
+                page: pagination.page,
+                totalPages: pagination.totalPages || 1,
+                total: formatNumber(pagination.total || 0, i18n.language),
+              })}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button
@@ -476,7 +481,7 @@ export default function MediaGalleryPage() {
                 disabled={pagination.page <= 1}
                 onClick={() => setFilters((p) => ({ ...p, page: p.page - 1 }))}
               >
-                ← Trang trước
+                {t("specimen.prevPage")}
               </button>
               <button
                 type="button"
@@ -484,7 +489,7 @@ export default function MediaGalleryPage() {
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => setFilters((p) => ({ ...p, page: p.page + 1 }))}
               >
-                Trang sau →
+                {t("specimen.nextPage")}
               </button>
             </div>
           </div>

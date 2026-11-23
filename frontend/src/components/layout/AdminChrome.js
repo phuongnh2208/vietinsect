@@ -6,6 +6,7 @@ import useAuthStore from "../../stores/auth.store";
 import useAuth from "../../modules/auth/useAuth";
 import BrandLogo from "../ui/BrandLogo";
 import Icon from "../ui/Icon";
+import LanguageSwitcher from "../ui/LanguageSwitcher";
 
 const navScreenIds = ["SCR-03", "SCR-05", "SCR-12", "SCR-18", "SCR-20", "SCR-25", "SCR-26"];
 const navLabels = {
@@ -41,7 +42,7 @@ export function AdminSidebar({ open, onClose }) {
   );
 
   return (
-    <aside className={`sidebar ${open ? "is-open" : ""}`} aria-label="Điều hướng quản trị">
+    <aside className={`sidebar ${open ? "is-open" : ""}`} aria-label={t("navigation.adminNav")}>
       <NavLink
         to="/admin/dashboard"
         className="brand-logo-link"
@@ -50,7 +51,7 @@ export function AdminSidebar({ open, onClose }) {
       >
         <BrandLogo showSubtitle={true} />
       </NavLink>
-      <div className="sidebar-section-label">Workspace</div>
+      <div className="sidebar-section-label">{t("navigation.workspace")}</div>
       <nav className="sidebar-nav">
         {navItems.map((item) => (
           <NavLink
@@ -73,7 +74,7 @@ export function AdminSidebar({ open, onClose }) {
           className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
         >
           <Icon name="image" size={18} />
-          <span>Thư viện ảnh</span>
+          <span>{t("navigation.mediaGallery")}</span>
         </NavLink>
         <NavLink
           to="/admin/sharing"
@@ -81,7 +82,7 @@ export function AdminSidebar({ open, onClose }) {
           className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
         >
           <Icon name="lock" size={18} />
-          <span>Chia sẻ Public/Private</span>
+          <span>{t("navigation.sharing")}</span>
         </NavLink>
         <NavLink
           to="/admin/system"
@@ -101,7 +102,7 @@ export function AdminSidebar({ open, onClose }) {
 }
 
 export function Topbar({ onMenuClick }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [theme, setTheme] = useState(
     () => window.localStorage.getItem("vietinsect_theme") || "light"
   );
@@ -112,18 +113,13 @@ export function Topbar({ onMenuClick }) {
     window.localStorage.setItem("vietinsect_theme", theme);
   }, [theme]);
 
-  const changeLanguage = (language) => {
-    i18n.changeLanguage(language);
-    window.localStorage.setItem("vietinsect_language", language);
-  };
-
   return (
     <header className="topbar">
       <button
         type="button"
         className="icon-button topbar-menu"
         onClick={onMenuClick}
-        aria-label="Mở menu"
+        aria-label={t("navigation.openMenu")}
       >
         <Icon name="menu" size={20} />
       </button>
@@ -134,22 +130,7 @@ export function Topbar({ onMenuClick }) {
       </label>
 
       <div className="topbar-actions">
-        <div className="language-toggle" aria-label={t("common.language")}>
-          <button
-            type="button"
-            className={i18n.language === "vi" ? "active" : ""}
-            onClick={() => changeLanguage("vi")}
-          >
-            VI
-          </button>
-          <button
-            type="button"
-            className={i18n.language === "en" ? "active" : ""}
-            onClick={() => changeLanguage("en")}
-          >
-            EN
-          </button>
-        </div>
+        <LanguageSwitcher variant="segmented" />
         <button
           type="button"
           className="icon-button"

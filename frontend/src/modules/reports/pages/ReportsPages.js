@@ -57,7 +57,7 @@ export function ReportsChecklistPage() {
         setLookups(lk || { orders: [], provinces: [] });
         setStats(st);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const loadChecklist = useCallback(async () => {
@@ -441,7 +441,7 @@ export function DigitizationKpiPage() {
         setStats(st);
         setAnalytics(an);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -659,7 +659,7 @@ export function CustomReportBuilderPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    specimenService.getLookups().then((lk) => setLookups(lk || { orders: [], provinces: [] })).catch(() => {});
+    specimenService.getLookups().then((lk) => setLookups(lk || { orders: [], provinces: [] })).catch(() => { });
   }, []);
 
   const runPreview = useCallback(async () => {
@@ -718,7 +718,7 @@ export function CustomReportBuilderPage() {
         limit: 10000,
       });
       downloadBlob(blob, `vietinsect-custom-report-${new Date().toISOString().slice(0, 10)}.xlsx`);
-    } catch (_) {}
+    } catch (_) { }
   };
 
   return (

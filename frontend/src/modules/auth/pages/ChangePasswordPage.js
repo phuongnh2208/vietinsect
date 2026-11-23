@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Icon from "../../../components/ui/Icon";
 import { useToast } from "../../../components/ui/ToastProvider";
 import useAuthStore from "../../../stores/auth.store";
 import systemService from "../../system/system.service";
+import getApiErrorMessage from "../../../utils/apiError";
 
 export default function ChangePasswordPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const logoutStore = useAuthStore((state) => state.logout);
@@ -19,25 +22,22 @@ export default function ChangePasswordPage() {
     e.preventDefault();
     const strongPw = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,128}$/;
     if (!strongPw.test(newPassword)) {
-      toast(
-        "Mật khẩu mới phải ≥12 ký tự và gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt (SRS §5.2)",
-        "warning",
-      );
+      toast(t("auth.passwordHint"), "warning");
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast("Mật khẩu xác nhận không trùng khớp", "warning");
+      toast(t("auth.passwordMismatch"), "warning");
       return;
     }
 
     setSubmitting(true);
     try {
       await systemService.changePassword(currentPassword, newPassword);
-      toast("Đã đổi mật khẩu và thu hồi các phiên cũ. Vui lòng đăng nhập lại.", "success");
+      toast(t("notification.saved"), "success");
       logoutStore();
       navigate("/login", { replace: true });
     } catch (err) {
-      toast(err.response?.data?.message || "Không thể đổi mật khẩu", "error");
+      toast(getApiErrorMessage(err, t), "error");
     } finally {
       setSubmitting(false);
     }
@@ -49,20 +49,17 @@ export default function ChangePasswordPage() {
         <div>
           <div className="eyebrow">
             <Icon name="key" size={14} />
-            Bảo mật Tài khoản Quản trị
+            {t("common.admin")}
           </div>
-          <h1>Đổi mật khẩu quản trị viên</h1>
-          <p className="page-description">
-            Mật khẩu mới yêu cầu tối thiểu 12 ký tự, được băm bằng thuật toán bcrypt (cost factor 12) và
-            tự động thu hồi toàn bộ refresh token cũ.
-          </p>
+          <h1>{t("auth.changePasswordTitle")}</h1>
+          <p className="page-description">{t("auth.passwordHint")}</p>
         </div>
       </div>
 
       <section className="card panel" style={{ maxWidth: 540 }}>
         <form onSubmit={handleSubmit}>
           <div className="form-field">
-            <label htmlFor="cp-cur">Mật khẩu hiện tại *</label>
+            <label htmlFor="cp-cur">{t("auth.currentPassword")} *</label>
             <input
               id="cp-cur"
               type="password"
@@ -73,7 +70,7 @@ export default function ChangePasswordPage() {
           </div>
 
           <div className="form-field">
-            <label htmlFor="cp-new">Mật khẩu mới (≥ 12 ký tự) *</label>
+            <label htmlFor="cp-new">{t("auth.newPassword")} *</label>
             <input
               id="cp-new"
               type="password"
@@ -85,7 +82,7 @@ export default function ChangePasswordPage() {
           </div>
 
           <div className="form-field">
-            <label htmlFor="cp-cfm">Nhập lại mật khẩu mới *</label>
+            <label htmlFor="cp-cfm">{t("auth.confirmPassword")} *</label>
             <input
               id="cp-cfm"
               type="password"
@@ -103,11 +100,11 @@ export default function ChangePasswordPage() {
               onClick={() => navigate("/admin/dashboard")}
               disabled={submitting}
             >
-              Hủy
+              {t("common.cancel")}
             </button>
             <button type="submit" className="button button-primary" disabled={submitting}>
               <Icon name="check" size={16} />
-              {submitting ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
+              {submitting ? t("common.saving") : t("auth.changePasswordSubmit")}
             </button>
           </div>
         </form>

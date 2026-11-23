@@ -1,16 +1,20 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Icon from "../../../components/ui/Icon";
 import LoadingState from "../../../components/ui/LoadingState";
 import EmptyState from "../../../components/ui/EmptyState";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { useToast } from "../../../components/ui/ToastProvider";
 import useIsAdminContext from "../../../hooks/useIsAdminContext";
+import { formatNumber } from "../../../utils/formatters";
+import getApiErrorMessage from "../../../utils/apiError";
 import dnaService, { GENE_MARKERS } from "../dna.service";
 import specimenService from "../../specimen/specimen.service";
 import { getOrderColor } from "../../specimen/specimen.constants";
 
 export default function DnaListPage() {
+  const { t, i18n } = useTranslation();
   const isAdmin = useIsAdminContext();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -203,19 +207,16 @@ export default function DnaListPage() {
         <div>
           <div className="eyebrow">
             <Icon name="dna" size={14} />
-            Dữ liệu Phân tử DNA & GenBank / BOLD
+            {t("dna.eyebrow")}
           </div>
-          <h1>Kho lưu trữ trình tự mã vạch DNA</h1>
-          <p className="page-description">
-            Tra cứu các trình tự gen ty thể và nhân (COI, 16S, 18S, ITS2, CytB), đối chiếu mã định danh
-            quốc tế NCBI GenBank / BOLD Systems và liên kết trực tiếp về mẫu vật thực địa tại Việt Nam.
-          </p>
+          <h1>{t("dna.listTitle")}</h1>
+          <p className="page-description">{t("dna.listDesc")}</p>
         </div>
 
         <div className="hero-actions" style={{ marginTop: 0 }}>
           <button type="button" className="button button-ghost" onClick={handleExportCsv}>
             <Icon name="file" size={16} />
-            Xuất bảng CSV
+            {t("dna.exportCsv")}
           </button>
           {isAdmin ? (
             <button
@@ -224,7 +225,7 @@ export default function DnaListPage() {
               onClick={() => navigate("/admin/dna/new")}
             >
               <Icon name="plus" size={16} />
-              Thêm trình tự DNA
+              {t("dna.createTitle")}
             </button>
           ) : null}
         </div>
@@ -235,49 +236,52 @@ export default function DnaListPage() {
         <div className="metric-grid" style={{ marginBottom: 20 }}>
           <article className="card metric-card">
             <div className="metric-head">
-              <span>Tổng chuỗi FASTA</span>
+              <span>{t("dna.totalFasta")}</span>
               <span className="metric-icon">
                 <Icon name="dna" size={16} />
               </span>
             </div>
-            <div className="metric-value">{(stats.totalSequences || 0).toLocaleString()}</div>
+            <div className="metric-value">{formatNumber(stats.totalSequences || 0, i18n.language)}</div>
             <div className="metric-foot">
-              {(stats.distinctTaxa || 0).toLocaleString()} loài / taxon phân tử
+              {t("dna.distinctTaxa", { count: formatNumber(stats.distinctTaxa || 0, i18n.language) })}
             </div>
           </article>
 
           <article className="card metric-card">
             <div className="metric-head">
-              <span>Liên kết mẫu vật VN</span>
+              <span>{t("dna.linkedSpecimens")}</span>
               <span className="metric-icon">
                 <Icon name="bug" size={16} />
               </span>
             </div>
-            <div className="metric-value">{(stats.linkedSpecimens || 0).toLocaleString()}</div>
-            <div className="metric-foot">Khớp trực tiếp kho mẫu vật GBIF</div>
+            <div className="metric-value">{formatNumber(stats.linkedSpecimens || 0, i18n.language)}</div>
+            <div className="metric-foot">{t("dna.linkedGbif")}</div>
           </article>
 
           <article className="card metric-card">
             <div className="metric-head">
-              <span>Chiều dài trung bình</span>
+              <span>{t("dna.avgLength")}</span>
               <span className="metric-icon">
                 <Icon name="chart" size={16} />
               </span>
             </div>
             <div className="metric-value">{stats.avgLengthBp || 0} bp</div>
-            <div className="metric-foot">Tỷ lệ G-C TB: {stats.avgGcPct || 0}%</div>
+            <div className="metric-foot">{t("dna.avgGc", { pct: stats.avgGcPct || 0 })}</div>
           </article>
 
           <article className="card metric-card">
             <div className="metric-head">
-              <span>Kết quả khớp lọc</span>
+              <span>{t("specimen.matchingResults")}</span>
               <span className="metric-icon">
                 <Icon name="filter" size={16} />
               </span>
             </div>
-            <div className="metric-value">{(pagination.total || 0).toLocaleString()}</div>
+            <div className="metric-value">{formatNumber(pagination.total || 0, i18n.language)}</div>
             <div className="metric-foot">
-              Trang {pagination.page} / {Math.max(1, pagination.totalPages)}
+              {t("specimen.pageOf", {
+                page: pagination.page,
+                total: Math.max(1, pagination.totalPages),
+              })}
             </div>
           </article>
         </div>
@@ -287,23 +291,23 @@ export default function DnaListPage() {
       <section className="card panel" style={{ marginBottom: 18 }}>
         <div className="vi-filter-grid">
           <div className="form-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="dna-q">Từ khóa (Accession, BOLD ID, Tên loài, Mã mẫu vật)</label>
+            <label htmlFor="dna-q">{t("dna.keywordLabel")}</label>
             <input
               id="dna-q"
               value={qInput}
               onChange={(e) => setQInput(e.target.value)}
-              placeholder="VD: AF469881, Papilio, Anopheles..."
+              placeholder={t("dna.keywordPlaceholder")}
             />
           </div>
 
           <div className="form-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="dna-marker">Chỉ thị Gen (Gene Marker)</label>
+            <label htmlFor="dna-marker">{t("dna.marker")}</label>
             <select
               id="dna-marker"
               value={filters.marker}
               onChange={(e) => updateFilter("marker", e.target.value)}
             >
-              <option value="">Tất cả Marker</option>
+              <option value="">{t("dna.allMarkers")}</option>
               {GENE_MARKERS.map((m) => (
                 <option key={m} value={m}>
                   {m}
@@ -313,13 +317,13 @@ export default function DnaListPage() {
           </div>
 
           <div className="form-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="dna-order">Bộ côn trùng (Order)</label>
+            <label htmlFor="dna-order">{t("specimen.order")}</label>
             <select
               id="dna-order"
               value={filters.order}
               onChange={(e) => updateFilter("order", e.target.value)}
             >
-              <option value="">Tất cả 16 Bộ</option>
+              <option value="">{t("specimen.allOrders")}</option>
               {orders.map((o) => (
                 <option key={o.id} value={o.scientificName}>
                   {o.scientificName}
@@ -329,16 +333,16 @@ export default function DnaListPage() {
           </div>
 
           <div className="form-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="dna-src">Nguồn cơ sở dữ liệu</label>
+            <label htmlFor="dna-src">{t("dna.sourceDb")}</label>
             <select
               id="dna-src"
               value={filters.sourceDb}
               onChange={(e) => updateFilter("sourceDb", e.target.value)}
             >
-              <option value="">Tất cả (NCBI + BOLD + Nội bộ)</option>
+              <option value="">{t("dna.allSourceDb")}</option>
               <option value="NCBI">NCBI GenBank</option>
               <option value="BOLD">BOLD Systems</option>
-              <option value="INTERNAL">Giải trình tự nội bộ</option>
+              <option value="INTERNAL">{t("dna.internalSeq")}</option>
             </select>
           </div>
         </div>
@@ -349,11 +353,11 @@ export default function DnaListPage() {
               className="vi-compact-select"
               value={filters.isOrphaned}
               onChange={(e) => updateFilter("isOrphaned", e.target.value)}
-              aria-label="Trạng thái liên kết mẫu vật"
+              aria-label={t("dna.colLinkedSpecimen")}
             >
-              <option value="">Tất cả trạng thái liên kết</option>
-              <option value="false">Đã liên kết mẫu vật thực địa</option>
-              <option value="true">Chuỗi tham chiếu độc lập (Orphaned)</option>
+              <option value="">{t("dna.allLinkStates")}</option>
+              <option value="false">{t("dna.linkedFieldSpecimen")}</option>
+              <option value="true">{t("dna.orphanedRefSeq")}</option>
             </select>
 
             {isAdmin ? (
@@ -361,16 +365,16 @@ export default function DnaListPage() {
                 className="vi-compact-select"
                 value={filters.isPublic}
                 onChange={(e) => updateFilter("isPublic", e.target.value)}
-                aria-label="Trạng thái chia sẻ"
+                aria-label={t("specimen.sharingStatus")}
               >
-                <option value="">Tất cả (Public + Private)</option>
-                <option value="true">Đang Công khai</option>
-                <option value="false">Đang Ẩn nội bộ</option>
+                <option value="">{t("specimen.allSharing")}</option>
+                <option value="true">{t("specimen.currentlyPublic")}</option>
+                <option value="false">{t("specimen.currentlyPrivate")}</option>
               </select>
             ) : null}
 
             <button type="button" className="button button-sm button-ghost" onClick={resetFilters}>
-              Đặt lại bộ lọc
+              {t("specimen.resetFilters")}
             </button>
           </div>
 
@@ -381,13 +385,13 @@ export default function DnaListPage() {
               const [sortBy, sortOrder] = e.target.value.split(":");
               setFilters((p) => ({ ...p, sortBy, sortOrder, page: 1 }));
             }}
-            aria-label="Sắp xếp theo"
+            aria-label={t("search.sortBy")}
           >
-            <option value="createdAt:desc">Mới đồng bộ / nhập gần nhất</option>
-            <option value="sequenceLengthBp:desc">Chiều dài chuỗi (Dài → Ngắn)</option>
-            <option value="gcContentPct:desc">Tỷ lệ G-C % (Cao → Thấp)</option>
-            <option value="scientificName:asc">Tên khoa học (A → Z)</option>
-            <option value="submissionDate:desc">Ngày công bố GenBank</option>
+            <option value="createdAt:desc">{t("dna.sortNewestSync")}</option>
+            <option value="sequenceLengthBp:desc">{t("dna.sortLengthDesc")}</option>
+            <option value="gcContentPct:desc">{t("dna.sortGcDesc")}</option>
+            <option value="scientificName:asc">{t("specimen.sortNameAsc")}</option>
+            <option value="submissionDate:desc">{t("dna.sortSubmissionDesc")}</option>
           </select>
         </div>
       </section>
@@ -395,31 +399,31 @@ export default function DnaListPage() {
       {/* Data Table */}
       <section className="card" style={{ overflow: "hidden" }}>
         {status === "loading" ? (
-          <LoadingState label="Đang tải danh sách trình tự nucleotide..." />
+          <LoadingState label={t("dna.loadingList")} />
         ) : status === "error" ? (
           <EmptyState
             icon="alert"
-            title="Không thể tải dữ liệu DNA"
+            title={t("dna.loadErrorTitle")}
             description={errorMsg}
             action={
               <button className="button button-ghost" onClick={fetchList}>
-                Thử lại
+                {t("specimen.retry")}
               </button>
             }
           />
         ) : items.length === 0 ? (
           <EmptyState
             icon="dna"
-            title="Chưa có trình tự DNA khớp điều kiện"
-            description="Hãy thử xóa bộ lọc hoặc nhập mới từ mã GenBank Accession."
+            title={t("dna.emptyListTitle")}
+            description={t("dna.emptyListDesc")}
             action={
               isAdmin ? (
                 <button className="button button-primary" onClick={() => navigate("/admin/dna/new")}>
-                  + Thêm chuỗi DNA đầu tiên
+                  {t("dna.addFirstSeq")}
                 </button>
               ) : (
                 <button className="button button-ghost" onClick={resetFilters}>
-                  Xóa bộ lọc
+                  {t("search.clearFilters")}
                 </button>
               )
             }
@@ -431,14 +435,14 @@ export default function DnaListPage() {
                 <thead>
                   <tr>
                     <th>GenBank / BOLD ID</th>
-                    <th>Loài / Định danh phân tử</th>
-                    <th>Bộ (Order)</th>
+                    <th>{t("dna.colSpeciesMolecular")}</th>
+                    <th>{t("specimen.order")}</th>
                     <th>Marker</th>
-                    <th>Độ dài & G-C%</th>
-                    <th>Mẫu vật liên kết</th>
-                    <th>Liên kết quốc tế</th>
-                    {isAdmin ? <th>Hiển thị</th> : null}
-                    <th style={{ textAlign: "right" }}>Thao tác</th>
+                    <th>{t("dna.colLengthGc")}</th>
+                    <th>{t("dna.colLinkedSpecimen")}</th>
+                    <th>{t("dna.colExternalLinks")}</th>
+                    {isAdmin ? <th>{t("specimen.colVisibility")}</th> : null}
+                    <th style={{ textAlign: "right" }}>{t("common.actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -469,7 +473,7 @@ export default function DnaListPage() {
                           </Link>
                           {item.submissionDate ? (
                             <span style={{ fontSize: 11, color: "var(--vi-muted)" }}>
-                              Công bố: {item.submissionDate}
+                              {t("dna.publishedDate", { date: item.submissionDate })}
                             </span>
                           ) : null}
                         </td>
@@ -511,7 +515,7 @@ export default function DnaListPage() {
                             </Link>
                           ) : (
                             <span style={{ fontSize: 11, color: "var(--vi-muted)" }}>
-                              Tham chiếu độc lập
+                              {t("dna.standaloneRef")}
                             </span>
                           )}
                         </td>
@@ -561,14 +565,14 @@ export default function DnaListPage() {
                             className="button button-sm button-secondary"
                             style={{ marginRight: isAdmin ? 6 : 0 }}
                           >
-                            Xem FASTA
+                            {t("dna.viewFasta")}
                           </Link>
                           {isAdmin ? (
                             <>
                               <button
                                 type="button"
                                 className="icon-button"
-                                title="Chỉnh sửa trình tự"
+                                title={t("common.edit")}
                                 onClick={() => navigate(`/admin/dna/new?id=${item.id}`)}
                               >
                                 <Icon name="edit" size={15} />
@@ -577,7 +581,7 @@ export default function DnaListPage() {
                                 type="button"
                                 className="icon-button"
                                 style={{ color: "#B0241A" }}
-                                title="Xóa trình tự"
+                                title={t("common.delete")}
                                 onClick={() => setPendingDelete(item)}
                               >
                                 <Icon name="close" size={15} />
@@ -594,12 +598,11 @@ export default function DnaListPage() {
 
             <div className="vi-pagination-bar">
               <div style={{ fontSize: 13, color: "var(--vi-muted)" }}>
-                Hiển thị{" "}
-                <strong>
-                  {(pagination.page - 1) * pagination.limit + 1}–
-                  {Math.min(pagination.page * pagination.limit, pagination.total)}
-                </strong>{" "}
-                trên tổng số <strong>{pagination.total.toLocaleString()}</strong> trình tự DNA
+                {t("dna.showingDnaRange", {
+                  from: (pagination.page - 1) * pagination.limit + 1,
+                  to: Math.min(pagination.page * pagination.limit, pagination.total),
+                  total: formatNumber(pagination.total, i18n.language),
+                })}
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -609,7 +612,7 @@ export default function DnaListPage() {
                   disabled={pagination.page <= 1}
                   onClick={() => setFilters((p) => ({ ...p, page: p.page - 1 }))}
                 >
-                  ← Trang trước
+                  {t("specimen.prevPage")}
                 </button>
                 <span style={{ fontSize: 13, fontWeight: 800, padding: "0 8px" }}>
                   {pagination.page} / {pagination.totalPages}
@@ -620,7 +623,7 @@ export default function DnaListPage() {
                   disabled={pagination.page >= pagination.totalPages}
                   onClick={() => setFilters((p) => ({ ...p, page: p.page + 1 }))}
                 >
-                  Trang sau →
+                  {t("specimen.nextPage")}
                 </button>
               </div>
             </div>
@@ -630,12 +633,12 @@ export default function DnaListPage() {
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}
-        title="Xóa bản ghi trình tự DNA?"
+        title={t("dna.deleteDnaTitle")}
         message={
           pendingDelete
-            ? `Bạn có chắc muốn xóa trình tự ${
-                pendingDelete.genbankAccession || pendingDelete.scientificName
-              }? Thao tác này không xóa mẫu vật thực địa liên kết.`
+            ? t("dna.deleteDnaMessage", {
+                name: pendingDelete.genbankAccession || pendingDelete.scientificName,
+              })
             : ""
         }
         variant="danger"

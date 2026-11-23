@@ -11,11 +11,11 @@ import specimenService from "../../specimen/specimen.service";
 import dnaService from "../../dna/dna.service";
 
 const TABS = [
-  { id: "morphology", label: "Hình thái & Sinh thái", icon: "leaf" },
-  { id: "specimens", label: "Mẫu vật", icon: "bug" },
-  { id: "dna", label: "DNA & GenBank / BOLD", icon: "dna" },
-  { id: "activity", label: "Hoạt tính Sinh/Hóa", icon: "chart" },
-  { id: "distribution", label: "Phân bố Không gian", icon: "map" },
+  { id: "morphology", labelKey: "taxonomy.tabMorphology", icon: "leaf" },
+  { id: "specimens", labelKey: "taxonomy.tabSpecimens", icon: "bug" },
+  { id: "dna", labelKey: "taxonomy.tabDna", icon: "dna" },
+  { id: "activity", labelKey: "taxonomy.tabActivity", icon: "chart" },
+  { id: "distribution", labelKey: "taxonomy.tabDistribution", icon: "map" },
 ];
 
 const ESRI_STREET_URL =
@@ -53,7 +53,7 @@ export default function SpeciesProfileTabs({ profile }) {
     specimenService
       .getLookups()
       .then((lk) => setProvinces(lk?.provinces || []))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const loadSpecimens = useCallback(async () => {
@@ -148,7 +148,7 @@ export default function SpeciesProfileTabs({ profile }) {
             onClick={() => setActive(tab.id)}
           >
             <Icon name={tab.icon} size={15} />
-            <span>{tab.label}</span>
+            <span>{t(tab.labelKey)}</span>
             {tab.id === "specimens" && profile.specimenCount != null ? (
               <span className="vi-tab-count-badge">
                 {(profile.specimenCount || 0).toLocaleString("vi-VN")}
@@ -195,9 +195,8 @@ export default function SpeciesProfileTabs({ profile }) {
                 <dt>Tên thường gọi (Vernacular Name)</dt>
                 <dd>
                   {profile.vernacularNameVn || profile.vernacularNameEn
-                    ? `${profile.vernacularNameVn || notProvided} / ${
-                        profile.vernacularNameEn || notProvided
-                      }`
+                    ? `${profile.vernacularNameVn || notProvided} / ${profile.vernacularNameEn || notProvided
+                    }`
                     : notProvided}
                 </dd>
               </div>
@@ -262,16 +261,18 @@ export default function SpeciesProfileTabs({ profile }) {
         {/* Table Controls Toolbar */}
         <div className="vi-spec-table-toolbar">
           <div className="vi-spec-table-summary">
-            Tổng số: <strong>{(specTotal || 0).toLocaleString("vi-VN")}</strong> mẫu vật · Đang hiển
-            thị: <strong>{specimens.length}</strong> bản ghi
+            {t("taxonomy.specimensSummary", {
+              total: specTotal || 0,
+              shown: specimens.length,
+            })}
           </div>
 
           <div className="vi-spec-table-controls">
             <input
               type="text"
               className="vi-compact-input"
-              aria-label="Tìm trong mẫu vật của loài"
-              placeholder="Tìm mã mẫu / địa điểm..."
+              aria-label={t("common.search")}
+              placeholder={t("taxonomy.searchSpecimenPlaceholder")}
               value={specFilters.q}
               onChange={(e) =>
                 setSpecFilters((p) => ({ ...p, q: e.target.value, page: 1 }))
@@ -280,13 +281,13 @@ export default function SpeciesProfileTabs({ profile }) {
 
             <select
               className="vi-compact-select"
-              aria-label="Lọc theo tỉnh thành"
+              aria-label={t("specimen.province")}
               value={specFilters.provinceId}
               onChange={(e) =>
                 setSpecFilters((p) => ({ ...p, provinceId: e.target.value, page: 1 }))
               }
             >
-              <option value="">Tất cả tỉnh/thành</option>
+              <option value="">{t("specimen.allProvinces")}</option>
               {provinces.map((prov) => (
                 <option key={prov.id} value={prov.id}>
                   {prov.nameVn}
@@ -296,33 +297,33 @@ export default function SpeciesProfileTabs({ profile }) {
 
             <select
               className="vi-compact-select"
-              aria-label="Sắp xếp theo ngày thu mẫu"
+              aria-label={t("search.sortBy")}
               value={specFilters.sortOrder}
               onChange={(e) =>
                 setSpecFilters((p) => ({ ...p, sortOrder: e.target.value, page: 1 }))
               }
             >
-              <option value="desc">Ngày thu: Mới nhất</option>
-              <option value="asc">Ngày thu: Cũ nhất</option>
+              <option value="desc">{t("specimen.sortDateDesc")}</option>
+              <option value="asc">{t("specimen.sortDateAsc")}</option>
             </select>
 
             <Link to={specimenListUrl} className="button button-sm button-primary">
-              Xem toàn bộ {(profile.specimenCount || 0).toLocaleString("vi-VN")} mẫu vật →
+              {t("home.browseAllCount", { count: profile.specimenCount || 0 })}
             </Link>
           </div>
         </div>
 
         {/* Table Content / Loading / Error / Empty States */}
         {specLoading ? (
-          <LoadingState label="Đang tải danh sách mẫu vật thuộc loài..." />
+          <LoadingState label={t("taxonomy.loadingSpeciesSpecimens")} />
         ) : specError ? (
           <EmptyState
             icon="alert"
-            title="Lỗi tải danh sách mẫu vật"
+            title={t("taxonomy.loadSpecimensError")}
             description={specError}
             action={
               <button type="button" className="button button-sm button-primary" onClick={loadSpecimens}>
-                Thử lại
+                {t("specimen.retry")}
               </button>
             }
           />
@@ -332,13 +333,13 @@ export default function SpeciesProfileTabs({ profile }) {
               <table className="vi-scientific-data-table" data-testid="species-specimens-table">
                 <thead>
                   <tr>
-                    <th>Mã mẫu vật</th>
-                    <th>Tên khoa học</th>
-                    <th>Tỉnh / Thành phố</th>
-                    <th>Ngày thu mẫu</th>
-                    <th>Tọa độ (WGS84)</th>
-                    <th>Trạng thái bản ghi</th>
-                    <th style={{ textAlign: "right" }}>Thao tác</th>
+                    <th>{t("specimen.catalogNumber")}</th>
+                    <th>{t("specimen.scientificName")}</th>
+                    <th>{t("specimen.province")}</th>
+                    <th>{t("specimen.eventDate")}</th>
+                    <th>{t("specimen.colGps")}</th>
+                    <th>{t("specimenDetail.recordType")}</th>
+                    <th style={{ textAlign: "right" }}>{t("common.actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -346,10 +347,10 @@ export default function SpeciesProfileTabs({ profile }) {
                     const detailUrl = isAdmin ? `/admin/specimens/${sp.id}` : `/specimens/${sp.id}`;
                     const basisLabel =
                       sp.basisOfRecord === "PRESERVED_SPECIMEN"
-                        ? "Tiêu bản bảo tàng"
+                        ? t("taxonomy.basisPreserved")
                         : sp.basisOfRecord === "HUMAN_OBSERVATION"
-                        ? "Quan sát thực địa"
-                        : sp.basisOfRecord || "Tiêu bản";
+                          ? t("taxonomy.basisObservation")
+                          : sp.basisOfRecord || t("taxonomy.basisDefault");
                     return (
                       <tr key={sp.id}>
                         <td className="mono">
@@ -367,8 +368,8 @@ export default function SpeciesProfileTabs({ profile }) {
                         <td className="mono">
                           {sp.latitude != null && sp.longitude != null
                             ? `${Number(sp.latitude).toFixed(4)}°N, ${Number(sp.longitude).toFixed(
-                                4
-                              )}°E`
+                              4
+                            )}°E`
                             : notProvided}
                         </td>
                         <td>
@@ -376,7 +377,7 @@ export default function SpeciesProfileTabs({ profile }) {
                         </td>
                         <td style={{ textAlign: "right" }}>
                           <Link to={detailUrl} className="vi-table-action-link">
-                            Xem chi tiết →
+                            {t("home.viewDetails")}
                           </Link>
                         </td>
                       </tr>
@@ -389,7 +390,7 @@ export default function SpeciesProfileTabs({ profile }) {
             {specTotalPages > 1 && (
               <div className="vi-compact-pagination">
                 <span>
-                  Trang <strong>{specFilters.page}</strong> / <strong>{specTotalPages}</strong>
+                  {t("specimen.pageOf", { page: specFilters.page, total: specTotalPages })}
                 </span>
                 <div style={{ display: "flex", gap: 6 }}>
                   <button
@@ -398,7 +399,7 @@ export default function SpeciesProfileTabs({ profile }) {
                     disabled={specFilters.page <= 1}
                     onClick={() => setSpecFilters((p) => ({ ...p, page: p.page - 1 }))}
                   >
-                    ← Trang trước
+                    {t("specimen.prevPage")}
                   </button>
                   <button
                     type="button"
@@ -406,7 +407,7 @@ export default function SpeciesProfileTabs({ profile }) {
                     disabled={specFilters.page >= specTotalPages}
                     onClick={() => setSpecFilters((p) => ({ ...p, page: p.page + 1 }))}
                   >
-                    Trang sau →
+                    {t("specimen.nextPage")}
                   </button>
                 </div>
               </div>
@@ -415,8 +416,8 @@ export default function SpeciesProfileTabs({ profile }) {
         ) : (
           <EmptyState
             icon="bug"
-            title="Không tìm thấy mẫu vật phù hợp"
-            description="Chưa ghi nhận mẫu vật nào khớp với bộ lọc hiện tại cho loài này."
+            title={t("specimen.emptyTitle")}
+            description={t("specimen.emptyDescription")}
           />
         )}
       </div>
@@ -424,19 +425,19 @@ export default function SpeciesProfileTabs({ profile }) {
       {/* TAB 3: DNA & GenBank / BOLD */}
       <div style={{ display: active === "dna" ? "block" : "none" }}>
         {dnaLoading ? (
-          <LoadingState label="Đang tải trình tự mã vạch DNA của loài..." />
+          <LoadingState label={t("taxonomy.loadingSpeciesDna")} />
         ) : dnaRecords.length > 0 ? (
           <div className="vi-table-scroll-wrap">
             <table className="vi-scientific-data-table">
               <thead>
                 <tr>
-                  <th>Gen Marker</th>
+                  <th>Marker</th>
                   <th>GenBank Accession (NCBI)</th>
                   <th>BOLD Systems</th>
-                  <th>Độ dài (bp)</th>
-                  <th>Tỷ lệ G-C</th>
-                  <th>Tác giả công bố</th>
-                  <th style={{ textAlign: "right" }}>Chuỗi FASTA</th>
+                  <th>{t("dna.sequenceLength")}</th>
+                  <th>G-C %</th>
+                  <th>{t("dna.authorVoucher")}</th>
+                  <th style={{ textAlign: "right" }}>FASTA</th>
                 </tr>
               </thead>
               <tbody>
@@ -485,7 +486,7 @@ export default function SpeciesProfileTabs({ profile }) {
                         to={isAdmin ? `/admin/dna/${seq.id}/fasta` : `/dna/${seq.id}/fasta`}
                         className="vi-table-action-link"
                       >
-                        Xem FASTA →
+                        {t("dna.viewFasta")} →
                       </Link>
                     </td>
                   </tr>
@@ -496,11 +497,11 @@ export default function SpeciesProfileTabs({ profile }) {
         ) : (
           <EmptyState
             icon="dna"
-            title="Chưa có trình tự DNA riêng cho loài này"
-            description={`Chưa ghi nhận trình tự COI / GenBank trực tiếp cho ${profile.scientificName}.`}
+            title={t("taxonomy.noSpeciesDnaTitle")}
+            description={t("taxonomy.noSpeciesDnaDesc", { name: profile.scientificName })}
             action={
               <Link to={isAdmin ? "/admin/dna" : "/dna"} className="button button-sm button-ghost">
-                Tra cứu Kho dữ liệu Phân tử DNA →
+                {t("taxonomy.searchDnaRepo")}
               </Link>
             }
           />
@@ -521,7 +522,7 @@ export default function SpeciesProfileTabs({ profile }) {
                   <span>{record.description || notProvided}</span>
                   {record.referenceTitle ? (
                     <span>
-                      Tài liệu: {record.referenceTitle}
+                      Ref: {record.referenceTitle}
                       {record.referenceDoi ? ` (DOI: ${record.referenceDoi})` : ""}
                     </span>
                   ) : null}
@@ -532,8 +533,8 @@ export default function SpeciesProfileTabs({ profile }) {
         ) : (
           <EmptyState
             icon="sparkles"
-            title="Chưa có dữ liệu hoạt tính"
-            description="Hoạt tính sinh/hóa học của loài sẽ hiển thị tại đây khi được bổ sung."
+            title={t("taxonomy.noBioactivityTitle")}
+            description={t("taxonomy.noBioactivityDesc")}
           />
         )}
       </div>
@@ -542,8 +543,7 @@ export default function SpeciesProfileTabs({ profile }) {
       <div style={{ display: active === "distribution" ? "block" : "none" }}>
         <div className="vi-spec-table-toolbar">
           <span className="vi-spec-table-summary">
-            Ghi nhận <strong>{mapData.points?.length || 0}</strong> tọa độ phân bố GPS của{" "}
-            <em>{profile.scientificName}</em> tại Việt Nam.
+            {t("taxonomy.recordedCoordsSummary", { count: mapData.points?.length || 0 })}
           </span>
 
           <div style={{ display: "flex", gap: 8 }}>
@@ -552,16 +552,15 @@ export default function SpeciesProfileTabs({ profile }) {
               className={`button button-sm ${basemapMode === "street" ? "button-primary" : "button-ghost"}`}
               onClick={() => setBasemapMode("street")}
             >
-              Bản đồ Khoa học (Esri)
+              {t("home.basemapStreet")}
             </button>
             <button
               type="button"
-              className={`button button-sm ${
-                basemapMode === "satellite" ? "button-primary" : "button-ghost"
-              }`}
+              className={`button button-sm ${basemapMode === "satellite" ? "button-primary" : "button-ghost"
+                }`}
               onClick={() => setBasemapMode("satellite")}
             >
-              Ảnh Vệ tinh (Satellite)
+              {t("home.basemapSatellite")}
             </button>
             <Link
               to={
@@ -571,13 +570,13 @@ export default function SpeciesProfileTabs({ profile }) {
               }
               className="button button-sm button-ghost"
             >
-              Mở Bản đồ GIS đầy đủ →
+              {t("home.openFullMap")}
             </Link>
           </div>
         </div>
 
         {mapLoading ? (
-          <LoadingState label="Đang tải bản đồ phân bố không gian..." />
+          <LoadingState label={t("taxonomy.loadingDistMap")} />
         ) : active === "distribution" ? (
           <div style={{ height: 420, border: "1px solid #DCE3E8" }}>
             <MapContainer
@@ -608,12 +607,12 @@ export default function SpeciesProfileTabs({ profile }) {
                       <strong>
                         <em>{pt.scientificName}</em>
                       </strong>
-                      <div>Mã mẫu: {pt.code}</div>
-                      <div>Tỉnh/Thành: {pt.provinceNameVn || notProvided}</div>
-                      <div>Ngày thu: {pt.collectionDate || notProvided}</div>
+                      <div>{t("specimen.catalogNumber")}: {pt.code}</div>
+                      <div>{t("specimen.province")}: {pt.provinceNameVn || notProvided}</div>
+                      <div>{t("specimen.eventDate")}: {pt.collectionDate || notProvided}</div>
                       <div style={{ marginTop: 4 }}>
                         <Link to={isAdmin ? `/admin/specimens/${pt.id}` : `/specimens/${pt.id}`}>
-                          Xem hồ sơ mẫu vật →
+                          {t("media.viewSpecimenRecord")}
                         </Link>
                       </div>
                     </div>

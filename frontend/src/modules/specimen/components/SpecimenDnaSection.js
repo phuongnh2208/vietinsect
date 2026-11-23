@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Icon from "../../../components/ui/Icon";
 import { useToast } from "../../../components/ui/ToastProvider";
 
@@ -8,14 +9,6 @@ const BASE_COLORS = {
   T: "#DC2626", // Thymine - Red
   G: "#D97706", // Guanine - Amber/Gold
   C: "#2563EB", // Cytosine - Blue
-};
-
-const RANK_LABELS_VN = {
-  Species: "Cùng Loài (Species Reference)",
-  Genus: "Đại diện cùng Giống (Genus Reference)",
-  Family: "Đại diện cùng Họ (Family Reference)",
-  Order: "Đại diện cùng Bộ (Order Reference)",
-  Class: "Đại diện lớp Côn trùng (Class Reference)",
 };
 
 function analyzeSequence(fastaRaw, fallbackGc) {
@@ -90,6 +83,7 @@ function formatGenBankOriginLines(cleanSeq, expanded = false) {
 }
 
 function DnaBarcodeRecordCard({ seq, isDirect, specimenScientificName, isAdmin, onCopyFasta }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const stats = analyzeSequence(seq.fastaSequence, seq.gcContentPct);
   const originLines = formatGenBankOriginLines(stats.clean, expanded);
@@ -125,7 +119,7 @@ function DnaBarcodeRecordCard({ seq, isDirect, specimenScientificName, isAdmin, 
               target="_blank"
               rel="noreferrer"
               className="vi-bold-blue-badge"
-              title="Liên kết hồ sơ BOLD Systems (F-DN-03)"
+              title={t("specimenDetail.dnaBoldLinkTitle")}
             >
               BOLD: {seq.boldProcessId || seq.binUri} ↗
             </a>
@@ -141,11 +135,13 @@ function DnaBarcodeRecordCard({ seq, isDirect, specimenScientificName, isAdmin, 
         <div className="vi-dna-card-badges">
           {isDirect ? (
             <span className="vi-dna-match-badge is-direct-badge">
-              Trích xuất trực tiếp từ mẫu vật
+              {t("specimenDetail.directExtract")}
             </span>
           ) : (
             <span className="vi-dna-match-badge is-ref-badge">
-              {RANK_LABELS_VN[seq.referenceMatchRank] || "Tham chiếu phân loại"}
+              {t(`specimenDetail.dnaRankLabels.${seq.referenceMatchRank}`, {
+                defaultValue: t("specimenDetail.dnaRankRefFallback"),
+              })}
               {seq.referenceTaxonName ? ` · ${seq.referenceTaxonName}` : ""}
             </span>
           )}
@@ -160,7 +156,7 @@ function DnaBarcodeRecordCard({ seq, isDirect, specimenScientificName, isAdmin, 
         <div className="vi-dna-chromatic-box">
           <div className="vi-dna-chromatic-top">
             <span className="vi-dna-chromatic-label">
-              PHỔ MÃ VẠCH PHÂN TỬ ({seq.geneMarker || "COI"} CHROMATIC BARCODE · 5&apos; → 3&apos;)
+              {t("specimenDetail.dnaChromaticLabel", { marker: seq.geneMarker || "COI" })}
             </span>
             <div className="vi-dna-base-legend">
               <span>
@@ -181,7 +177,11 @@ function DnaBarcodeRecordCard({ seq, isDirect, specimenScientificName, isAdmin, 
 
           <div
             className="vi-dna-barcode-strip"
-            title={`Chuỗi mã vạch ${displaySciName} (${seq.sequenceLengthBp || stats.total} bp, GC: ${stats.gcPct}%)`}
+            title={t("specimenDetail.dnaBarcodeStripTitle", {
+              name: displaySciName,
+              length: seq.sequenceLengthBp || stats.total,
+              gc: stats.gcPct,
+            })}
           >
             {stats.bars.map((base, idx) => (
               <span
@@ -237,14 +237,15 @@ function DnaBarcodeRecordCard({ seq, isDirect, specimenScientificName, isAdmin, 
                 rel="noreferrer"
                 className="dna-ext-link"
               >
-                Tra cứu BOLD ({displaySciName}) <Icon name="external-link" size={12} />
+                {t("specimenDetail.dnaBoldLookup", { name: displaySciName })}{" "}
+                <Icon name="external-link" size={12} />
               </a>
             )}
           </span>
         </div>
 
         <div className="vi-dna-meta-cell">
-          <span className="vi-dna-meta-key">Vùng Gen & Tỷ lệ G-C</span>
+          <span className="vi-dna-meta-key">{t("specimenDetail.dnaGeneAndGc")}</span>
           <span className="vi-dna-meta-val">
             <strong>{seq.geneMarker || "COI"}</strong> · {seq.sequenceLengthBp || stats.total || "—"} bp (GC:{" "}
             {stats.gcPct}%)
@@ -252,7 +253,7 @@ function DnaBarcodeRecordCard({ seq, isDirect, specimenScientificName, isAdmin, 
         </div>
 
         <div className="vi-dna-meta-cell">
-          <span className="vi-dna-meta-key">Tác giả & Nguồn CSDL</span>
+          <span className="vi-dna-meta-key">{t("specimenDetail.dnaAuthorAndSource")}</span>
           <span className="vi-dna-meta-val" title={seq.authorName || ""}>
             {seq.authorName || "INSDC / GenBank Consortium"} ({seq.sourceDb || "GENBANK"}
             {seq.submissionDate ? ` · ${seq.submissionDate}` : ""})
@@ -272,8 +273,8 @@ function DnaBarcodeRecordCard({ seq, isDirect, specimenScientificName, isAdmin, 
                 onClick={() => setExpanded((prev) => !prev)}
               >
                 {expanded
-                  ? "Thu gọn trình tự ▲"
-                  : `Mở rộng toàn bộ ${stats.clean.length} bp ▼`}
+                  ? t("specimenDetail.dnaCollapseSeq")
+                  : t("specimenDetail.dnaExpandSeq", { length: stats.clean.length })}
               </button>
             )}
           </div>
@@ -286,8 +287,9 @@ function DnaBarcodeRecordCard({ seq, isDirect, specimenScientificName, isAdmin, 
             ))}
             {!expanded && stats.clean.length > 180 && (
               <div className="vi-dna-origin-more">
-                ... còn {stats.clean.length - 180} nucleotide (nhấn &ldquo;Mở rộng toàn bộ&rdquo; hoặc
-                &ldquo;Hồ sơ FASTA&rdquo; để xem đầy đủ)
+                {t("specimenDetail.dnaRemainingNucleotides", {
+                  count: stats.clean.length - 180,
+                })}
               </div>
             )}
           </div>
@@ -306,14 +308,14 @@ function DnaBarcodeRecordCard({ seq, isDirect, specimenScientificName, isAdmin, 
                   onCopyFasta(`${fastaHeader}\n${stats.clean}`, seq.genbankAccession || seq.id)
                 }
               >
-                <Icon name="copy" size={13} /> Sao chép FASTA
+                <Icon name="copy" size={13} /> {t("specimenDetail.copyFasta")}
               </button>
               <button
                 type="button"
                 className="button button-sm button-ghost"
                 onClick={handleDownloadFasta}
               >
-                <Icon name="download" size={13} /> Tải tệp .fasta
+                <Icon name="download" size={13} /> {t("specimenDetail.downloadFasta")}
               </button>
             </>
           )}
@@ -323,7 +325,7 @@ function DnaBarcodeRecordCard({ seq, isDirect, specimenScientificName, isAdmin, 
           to={isAdmin ? `/admin/dna/${seq.id}/fasta` : `/dna/${seq.id}/fasta`}
           className="button button-sm button-primary"
         >
-          Hồ sơ FASTA chi tiết →
+          {t("specimenDetail.fastaDetail")}
         </Link>
       </div>
     </div>
@@ -336,6 +338,7 @@ export default function SpecimenDnaSection({
   scientificName = "",
   isAdmin = false,
 }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const hasDirect = dnaSequences.length > 0;
   const hasSpecies = speciesDnaSequences.length > 0;
@@ -343,7 +346,7 @@ export default function SpecimenDnaSection({
   const handleCopyFasta = (fastaText, label) => {
     if (navigator?.clipboard) {
       navigator.clipboard.writeText(fastaText);
-      toast(`Đã sao chép trình tự FASTA (${label}) vào bộ nhớ tạm`, "success");
+      toast(t("specimenDetail.dnaCopySuccess", { label }), "success");
     }
   };
 
@@ -353,21 +356,21 @@ export default function SpecimenDnaSection({
         <div className="dna-header-left">
           <Icon name="dna" size={18} />
           <div>
-            <h3>Dữ liệu Phân tử & Mã vạch DNA (Molecular Barcodes)</h3>
+            <h3>{t("specimenDetail.dnaSectionTitle")}</h3>
             <span className="dna-header-subtitle">
-              GenBank (NCBI) · BOLD Systems · Chuẩn Barcode COI
+              GenBank (NCBI) · BOLD Systems · COI Barcode
             </span>
           </div>
         </div>
         <div className="dna-counts-badges">
           {hasDirect && (
             <span className="status-badge status-public">
-              {dnaSequences.length} trình tự trực tiếp
+              {t("specimenDetail.directSeqs", { count: dnaSequences.length })}
             </span>
           )}
           {!hasDirect && hasSpecies && (
             <span className="status-badge" style={{ background: "#EFF6FF", color: "#1D4ED8" }}>
-              {speciesDnaSequences.length} trình tự tham chiếu
+              {t("specimenDetail.refSeqs", { count: speciesDnaSequences.length })}
             </span>
           )}
           <Link
@@ -378,7 +381,7 @@ export default function SpecimenDnaSection({
             }
             className="button button-sm button-ghost"
           >
-            Kho dữ liệu DNA →
+            {t("specimenDetail.dnaRepoLink")}
           </Link>
         </div>
       </div>
@@ -407,9 +410,10 @@ export default function SpecimenDnaSection({
           <div className="dna-species-notice">
             <Icon name="info" size={16} />
             <span>
-              Mẫu vật bảo tàng này chưa giải trình tự PCR riêng. Hệ thống tự động đối chiếu và hiển thị
-              <strong> chuỗi mã vạch DNA chuẩn quốc tế (NCBI GenBank / BOLD Systems)</strong> tương ứng
-              với đơn vị phân loại của <em>{scientificName || "mẫu vật"}</em>:
+              {t("specimenDetail.dnaRefNoticePrefix")}
+              <strong>{t("specimenDetail.dnaRefNoticeStrong")}</strong>
+              {t("specimenDetail.dnaRefNoticeSuffix")}{" "}
+              <em>{scientificName || t("specimenDetail.dnaRefNoticeFallback")}</em>:
             </span>
           </div>
 
@@ -431,7 +435,7 @@ export default function SpecimenDnaSection({
       {/* 3. Trường hợp dự phòng nếu DB chưa có bản ghi nào */}
       {!hasDirect && !hasSpecies && (
         <div className="dna-empty-state">
-          <p>Chưa có dữ liệu giải trình tự mã vạch DNA cho mẫu vật hoặc nhánh phân loại này.</p>
+          <p>{t("specimenDetail.dnaEmptyState")}</p>
           {scientificName && (
             <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 10 }}>
               <a
@@ -442,7 +446,7 @@ export default function SpecimenDnaSection({
                 rel="noreferrer"
                 className="button button-sm button-ghost"
               >
-                <Icon name="external-link" size={13} /> Tra cứu trên NCBI GenBank ↗
+                <Icon name="external-link" size={13} /> {t("specimenDetail.dnaSearchNcbi")}
               </a>
               <a
                 href={`https://portal.boldsystems.org/result?query=${encodeURIComponent(
@@ -452,7 +456,7 @@ export default function SpecimenDnaSection({
                 rel="noreferrer"
                 className="button button-sm button-ghost"
               >
-                <Icon name="external-link" size={13} /> Tra cứu trên BOLD Systems ↗
+                <Icon name="external-link" size={13} /> {t("specimenDetail.dnaSearchBold")}
               </a>
             </div>
           )}

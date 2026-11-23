@@ -1,14 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Icon from "../../../components/ui/Icon";
 import LoadingState from "../../../components/ui/LoadingState";
 import EmptyState from "../../../components/ui/EmptyState";
 import { useToast } from "../../../components/ui/ToastProvider";
 import useIsAdminContext from "../../../hooks/useIsAdminContext";
+import { formatNumber } from "../../../utils/formatters";
 import dnaService from "../dna.service";
 import { getOrderColor } from "../../specimen/specimen.constants";
 
 export default function DnaFastaDetailPage() {
+  const { t, i18n } = useTranslation();
   const { id } = useParams();
   const isAdmin = useIsAdminContext();
   const navigate = useNavigate();
@@ -69,7 +72,7 @@ export default function DnaFastaDetailPage() {
     return (
       <div className="page-container page-content">
         <div className="card panel">
-          <LoadingState label="Đang giải mã và phân tích thành phần nucleotide..." />
+          <LoadingState label={t("dna.loadingFasta")} />
         </div>
       </div>
     );
@@ -81,14 +84,14 @@ export default function DnaFastaDetailPage() {
         <div className="card panel">
           <EmptyState
             icon="alert"
-            title="Không tìm thấy trình tự FASTA"
+            title={t("dna.notFoundFasta")}
             description={errorMsg}
             action={
               <button
                 className="button button-primary"
                 onClick={() => navigate(isAdmin ? "/admin/dna" : "/dna")}
               >
-                Quay lại danh sách DNA
+                {t("dna.backToDnaList")}
               </button>
             }
           />
@@ -127,16 +130,16 @@ export default function DnaFastaDetailPage() {
             type="button"
             className="vi-back-page-btn"
             onClick={handleGoBack}
-            title="Quay lại trang trước"
+            title={t("common.back")}
           >
             <Icon name="chevron-left" size={15} />
-            <span>Quay lại</span>
+            <span>{t("common.back")}</span>
           </button>
 
           <nav className="vi-specimen-breadcrumb" aria-label="Breadcrumb">
-            <Link to={isAdmin ? "/admin/dashboard" : "/"}>Trang chủ</Link>
+            <Link to={isAdmin ? "/admin/dashboard" : "/"}>{t("navigation.home")}</Link>
             <Icon name="chevron-right" size={12} />
-            <Link to={isAdmin ? "/admin/dna" : "/dna"}>Kho dữ liệu DNA</Link>
+            <Link to={isAdmin ? "/admin/dna" : "/dna"}>{t("dna.title")}</Link>
             <Icon name="chevron-right" size={12} />
             <span className="breadcrumb-current">
               {record.genbankAccession || record.boldProcessId || `DNA-${record.id}`}
@@ -150,7 +153,7 @@ export default function DnaFastaDetailPage() {
         <div>
           <div className="eyebrow">
             <Icon name="dna" size={14} />
-            Trình xem Chuỗi Nucleotide FASTA · {record.geneMarker} Marker
+            {t("dna.fastaEyebrow", { marker: record.geneMarker })}
           </div>
           <h1 className="taxonomy-name" style={{ fontSize: "clamp(26px, 3vw, 40px)" }}>
             <em>{record.scientificName}</em>
@@ -160,13 +163,13 @@ export default function DnaFastaDetailPage() {
               className="status-badge"
               style={{ background: orderColor, color: "#FFFFFF", borderColor: "#111111" }}
             >
-              Bộ: {record.orderName || record.taxonName}
+              {t("specimenDetail.orderPrefix")}: {record.orderName || record.taxonName}
             </span>
             <span className="status-badge" style={{ background: "#E8F5E9", color: "#0F3820" }}>
               Marker: {record.geneMarker} · {record.sequenceLengthBp || 0} bp
             </span>
             <span className="status-badge" style={{ background: "#FFFFFF" }}>
-              Nguồn: {record.sourceDb}
+              {t("specimenDetail.source")}: {record.sourceDb}
             </span>
             <span className={`status-badge ${record.isPublic ? "status-public" : "status-private"}`}>
               {record.isPublic ? "PUBLIC OPEN DATA" : "INTERNAL ONLY"}
@@ -177,11 +180,11 @@ export default function DnaFastaDetailPage() {
         <div className="hero-actions" style={{ marginTop: 0 }}>
           <button type="button" className="button button-ghost" onClick={handleCopyFasta}>
             <Icon name="copy" size={16} />
-            Sao chép FASTA
+            {t("dna.copyFasta")}
           </button>
           <button type="button" className="button button-secondary" onClick={handleDownloadFasta}>
             <Icon name="download" size={16} />
-            Tải tệp .fasta
+            {t("dna.downloadFasta")}
           </button>
           {isAdmin ? (
             <button
@@ -190,7 +193,7 @@ export default function DnaFastaDetailPage() {
               onClick={() => navigate(`/admin/dna/new?id=${record.id}`)}
             >
               <Icon name="edit" size={16} />
-              Chỉnh sửa
+              {t("common.edit")}
             </button>
           ) : null}
         </div>
@@ -244,8 +247,8 @@ export default function DnaFastaDetailPage() {
                 </strong>
               </div>
               <div>
-                <span>Tổng chiều dài:</span>{" "}
-                <strong>{(record.sequenceLengthBp || 0).toLocaleString()} bp</strong>
+                <span>{t("dna.totalLength")}</span>{" "}
+                <strong>{formatNumber(record.sequenceLengthBp || 0, i18n.language)} bp</strong>
               </div>
             </div>
           </section>
@@ -253,8 +256,8 @@ export default function DnaFastaDetailPage() {
           {/* 2. Biểu đồ phân bố 4 loại Base A - T - C - G */}
           <section className="card panel">
             <div className="panel-title">
-              <h2>Phân bố thành phần Nucleotide (Base Distribution)</h2>
-              <span>Tỷ lệ phần trăm từng loại Base</span>
+              <h2>{t("dna.baseDistTitle")}</h2>
+              <span>{t("dna.baseDistSub")}</span>
             </div>
 
             <div className="vi-base-chart-grid">
@@ -283,7 +286,7 @@ export default function DnaFastaDetailPage() {
         {/* Cột phải: Metadata, Liên kết Mẫu vật & Quốc tế */}
         <aside className="card panel">
           <div className="panel-title">
-            <h2>Thông tin Hồ sơ Phân tử</h2>
+            <h2>{t("dna.molecularInfoTitle")}</h2>
             <Icon name="dna" size={18} />
           </div>
 
@@ -292,7 +295,7 @@ export default function DnaFastaDetailPage() {
               <div>
                 <strong>GenBank Accession</strong>
                 <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#111111" }}>
-                  {record.genbankAccession || "Chưa đăng ký GenBank"}
+                  {record.genbankAccession || t("dna.notRegisteredGenbank")}
                 </span>
               </div>
               {record.externalLinks?.ncbi ? (
@@ -330,11 +333,11 @@ export default function DnaFastaDetailPage() {
 
             <div className="placeholder-row">
               <div>
-                <strong>Mẫu vật thực địa (Voucher)</strong>
+                <strong>{t("dna.voucherFieldLabel")}</strong>
                 <span>
                   {record.specimenCode
-                    ? `Đã liên kết: ${record.specimenCode}`
-                    : "Chuỗi tham chiếu độc lập"}
+                    ? t("dna.linkedCode", { code: record.specimenCode })
+                    : t("dna.standaloneRef")}
                 </span>
               </div>
               {record.specimenId ? (
@@ -346,14 +349,14 @@ export default function DnaFastaDetailPage() {
                   }
                   className="button button-sm button-secondary"
                 >
-                  Mẫu vật →
+                  {t("nav.catalog")} →
                 </Link>
               ) : null}
             </div>
 
             <div className="placeholder-row">
               <div>
-                <strong>Phân loại học liên kết</strong>
+                <strong>{t("dna.linkedTaxonomy")}</strong>
                 <span>
                   {[record.orderName, record.familyName, record.genusName]
                     .filter(Boolean)
@@ -364,14 +367,14 @@ export default function DnaFastaDetailPage() {
 
             <div className="placeholder-row">
               <div>
-                <strong>Tác giả / Voucher gốc</strong>
+                <strong>{t("dna.authorVoucher")}</strong>
                 <span>{record.authorName || "—"}</span>
               </div>
             </div>
 
             <div className="placeholder-row">
               <div>
-                <strong>Ngày công bố</strong>
+                <strong>{t("dna.submissionDate")}</strong>
                 <span>{record.submissionDate || "—"}</span>
               </div>
             </div>
@@ -379,7 +382,7 @@ export default function DnaFastaDetailPage() {
             {record.primersInfo ? (
               <div className="placeholder-row">
                 <div>
-                  <strong>Cặp mồi Primer</strong>
+                  <strong>{t("dna.primersInfo")}</strong>
                   <span>{record.primersInfo}</span>
                 </div>
               </div>
@@ -388,7 +391,7 @@ export default function DnaFastaDetailPage() {
             {record.pcrConditions ? (
               <div className="placeholder-row">
                 <div>
-                  <strong>Điều kiện chu trình PCR</strong>
+                  <strong>{t("dna.pcrConditions")}</strong>
                   <span>{record.pcrConditions}</span>
                 </div>
               </div>
@@ -397,7 +400,7 @@ export default function DnaFastaDetailPage() {
             {record.notes ? (
               <div className="placeholder-row">
                 <div>
-                  <strong>Mô tả / Định nghĩa GenBank</strong>
+                  <strong>{t("dna.genbankDef")}</strong>
                   <span>{record.notes}</span>
                 </div>
               </div>

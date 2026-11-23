@@ -60,7 +60,7 @@ export default function SpeciesProfilePage() {
     return (
       <div className="page-container page-content vi-page-enter">
         <div className="card panel">
-          <LoadingState label="Đang tải hồ sơ loài..." />
+          <LoadingState label={t("taxonomy.loadingProfile")} />
         </div>
       </div>
     );
@@ -72,12 +72,12 @@ export default function SpeciesProfilePage() {
         <div className="card panel">
           <EmptyState
             icon="alert"
-            title="Không tải được hồ sơ loài"
+            title={t("taxonomy.profileLoadError")}
             description={error}
             action={
               <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                 <button type="button" className="button button-ghost" onClick={handleGoBack}>
-                  ← Quay lại
+                  ← {t("common.back")}
                 </button>
                 <button
                   type="button"
@@ -85,7 +85,7 @@ export default function SpeciesProfilePage() {
                   onClick={() => setRetryCount((c) => c + 1)}
                 >
                   <Icon name="arrow-up-right" size={16} />
-                  Thử lại
+                  {t("specimen.retry")}
                 </button>
               </div>
             }
@@ -112,15 +112,15 @@ export default function SpeciesProfilePage() {
           type="button"
           className="vi-back-page-btn"
           onClick={handleGoBack}
-          title="Quay lại trang trước"
+          title={t("common.back")}
         >
           <Icon name="chevron-left" size={14} />
-          <span>Quay lại</span>
+          <span>{t("common.back")}</span>
         </button>
 
         <nav className="vi-tax-breadcrumb-strip" aria-label="Taxonomic hierarchy">
           <Link to={isAdmin ? "/admin/taxonomy" : "/taxonomy"} className="vi-tax-crumb-link">
-            Cây phân loại
+            {t("navigation.taxonomyTree")}
           </Link>
           {taxBreadcrumbs.map((b) => (
             <React.Fragment key={`${b.rank}-${b.name}`}>
@@ -158,13 +158,13 @@ export default function SpeciesProfilePage() {
 
           <div className="vi-species-vernacular-row">
             <span>
-              <strong>Tên tiếng Việt:</strong>{" "}
-              {profile.vernacularNameVn || t("common.notProvided", "Chưa cung cấp")}
+              <strong>{t("taxonomy.vietnameseName")}</strong>{" "}
+              {profile.vernacularNameVn || t("media.notProvided")}
             </span>
             <span className="vi-dot-sep">·</span>
             <span>
-              <strong>Tên tiếng Anh:</strong>{" "}
-              {profile.vernacularNameEn || t("common.notProvided", "Chưa cung cấp")}
+              <strong>{t("taxonomy.englishName")}</strong>{" "}
+              {profile.vernacularNameEn || t("media.notProvided")}
             </span>
           </div>
 
@@ -187,7 +187,7 @@ export default function SpeciesProfilePage() {
           >
             <Icon name="bug" size={15} />
             <span>
-              Mẫu vật (<strong>{(profile.specimenCount || 0).toLocaleString("vi-VN")}</strong>)
+              {t("taxonomy.tabSpecimens")} (<strong>{profile.specimenCount || 0}</strong>)
             </span>
           </Link>
           <Link
@@ -199,7 +199,7 @@ export default function SpeciesProfilePage() {
             className="button button-sm button-ghost"
           >
             <Icon name="map" size={15} />
-            <span>Bản đồ phân bố</span>
+            <span>{t("taxonomy.distributionMap")}</span>
           </Link>
           {isAdmin ? (
             <button
@@ -208,7 +208,7 @@ export default function SpeciesProfilePage() {
               onClick={() => navigate("/admin/taxonomy/editor")}
             >
               <Icon name="edit" size={15} />
-              <span>Sửa hồ sơ</span>
+              <span>{t("taxonomy.editProfile")}</span>
             </button>
           ) : null}
         </div>

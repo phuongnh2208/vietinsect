@@ -29,6 +29,15 @@ const MAX_IMAGES = (() => {
   const i = args.indexOf("--max");
   return i !== -1 ? parseInt(args[i + 1], 10) : 48;
 })();
+const ORDER_FILTER = (() => {
+  const i = args.indexOf("--order");
+  return i !== -1 ? args[i + 1].split(",").map((s) => s.trim().toLowerCase()) : null;
+})();
+const PER_ORDER_ARG = (() => {
+  const i = args.indexOf("--per-order");
+  return i !== -1 ? parseInt(args[i + 1], 10) : null;
+})();
+const EXACT_ONLY = args.includes("--exact-only");
 
 const TARGET_ORDERS = [
   { order: "Lepidoptera", taxonKey: 797 },
@@ -36,6 +45,17 @@ const TARGET_ORDERS = [
   { order: "Odonata", taxonKey: 789 },
   { order: "Hymenoptera", taxonKey: 1457 },
   { order: "Diptera", taxonKey: 811 },
+  { order: "Hemiptera", taxonKey: 809 },
+  { order: "Orthoptera", taxonKey: 1458 },
+  { order: "Blattodea", taxonKey: 800 },
+  { order: "Mantodea", taxonKey: 788 },
+  { order: "Neuroptera", taxonKey: 1501 },
+  { order: "Trichoptera", taxonKey: 1003 },
+  { order: "Ephemeroptera", taxonKey: 1225 },
+  { order: "Plecoptera", taxonKey: 787 },
+  { order: "Thysanoptera", taxonKey: 1228 },
+  { order: "Dermaptera", taxonKey: 1224 },
+  { order: "Phasmida", taxonKey: 1460 },
 ];
 
 function log(msg) {
@@ -86,8 +106,7 @@ async function loadSpecimenLookups() {
     .join({ sr: "specimen_registry" }, "s.specimen_id", "sr.specimen_id")
     .whereNull("s.deleted_at")
     .where("s.is_public", true)
-    .select("s.specimen_id", "sr.gbif_occurrence_id", "s.gbif_scientific_name")
-    .limit(98000);
+    .select("s.specimen_id", "sr.gbif_occurrence_id", "s.gbif_scientific_name");
 
   const byOccId = new Map();
   const byBinomial = new Map();
@@ -138,15 +157,19 @@ async function main() {
   }
 
   const lookup = await loadSpecimenLookups();
-  const perOrder = Math.max(8, Math.ceil(MAX_IMAGES / TARGET_ORDERS.length));
+  const activeOrders = ORDER_FILTER
+    ? TARGET_ORDERS.filter((o) => ORDER_FILTER.includes(o.order.toLowerCase()))
+    : TARGET_ORDERS;
+  const perOrder = PER_ORDER_ARG || Math.max(8, Math.ceil(MAX_IMAGES / activeOrders.length));
+  const effectiveMax = PER_ORDER_ARG ? PER_ORDER_ARG * activeOrders.length : MAX_IMAGES;
 
   let uploaded = 0;
   let skippedLicense = 0;
   let skippedDup = 0;
   let exactMatched = 0;
 
-  for (const { order, taxonKey } of TARGET_ORDERS) {
-    if (uploaded >= MAX_IMAGES) break;
+  for (const { order, taxonKey } of activeOrders) {
+    if (uploaded >= effectiveMax) break;
 
     log(`\n🦋 [${order}] Truy vấn ảnh mẫu vật tại Việt Nam từ GBIF Multimedia...`);
     let results = [];
@@ -172,7 +195,7 @@ async function main() {
 
     let orderUploaded = 0;
     for (const occ of results) {
-      if (uploaded >= MAX_IMAGES || orderUploaded >= perOrder) break;
+      if (uploaded >= effectiveMax || orderUploaded >= perOrder) break;
 
       const mediaArr = occ.media || [];
       const mediaItem = mediaArr.find((m) => m.type === "StillImage" && m.identifier);
@@ -194,7 +217,7 @@ async function main() {
 
       if (specimenId) {
         exactMatched++;
-      } else {
+      } else if (!EXACT_ONLY) {
         const sci = occ.species || occ.genus || occ.scientificName || "";
         const words = sci.trim().split(/\s+/);
         if (words.length >= 2) {

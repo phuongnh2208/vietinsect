@@ -55,7 +55,7 @@ export default function SpecimenImageViewerModal({
 
   if (!open || !current) return null;
 
-  const notProvided = t("common.notProvided", "Chưa cung cấp");
+  const notProvided = t("media.notProvided");
   const sciName = current.scientificName || current.taxonName || notProvided;
   const specId = current.specimenId || current.specimen_id;
   const specCode = current.specimenCode || current.specimen_code || (specId ? `#${specId}` : notProvided);
@@ -97,8 +97,8 @@ export default function SpecimenImageViewerModal({
                 type="button"
                 className="vi-img-modal-nav prev"
                 onClick={handlePrev}
-                aria-label="Ảnh trước"
-                title="Ảnh trước (←)"
+                aria-label={t("media.prevImage")}
+                title={t("media.prevImage")}
               >
                 <Icon name="chevron-left" size={20} />
               </button>
@@ -106,8 +106,8 @@ export default function SpecimenImageViewerModal({
                 type="button"
                 className="vi-img-modal-nav next"
                 onClick={handleNext}
-                aria-label="Ảnh tiếp theo"
-                title="Ảnh tiếp theo (→)"
+                aria-label={t("media.nextImage")}
+                title={t("media.nextImage")}
               >
                 <Icon name="chevron-right" size={20} />
               </button>
@@ -126,7 +126,7 @@ export default function SpecimenImageViewerModal({
             ) : (
               <div className="vi-img-modal-fallback">
                 <Icon name="image" size={36} />
-                <span>Không tải được tệp hình ảnh gốc</span>
+                <span>{t("media.loadOriginalFailed")}</span>
               </div>
             )}
           </div>
@@ -136,8 +136,8 @@ export default function SpecimenImageViewerModal({
               type="button"
               className="vi-img-ctrl-btn"
               onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2)))}
-              aria-label="Thu nhỏ"
-              title="Thu nhỏ (-)"
+              aria-label={t("media.zoomOut")}
+              title={t("media.zoomOut")}
             >
               −
             </button>
@@ -146,8 +146,8 @@ export default function SpecimenImageViewerModal({
               type="button"
               className="vi-img-ctrl-btn"
               onClick={() => setZoom((z) => Math.min(2.5, +(z + 0.25).toFixed(2)))}
-              aria-label="Phóng to"
-              title="Phóng to (+)"
+              aria-label={t("media.zoomIn")}
+              title={t("media.zoomIn")}
             >
               +
             </button>
@@ -155,8 +155,8 @@ export default function SpecimenImageViewerModal({
               type="button"
               className="vi-img-ctrl-btn"
               onClick={() => setZoom(1)}
-              aria-label="Vừa khung hình"
-              title="Vừa khung hình (100%)"
+              aria-label={t("media.fitFrame")}
+              title={t("media.fitFrame")}
             >
               Fit 1:1
             </button>
@@ -168,7 +168,7 @@ export default function SpecimenImageViewerModal({
           <div className="vi-img-modal-meta-header">
             <div>
               <div className="eyebrow" style={{ marginBottom: 2 }}>
-                HỒ SƠ TƯ LIỆU ẢNH MẪU VẬT
+                {t("media.viewerEyebrow")}
               </div>
               <h2 className="vi-img-modal-title">
                 <em>{sciName}</em>
@@ -178,8 +178,8 @@ export default function SpecimenImageViewerModal({
               type="button"
               className="icon-button"
               onClick={onClose}
-              aria-label="Đóng hộp thoại xem ảnh"
-              title="Đóng (Esc)"
+              aria-label={t("common.close")}
+              title={t("common.close")}
             >
               <Icon name="close" size={18} />
             </button>
@@ -187,7 +187,7 @@ export default function SpecimenImageViewerModal({
 
           <dl className="vi-img-meta-dl">
             <div className="vi-img-meta-row">
-              <dt>Tên khoa học</dt>
+              <dt>{t("specimen.scientificName")}</dt>
               <dd>
                 <strong>
                   <em>{sciName}</em>
@@ -195,11 +195,11 @@ export default function SpecimenImageViewerModal({
               </dd>
             </div>
             <div className="vi-img-meta-row">
-              <dt>Mã định danh ảnh</dt>
+              <dt>{t("media.imageId")}</dt>
               <dd className="mono">{current.id ? `IMG-${current.id}` : notProvided}</dd>
             </div>
             <div className="vi-img-meta-row">
-              <dt>Mã mẫu vật liên kết</dt>
+              <dt>{t("media.linkedSpecimen")}</dt>
               <dd className="mono">
                 {specId ? (
                   <Link to={`${specimenBasePath}/${specId}`} onClick={onClose} className="vi-code-link">
@@ -211,11 +211,11 @@ export default function SpecimenImageViewerModal({
               </dd>
             </div>
             <div className="vi-img-meta-row">
-              <dt>Góc chụp / Loại ảnh</dt>
+              <dt>{t("media.shotTypeLabel")}</dt>
               <dd>{shotType}</dd>
             </div>
             <div className="vi-img-meta-row">
-              <dt>Giấy phép bản quyền</dt>
+              <dt>{t("media.licenseLabel")}</dt>
               <dd>
                 <span className="status-badge status-public">{license}</span>
                 {current.licenseLabel ? (
@@ -226,23 +226,23 @@ export default function SpecimenImageViewerModal({
               </dd>
             </div>
             <div className="vi-img-meta-row">
-              <dt>Ghi công (Attribution)</dt>
+              <dt>{t("media.attributionLabel")}</dt>
               <dd>{attribution}</dd>
             </div>
             <div className="vi-img-meta-row">
-              <dt>Tác giả / Người đóng góp</dt>
+              <dt>{t("media.contributorLabel")}</dt>
               <dd>{contributor}</dd>
             </div>
             <div className="vi-img-meta-row">
-              <dt>Ngày thu mẫu</dt>
+              <dt>{t("specimen.eventDate")}</dt>
               <dd className="mono">{collectionDate}</dd>
             </div>
             <div className="vi-img-meta-row">
-              <dt>Địa điểm / Tỉnh thành</dt>
+              <dt>{t("media.localityLabel")}</dt>
               <dd>{locality}</dd>
             </div>
             <div className="vi-img-meta-row">
-              <dt>Nguồn lưu trữ</dt>
+              <dt>{t("media.storageSourceLabel")}</dt>
               <dd className="mono">{storageSource}</dd>
             </div>
           </dl>
@@ -255,7 +255,7 @@ export default function SpecimenImageViewerModal({
                 className="button button-primary"
                 style={{ flex: 1, justifyContent: "center" }}
               >
-                Xem hồ sơ mẫu vật →
+                {t("media.viewSpecimenRecord")}
               </Link>
             ) : null}
             {originalUrl ? (
@@ -266,7 +266,7 @@ export default function SpecimenImageViewerModal({
                 className="button button-ghost"
                 style={{ justifyContent: "center" }}
               >
-                Nguồn ảnh gốc ↗
+                {t("media.originalSource")}
               </a>
             ) : null}
           </div>

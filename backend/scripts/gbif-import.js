@@ -48,6 +48,10 @@ const PAGE_LIMIT = (() => {
   const idx = args.indexOf("--limit");
   return idx !== -1 ? parseInt(args[idx + 1], 10) : 300;
 })();
+const MAX_PER_ORDER = (() => {
+  const idx = args.indexOf("--max-per-order");
+  return idx !== -1 ? parseInt(args[idx + 1], 10) : Infinity;
+})();
 
 // ─── Config GBIF ──────────────────────────────────────────────────────────
 const GBIF_BASE = "https://api.gbif.org/v1/occurrence/search";
@@ -900,10 +904,14 @@ async function importOrder({ order, taxonKey }, initialOffset = 0) {
 
       // ── Insert batch ─────────────────────────────────────────────────────
       if (toInsert.length > 0) {
+        const remaining = MAX_PER_ORDER - totalForOrder;
+        const batchToInsert = Number.isFinite(remaining) ? toInsert.slice(0, Math.max(0, remaining)) : toInsert;
         try {
           const beforeIns = stats.inserted;
           const beforeDup = stats.skipped_duplicate;
-          await insertBatch(toInsert);
+          if (batchToInsert.length > 0) {
+            await insertBatch(batchToInsert);
+          }
           const newAdded = stats.inserted - beforeIns;
           const dupSkipped = stats.skipped_duplicate - beforeDup;
           totalForOrder += newAdded;
@@ -912,12 +920,17 @@ async function importOrder({ order, taxonKey }, initialOffset = 0) {
           );
         } catch (err) {
           log(`   ❌ Lỗi insert batch: ${err.message}`);
-          stats.errors += toInsert.length;
+          stats.errors += batchToInsert.length;
         }
       } else {
         log(
           `   ⏭️  Không có record hợp lệ (no_date=${pageSkips.no_date}, bbox=${pageSkips.bbox}, lit=${pageSkips.literature}, no_taxon=${pageSkips.no_taxon})`
         );
+      }
+
+      if (totalForOrder >= MAX_PER_ORDER) {
+        log(`🎯 Đã đạt giới hạn --max-per-order=${MAX_PER_ORDER} cho ${order}.`);
+        break;
       }
 
       if (endOfRecords || results.length === 0) {
@@ -926,6 +939,10 @@ async function importOrder({ order, taxonKey }, initialOffset = 0) {
 
       offset += results.length;
       await sleep(GBIF_RATE_LIMIT_MS);
+    }
+
+    if (totalForOrder >= MAX_PER_ORDER) {
+      break;
     }
   }
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import L from "leaflet";
@@ -13,6 +14,7 @@ export default function SpecimenMapSidebar({
   orderName,
   provinceNameVn,
   localityDetail,
+  license,
   onCopyCoordinates,
 }) {
   const { t } = useTranslation();
@@ -57,11 +59,15 @@ export default function SpecimenMapSidebar({
       fillOpacity: 0.95,
     }).addTo(map);
 
+    const pinIconHtml = renderToStaticMarkup(
+      <Icon name="pin" size={12} style={{ flexShrink: 0 }} />,
+    );
+
     marker
       .bindPopup(
         `<div style="font-family:Inter,sans-serif;padding:2px;">
           <strong style="font-style:italic;font-size:13px;display:block;margin-bottom:2px;">${scientificName}</strong>
-          <span style="font-size:11px;color:#555;">📍 ${provinceNameVn || "Việt Nam"}</span><br/>
+          <span style="font-size:11px;color:#555;display:inline-flex;align-items:center;gap:4px;">${pinIconHtml}${provinceNameVn || "Việt Nam"}</span><br/>
           <span style="font-size:10px;color:#777;">WGS84: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}</span>
         </div>`,
       )
@@ -149,7 +155,7 @@ export default function SpecimenMapSidebar({
         <div className="citation-meta-list">
           <div className="citation-meta-item">
             <span>{t("specimenDetail.openDataLabel")}</span>
-            <strong>{specimen.license || t("specimenDetail.notRecorded")}</strong>
+            <strong>{license || t("specimenDetail.notRecorded")}</strong>
           </div>
           <div className="citation-meta-item">
             <span>{t("specimenDetail.exportFormatLabel")}</span>

@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import Icon from "../../../components/ui/Icon";
 import specimenService from "../../specimen/specimen.service";
+import { formatNumber } from "../../../utils/formatters";
 
 const ESRI_STREET_URL =
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
@@ -25,6 +27,7 @@ function getMarkerRadius(count, mode) {
 }
 
 export default function HomeMapHero({ stats = null }) {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [mode, setMode] = useState("density");
   const [basemap, setBasemap] = useState("street");
@@ -59,45 +62,42 @@ export default function HomeMapHero({ stats = null }) {
         <div>
           <span className="eyebrow">
             <Icon name="map" size={14} />
-            Dữ liệu theo không gian PostGIS
+            {t("home.mapEyebrow")}
           </span>
-          <h2 id="home-map-title">Khám phá đa dạng sinh học Việt Nam</h2>
-          <p>
-            Phân bố điểm ghi nhận thực tế theo 34 tỉnh/thành phố chuẩn hóa (Nghị quyết
-            202/2025/QH15).
-          </p>
+          <h2 id="home-map-title">{t("home.mapTitle")}</h2>
+          <p>{t("home.mapDesc")}</p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <div className="map-mode-toggle" role="group" aria-label="Chế độ bản đồ">
+          <div className="map-mode-toggle" role="group" aria-label={t("gis.mapView")}>
             <button
               type="button"
               className={mode === "points" ? "active" : ""}
               onClick={() => setMode("points")}
             >
-              Điểm
+              {t("home.modePoints")}
             </button>
             <button
               type="button"
               className={mode === "density" ? "active" : ""}
               onClick={() => setMode("density")}
             >
-              Mật độ
+              {t("home.modeDensity")}
             </button>
           </div>
-          <div className="map-mode-toggle" role="group" aria-label="Lớp nền bản đồ">
+          <div className="map-mode-toggle" role="group" aria-label={t("gis.layers")}>
             <button
               type="button"
               className={basemap === "street" ? "active" : ""}
               onClick={() => setBasemap("street")}
             >
-              Khoa học
+              {t("home.basemapStreet")}
             </button>
             <button
               type="button"
               className={basemap === "satellite" ? "active" : ""}
               onClick={() => setBasemap("satellite")}
             >
-              Vệ tinh
+              {t("home.basemapSatellite")}
             </button>
           </div>
           <button
@@ -105,7 +105,7 @@ export default function HomeMapHero({ stats = null }) {
             className="button button-sm button-primary"
             onClick={() => navigate("/map")}
           >
-            Mở Bản đồ GIS đầy đủ →
+            {t("home.openFullMap")}
           </button>
         </div>
       </div>
@@ -138,8 +138,8 @@ export default function HomeMapHero({ stats = null }) {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Lọc nhanh tỉnh/thành (VD: Lâm Đồng, Đà Nẵng, Lào Cai)..."
-              aria-label="Tìm trên bản đồ"
+              placeholder={t("home.filterProvincePlaceholder")}
+              aria-label={t("common.search")}
               style={{
                 border: 0,
                 outline: 0,
@@ -154,7 +154,7 @@ export default function HomeMapHero({ stats = null }) {
                 type="button"
                 className="icon-button"
                 onClick={() => setQuery("")}
-                aria-label="Xóa tìm kiếm"
+                aria-label={t("common.reset")}
               >
                 <Icon name="close" size={14} />
               </button>
@@ -163,13 +163,13 @@ export default function HomeMapHero({ stats = null }) {
 
           <div className="map-legend" style={{ margin: 0 }}>
             <span>
-              <i className="legend-dot legend-low" /> &lt; 1.500 mẫu
+              <i className="legend-dot legend-low" /> {t("home.legendLow")}
             </span>
             <span>
-              <i className="legend-dot legend-mid" /> 1.500 – 5.000 mẫu
+              <i className="legend-dot legend-mid" /> {t("home.legendMid")}
             </span>
             <span>
-              <i className="legend-dot legend-high" /> &gt; 5.000 mẫu (Điểm nóng)
+              <i className="legend-dot legend-high" /> {t("home.legendHigh")}
             </span>
           </div>
         </div>
@@ -203,12 +203,12 @@ export default function HomeMapHero({ stats = null }) {
                     <div style={{ fontSize: 12.5, color: "#111111" }}>
                       <strong>{prov.province_name_vn}</strong>
                       <div>
-                        Số mẫu vật ghi nhận:{" "}
-                        <strong>{Number(prov.count).toLocaleString("vi-VN")}</strong>
+                        {t("home.recordedSpecimens")}{" "}
+                        <strong>{formatNumber(prov.count, i18n.language)}</strong>
                       </div>
                       <div style={{ marginTop: 6 }}>
                         <Link to={`/specimens/search?provinceId=${prov.province_id}`}>
-                          Tra cứu mẫu vật tại {prov.province_name_vn} →
+                          {t("home.searchAtProvince", { province: prov.province_name_vn })}
                         </Link>
                       </div>
                     </div>

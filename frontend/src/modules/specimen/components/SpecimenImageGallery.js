@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import Icon from "../../../components/ui/Icon";
 import SpecimenImageViewerModal from "../../media/components/SpecimenImageViewerModal";
 
@@ -8,6 +9,7 @@ export default function SpecimenImageGallery({
   scientificName = "",
   gbifOccurrenceId = null,
 }) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(images.length > 0 ? "specimen" : "species");
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -43,10 +45,8 @@ export default function SpecimenImageGallery({
           <div className="gallery-empty-icon">
             <Icon name="image" size={32} />
           </div>
-          <h4>Chưa có hình ảnh lưu trữ nội bộ</h4>
-          <p>
-            Bản ghi mẫu vật này chưa đính kèm ảnh vi thể nội bộ hoặc ảnh số hóa độ phân giải cao.
-          </p>
+          <h4>{t("specimenDetail.noInternalImages")}</h4>
+          <p>{t("specimenDetail.noInternalImagesDesc")}</p>
           {gbifOccurrenceId && String(gbifOccurrenceId).includes("inaturalist") ? (
             <a
               href={gbifOccurrenceId}
@@ -74,14 +74,14 @@ export default function SpecimenImageGallery({
             className={`gallery-source-btn ${activeTab === "specimen" ? "active" : ""}`}
             onClick={() => setActiveTab("specimen")}
           >
-            Ảnh mẫu vật ({images.length})
+            {t("specimenDetail.specimenPhotos", { count: images.length })}
           </button>
           <button
             type="button"
             className={`gallery-source-btn ${activeTab === "species" ? "active" : ""}`}
             onClick={() => setActiveTab("species")}
           >
-            Ảnh tham khảo loài ({speciesImages.length})
+            {t("specimenDetail.speciesRefPhotos", { count: speciesImages.length })}
           </button>
         </div>
       )}
@@ -106,10 +106,10 @@ export default function SpecimenImageGallery({
                 e.stopPropagation();
                 setLightboxOpen(true);
               }}
-              aria-label="Phóng to ảnh"
+              aria-label={t("specimenDetail.zoom")}
             >
               <Icon name="zoom-in" size={16} />
-              <span>Phóng to</span>
+              <span>{t("specimenDetail.zoom")}</span>
             </button>
           </div>
 
@@ -122,12 +122,13 @@ export default function SpecimenImageGallery({
               {currentImg.isSpeciesReference && (
                 <span className="gallery-ref-badge">
                   {currentImg.referenceMatchRank === "Species"
-                    ? "ẢNH THAM CHIẾU CÙNG LOÀI"
-                    : `ẢNH ĐẠI DIỆN PHÂN LOẠI (${
-                        currentImg.referenceScientificName ||
-                        currentImg.referenceTaxonName ||
-                        currentImg.referenceMatchRank
-                      })`}
+                    ? t("specimenDetail.sameSpeciesRef")
+                    : t("specimenDetail.taxonRefPhoto", {
+                        name:
+                          currentImg.referenceScientificName ||
+                          currentImg.referenceTaxonName ||
+                          currentImg.referenceMatchRank,
+                      })}
                 </span>
               )}
               {currentImg.licenseCode && (
@@ -149,7 +150,7 @@ export default function SpecimenImageGallery({
                   rel="noreferrer"
                   className="gallery-source-link"
                 >
-                  Nguồn <Icon name="external-link" size={12} />
+                  {t("specimenDetail.source")} <Icon name="external-link" size={12} />
                 </a>
               )}
             </div>

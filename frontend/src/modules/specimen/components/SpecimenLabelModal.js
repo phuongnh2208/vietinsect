@@ -40,7 +40,7 @@ export default function SpecimenLabelModal({ specimen, isOpen, onClose }) {
                 {specimen.orderName || notRecorded} : {specimen.familyName || notRecorded}
               </div>
               <div className="label-locality">
-                📍 {specimen.provinceNameVn || notRecorded}
+                {specimen.provinceNameVn || notRecorded}
                 {specimen.localityDetail ? `, ${specimen.localityDetail}` : ""}
               </div>
               {specimen.latitude != null && specimen.longitude != null && (
