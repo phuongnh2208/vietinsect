@@ -8,6 +8,11 @@ export default function SpecimenImageGallery({
   speciesImages = [],
   scientificName = "",
   gbifOccurrenceId = null,
+  referencesUrl = null,
+  license = null,
+  rightsHolder = null,
+  recordedBy = null,
+  datasetName = null,
 }) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(images.length > 0 ? "specimen" : "species");
@@ -39,6 +44,12 @@ export default function SpecimenImageGallery({
   const hasAnyImages = images.length > 0 || speciesImages.length > 0;
 
   if (!hasAnyImages) {
+    const sourceLink =
+      referencesUrl ||
+      (gbifOccurrenceId && /^https?:\/\//i.test(String(gbifOccurrenceId))
+        ? String(gbifOccurrenceId)
+        : null);
+    const contributor = rightsHolder || recordedBy || null;
     return (
       <div className="vi-specimen-gallery-empty card">
         <div className="gallery-empty-inner">
@@ -47,17 +58,23 @@ export default function SpecimenImageGallery({
           </div>
           <h4>{t("specimenDetail.noInternalImages")}</h4>
           <p>{t("specimenDetail.noInternalImagesDesc")}</p>
-          {gbifOccurrenceId && String(gbifOccurrenceId).includes("inaturalist") ? (
-            <a
-              href={gbifOccurrenceId}
-              target="_blank"
-              rel="noreferrer"
-              className="button button-sm button-ghost"
-              style={{ marginTop: 10 }}
-            >
-              <Icon name="external-link" size={14} />
-              Tra cứu ảnh thực địa trên iNaturalist Open Data ↗
-            </a>
+          {sourceLink ? (
+            <div style={{ marginTop: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+              <a
+                href={sourceLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="button button-sm button-ghost"
+              >
+                <Icon name="external-link" size={14} />
+                {t("specimenDetail.viewSourcePhoto", "Xem ảnh gốc tại nguồn")} ↗
+              </a>
+              {(contributor || license || datasetName) && (
+                <small style={{ opacity: 0.8 }}>
+                  {[contributor ? `© ${contributor}` : null, license, datasetName].filter(Boolean).join(" · ")}
+                </small>
+              )}
+            </div>
           ) : null}
         </div>
       </div>

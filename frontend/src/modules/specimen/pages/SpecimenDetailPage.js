@@ -144,6 +144,11 @@ export default function SpecimenDetailPage() {
             speciesImages={specimen.speciesImages || []}
             scientificName={specimen.scientificName}
             gbifOccurrenceId={specimen.gbifOccurrenceId}
+            referencesUrl={specimen.referencesUrl}
+            license={specimen.license}
+            rightsHolder={specimen.rightsHolder}
+            recordedBy={specimen.recordedBy}
+            datasetName={specimen.datasetName}
           />
 
           {/* B. Vị trí phân loại học (Taxonomy Hierarchy Bar) */}
