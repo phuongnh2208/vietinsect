@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Icon from "../../../components/ui/Icon";
@@ -161,7 +161,7 @@ export default function DnaFastaDetailPage() {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
             <span
               className="status-badge"
-              style={{ background: orderColor, color: "#FFFFFF", borderColor: "#111111" }}
+              style={{ background: orderColor, color: "#FFFFFF", borderColor: "#D1D5DB" }}
             >
               {t("specimenDetail.orderPrefix")}: {record.orderName || record.taxonName}
             </span>

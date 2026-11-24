@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -401,7 +401,7 @@ export default function AdminDashboardPage() {
               width: "100%",
               height: 275,
               marginTop: 8,
-              border: "1px solid #111111",
+              border: "1px solid #D1D5DB",
               position: "relative",
             }}
           >
@@ -465,7 +465,7 @@ export default function AdminDashboardPage() {
                     height: 10,
                     background: "#66BB6A",
                     display: "inline-block",
-                    border: "1px solid #111",
+                    border: "1px solid #D1D5DB",
                   }}
                 />{" "}
                 &lt; 400 mẫu
@@ -477,7 +477,7 @@ export default function AdminDashboardPage() {
                     height: 10,
                     background: "#2E7D32",
                     display: "inline-block",
-                    border: "1px solid #111",
+                    border: "1px solid #D1D5DB",
                   }}
                 />{" "}
                 400 – 1.500
@@ -489,7 +489,7 @@ export default function AdminDashboardPage() {
                     height: 10,
                     background: "#1F4E2D",
                     display: "inline-block",
-                    border: "1px solid #111",
+                    border: "1px solid #D1D5DB",
                   }}
                 />{" "}
                 1.500 – 5.000
@@ -501,7 +501,7 @@ export default function AdminDashboardPage() {
                     height: 10,
                     background: "#0F3820",
                     display: "inline-block",
-                    border: "1px solid #111",
+                    border: "1px solid #D1D5DB",
                   }}
                 />{" "}
                 &gt; 5.000 mẫu

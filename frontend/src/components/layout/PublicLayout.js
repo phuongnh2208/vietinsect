@@ -36,6 +36,9 @@ export default function PublicLayout() {
                 </NavLink>
               ))}
               <LanguageSwitcher variant="single" />
+              <Link to="/login" className="header-login-btn">
+                Login
+              </Link>
             </div>
           </nav>
         </div>

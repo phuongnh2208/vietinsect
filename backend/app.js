@@ -1,3 +1,5 @@
+const path = require("path");
+const fs = require("fs");
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
@@ -20,6 +22,7 @@ if (trustProxyHops > 0) {
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: false,
   }),
 );
 app.use(
@@ -79,6 +82,18 @@ app.use("/api/dna", require("./src/modules/dna/dna.routes"));
 app.use("/api/media", require("./src/modules/media/media.routes"));
 app.use("/api/reports", require("./src/modules/reports/reports.routes"));
 app.use("/api/system", require("./src/modules/system/system.routes"));
+
+// Phục vụ Frontend production build (single-origin cho Cloudflare Tunnel / deploy demo)
+const frontendBuildDir = path.resolve(__dirname, "../frontend/build");
+if (fs.existsSync(frontendBuildDir)) {
+  app.use(express.static(frontendBuildDir));
+  app.use((req, res, next) => {
+    if (req.method === "GET" && !req.path.startsWith("/api/")) {
+      return res.sendFile(path.join(frontendBuildDir, "index.html"));
+    }
+    return next();
+  });
+}
 
 // 404 handler
 app.use((req, res) => {

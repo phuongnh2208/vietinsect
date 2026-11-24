@@ -7,6 +7,7 @@ import FacetPanel from "../../search/components/FacetPanel";
 import ActiveFilters from "../../search/components/ActiveFilters";
 import ViewSwitcher from "../../search/components/ViewSwitcher";
 import SearchResultViews from "../../search/components/SearchResultViews";
+import "./AdvancedSearchPage.css";
 
 export default function AdvancedSearchPage() {
   const { t } = useTranslation();
@@ -83,7 +84,7 @@ export default function AdvancedSearchPage() {
     try {
       const res = await searchService.searchSpecimens(apiParams);
       setData({
-        items: res?.items || [],
+        items: Array.isArray(res?.items) ? res.items : Array.isArray(res?.data) ? res.data : [],
         facets: res?.facets || {},
         pagination: res?.pagination || {
           total: 0,
@@ -136,15 +137,15 @@ export default function AdvancedSearchPage() {
   const currentPage = pagination.page || 1;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 space-y-5">
+    <div className="adv-search-page">
       {/* Header + Search Bar */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div className="adv-search-header-card">
+        <div className="adv-search-top-row">
           <div>
-            <h1 className="text-xl font-bold text-slate-900">
+            <h1 className="adv-search-title">
               {t("search.title", "Tìm kiếm & Khám phá Mẫu vật")}
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="adv-search-subtitle">
               {t(
                 "search.subtitle",
                 "Tìm kiếm toàn văn tiếng Việt không dấu, lọc đa chiều (8 facet) và 5 chế độ hiển thị."
@@ -157,8 +158,8 @@ export default function AdvancedSearchPage() {
           />
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
+        <div className="adv-search-bar-row">
+          <div className="adv-search-input-wrap">
             <input
               type="search"
               value={searchInput}
@@ -168,14 +169,14 @@ export default function AdvancedSearchPage() {
                 "Nhập tên khoa học, tên tiếng Việt không dấu (vd: bo canh cung), mã mẫu, địa danh..."
               )}
               aria-label={t("search.inputAria", "Từ khóa tìm kiếm mẫu vật")}
-              className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              className="adv-search-input"
             />
           </div>
           <select
             value={state.sortBy || "relevance"}
             onChange={(e) => updateParams({ sortBy: e.target.value })}
             aria-label={t("search.sortAria", "Sắp xếp kết quả")}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white"
+            className="adv-search-sort"
           >
             <option value="relevance">{t("search.sort.relevance", "Độ liên quan")}</option>
             <option value="specimenId">{t("search.sort.catalogNumber", "Mã mẫu")}</option>
@@ -194,10 +195,7 @@ export default function AdvancedSearchPage() {
 
       {/* Synonym notice */}
       {synonymNotice && (
-        <div
-          role="status"
-          className="bg-blue-50 border border-blue-200 text-blue-900 rounded-xl px-4 py-3 text-sm"
-        >
+        <div role="status" className="adv-search-notice">
           {typeof synonymNotice === "string"
             ? synonymNotice
             : synonymNotice.message ||
@@ -207,13 +205,9 @@ export default function AdvancedSearchPage() {
 
       {/* Explicit 503 / Error Banner */}
       {errorState && (
-        <div
-          role="alert"
-          data-testid="search-error-banner"
-          className="bg-red-50 border border-red-300 text-red-900 rounded-xl px-4 py-3 text-sm flex items-center justify-between gap-3"
-        >
+        <div role="alert" data-testid="search-error-banner" className="adv-search-error">
           <div>
-            <strong className="font-semibold">
+            <strong>
               {errorState.status === 503
                 ? t("search.errors.title503", "Dịch vụ tìm kiếm tạm ngừng (503)")
                 : t("search.errors.title", "Lỗi tìm kiếm")}
@@ -224,7 +218,7 @@ export default function AdvancedSearchPage() {
           <button
             type="button"
             onClick={fetchResults}
-            className="px-3 py-1 rounded-md bg-red-700 text-white text-xs font-medium hover:bg-red-800 shrink-0"
+            className="button button-sm button-primary"
           >
             {t("search.retry", "Thử lại")}
           </button>
@@ -232,8 +226,8 @@ export default function AdvancedSearchPage() {
       )}
 
       {/* Main Layout: Facet Sidebar + Results */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-3">
+      <div className="adv-search-layout">
+        <div className="adv-search-sidebar">
           <FacetPanel
             facets={facets}
             state={state}
@@ -241,8 +235,8 @@ export default function AdvancedSearchPage() {
           />
         </div>
 
-        <section className="lg:col-span-9 space-y-4">
-          <div className="flex items-center justify-between text-xs text-slate-600">
+        <section className="adv-search-results">
+          <div className="adv-search-meta">
             <span>
               {loading
                 ? t("search.loading", "Đang tìm kiếm...")
@@ -263,7 +257,7 @@ export default function AdvancedSearchPage() {
           </div>
 
           {!loading && !errorState && items.length === 0 && state.view !== "treemap" ? (
-            <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-slate-500 text-sm">
+            <div className="adv-search-empty">
               {t("search.empty", "Không tìm thấy mẫu vật phù hợp với bộ lọc hiện tại.")}
             </div>
           ) : (
@@ -278,23 +272,23 @@ export default function AdvancedSearchPage() {
 
           {/* Pagination */}
           {totalPages > 1 && state.view !== "treemap" && (
-            <div className="flex items-center justify-center gap-2 pt-2">
+            <div className="adv-search-pagination">
               <button
                 type="button"
                 disabled={currentPage <= 1}
                 onClick={() => updateParams({ page: currentPage - 1 }, { resetPage: false })}
-                className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-medium disabled:opacity-40 hover:bg-slate-50"
+                className="button button-sm button-ghost"
               >
                 {t("search.pagination.prev", "Trang trước")}
               </button>
-              <span className="text-xs text-slate-600 px-2">
+              <span className="adv-search-page-info">
                 {currentPage} / {totalPages}
               </span>
               <button
                 type="button"
                 disabled={currentPage >= totalPages}
                 onClick={() => updateParams({ page: currentPage + 1 }, { resetPage: false })}
-                className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-medium disabled:opacity-40 hover:bg-slate-50"
+                className="button button-sm button-ghost"
               >
                 {t("search.pagination.next", "Trang sau")}
               </button>

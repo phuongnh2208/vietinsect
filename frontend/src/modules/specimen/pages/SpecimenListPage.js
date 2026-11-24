@@ -17,6 +17,7 @@ import {
   getOrderColor,
   SPATIAL_PRESETS,
 } from "../specimen.constants";
+import "./SpecimenListPage.css";
 
 export default function SpecimenListPage() {
   const { t, i18n } = useTranslation();
@@ -31,6 +32,8 @@ export default function SpecimenListPage() {
     q: searchParams.get("q") || "",
     taxonId: searchParams.get("taxonId") || "",
     order: searchParams.get("order") || "",
+    family: searchParams.get("family") || "",
+    genus: searchParams.get("genus") || "",
     provinceId: searchParams.get("provinceId") || "",
     basisOfRecord: searchParams.get("basisOfRecord") || "",
     isPublic: "",
@@ -66,8 +69,24 @@ export default function SpecimenListPage() {
     collector: false,
   });
   const [colMenuOpen, setColMenuOpen] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef(null);
+  const colMenuRef = useRef(null);
 
   const debounceRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target)) {
+        setExportMenuOpen(false);
+      }
+      if (colMenuRef.current && !colMenuRef.current.contains(e.target)) {
+        setColMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   // Tải danh mục & thống kê tổng quan
   const refreshStats = useCallback(() => {
@@ -129,9 +148,19 @@ export default function SpecimenListPage() {
     if (filters.q) nextParams.q = filters.q;
     if (filters.taxonId) nextParams.taxonId = filters.taxonId;
     if (filters.order) nextParams.order = filters.order;
+    if (filters.family) nextParams.family = filters.family;
+    if (filters.genus) nextParams.genus = filters.genus;
     if (filters.provinceId) nextParams.provinceId = filters.provinceId;
     setSearchParams(nextParams, { replace: true });
-  }, [filters.q, filters.taxonId, filters.order, filters.provinceId, setSearchParams]);
+  }, [
+    filters.q,
+    filters.taxonId,
+    filters.order,
+    filters.family,
+    filters.genus,
+    filters.provinceId,
+    setSearchParams,
+  ]);
 
   const updateFilter = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
@@ -144,6 +173,8 @@ export default function SpecimenListPage() {
       q: "",
       taxonId: "",
       order: "",
+      family: "",
+      genus: "",
       provinceId: "",
       basisOfRecord: "",
       isPublic: "",
@@ -275,408 +306,570 @@ export default function SpecimenListPage() {
   };
 
   const detailBasePath = isAdmin ? "/admin/specimens" : "/specimens";
+  const isEn = i18n.language.startsWith("en");
+
+  const handleSearchSubmit = (e) => {
+    if (e) e.preventDefault();
+    clearTimeout(debounceRef.current);
+    const trimmed = qInput.trim();
+    if (filters.q !== trimmed) {
+      setFilters((prev) => ({ ...prev, q: trimmed, page: 1 }));
+    } else {
+      fetchList();
+    }
+  };
+
+  const sortOptions = useMemo(
+    () => [
+      { value: "collectionDate:desc", label: t("specimen.sortDateDesc") },
+      { value: "collectionDate:asc", label: t("specimen.sortDateAsc") },
+      { value: "scientificName:asc", label: t("specimen.sortNameAsc") },
+      { value: "individualCount:desc", label: t("specimen.sortCountDesc") },
+      { value: "specimenId:desc", label: t("specimen.sortNewest") },
+    ],
+    [t],
+  );
+
+  const activeSortLabel = useMemo(() => {
+    const current = `${filters.sortBy}:${filters.sortOrder}`;
+    return sortOptions.find((o) => o.value === current)?.label || sortOptions[0].label;
+  }, [filters.sortBy, filters.sortOrder, sortOptions]);
+
+  const activeChips = useMemo(() => {
+    const chips = [];
+    if (filters.q) {
+      chips.push({
+        key: "q",
+        label: `${isEn ? "Keyword" : "Từ khóa"}: ${filters.q}`,
+        onRemove: () => {
+          setQInput("");
+          updateFilter("q", "");
+        },
+      });
+    }
+    if (filters.order) {
+      chips.push({
+        key: "order",
+        label: `${isEn ? "Order" : "Bộ"}: ${filters.order}`,
+        onRemove: () => updateFilter("order", ""),
+      });
+    }
+    if (filters.family) {
+      chips.push({
+        key: "family",
+        label: `${t("specimen.family")}: ${filters.family}`,
+        onRemove: () => updateFilter("family", ""),
+      });
+    }
+    if (filters.genus) {
+      chips.push({
+        key: "genus",
+        label: `${t("specimen.genus")}: ${filters.genus}`,
+        onRemove: () => updateFilter("genus", ""),
+      });
+    }
+    if (filters.provinceId) {
+      const prov = lookups.provinces.find((p) => String(p.id) === String(filters.provinceId));
+      chips.push({
+        key: "provinceId",
+        label: `${isEn ? "Province" : "Tỉnh"}: ${prov ? prov.nameVn : filters.provinceId}`,
+        onRemove: () => updateFilter("provinceId", ""),
+      });
+    }
+    if (filters.basisOfRecord) {
+      chips.push({
+        key: "basisOfRecord",
+        label: `${isEn ? "Source" : "Nguồn"}: ${formatBasisOfRecord(filters.basisOfRecord)}`,
+        onRemove: () => updateFilter("basisOfRecord", ""),
+      });
+    }
+    if (filters.dateFrom || filters.dateTo) {
+      const rangeText =
+        filters.dateFrom && filters.dateTo
+          ? `${filters.dateFrom} – ${filters.dateTo}`
+          : filters.dateFrom
+            ? `≥ ${filters.dateFrom}`
+            : `≤ ${filters.dateTo}`;
+      chips.push({
+        key: "dateRange",
+        label: `${isEn ? "Date" : "Ngày"}: ${rangeText}`,
+        onRemove: () =>
+          setFilters((prev) => ({ ...prev, dateFrom: "", dateTo: "", page: 1 })),
+      });
+    }
+    if (showSpatialFilter && filters.lat !== "" && filters.lon !== "") {
+      chips.push({
+        key: "spatial",
+        label: `GPS: ${filters.lat}, ${filters.lon} (${filters.radiusKm || 25}km)`,
+        onRemove: () =>
+          setFilters((prev) => ({ ...prev, lat: "", lon: "", radiusKm: 25, page: 1 })),
+      });
+    }
+    if (isAdmin && filters.isPublic !== "") {
+      chips.push({
+        key: "isPublic",
+        label: `${t("specimen.sharingStatus")}: ${
+          filters.isPublic === "true"
+            ? t("specimen.currentlyPublic")
+            : t("specimen.currentlyPrivate")
+        }`,
+        onRemove: () => updateFilter("isPublic", ""),
+      });
+    }
+    return chips;
+  }, [filters, showSpatialFilter, lookups.provinces, isAdmin, isEn, t]);
 
   return (
-    <div className="page-container page-content vi-page-enter">
-      {/* Header */}
-      <div className="page-header">
-        <div>
-          <div className="eyebrow">
-            <Icon name={isAdmin ? "database" : "search"} size={14} />
+    <div className="page-container page-content vi-page-enter vi-portal-page">
+      {/* 1. Page Header */}
+      <header className="vi-portal-header">
+        <div className="vi-portal-header-copy">
+          <div className="vi-portal-eyebrow">
+            <Icon name={isAdmin ? "database" : "search"} size={13} />
             {isAdmin ? t("specimen.title") : t("specimen.publicPortalEyebrow")}
           </div>
-          <h1>{isAdmin ? t("specimen.adminHeading") : t("specimen.publicHeading")}</h1>
-          <p className="page-description">
+          <h1 className="vi-portal-title">
+            {isAdmin ? t("specimen.adminHeading") : t("specimen.publicHeading")}
+          </h1>
+          <p className="vi-portal-desc">
             {isAdmin ? t("specimen.adminDesc") : t("specimen.publicDesc")}
           </p>
         </div>
 
-        <div className="hero-actions" style={{ marginTop: 0 }}>
+        <div className="vi-portal-actions">
           <button
             type="button"
-            className="button button-ghost"
+            className="vp-btn"
             onClick={() => navigate(isAdmin ? "/admin/map" : "/map")}
           >
-            <Icon name="map" size={16} />
+            <Icon name="map" size={15} />
             {t("specimen.viewOnMap")}
           </button>
-          <button
-            type="button"
-            className="button button-ghost"
-            onClick={() => handleServerExport("dwca")}
-            disabled={Boolean(exportingFmt)}
-          >
-            <Icon name="archive" size={16} />
-            {exportingFmt === "dwca" ? t("specimen.packaging") : "DwC-A (.zip)"}
-          </button>
-          <button
-            type="button"
-            className="button button-ghost"
-            onClick={() => handleServerExport("xlsx")}
-            disabled={Boolean(exportingFmt)}
-          >
-            <Icon name="file" size={16} />
-            {exportingFmt === "xlsx" ? t("specimen.exporting") : "Excel (.xlsx)"}
-          </button>
-          <button
-            type="button"
-            className="button button-ghost"
-            onClick={() => handleServerExport("geojson")}
-            disabled={Boolean(exportingFmt)}
-          >
-            <Icon name="globe" size={16} />
-            {exportingFmt === "geojson" ? t("specimen.exporting") : "GeoJSON"}
-          </button>
+
+          <div className="vp-dropdown-wrap" ref={exportMenuRef}>
+            <button
+              type="button"
+              className="vp-btn"
+              onClick={() => setExportMenuOpen((v) => !v)}
+              disabled={Boolean(exportingFmt)}
+              aria-expanded={exportMenuOpen}
+            >
+              <Icon name="archive" size={15} />
+              {exportingFmt
+                ? exportingFmt === "dwca"
+                  ? t("specimen.packaging")
+                  : t("specimen.exporting")
+                : isEn
+                  ? "Export Data ▾"
+                  : "Xuất dữ liệu ▾"}
+            </button>
+
+            {exportMenuOpen ? (
+              <div className="vp-dropdown-menu">
+                <button
+                  type="button"
+                  className="vp-dropdown-item"
+                  onClick={() => {
+                    setExportMenuOpen(false);
+                    handleServerExport("dwca");
+                  }}
+                  disabled={Boolean(exportingFmt)}
+                >
+                  <Icon name="archive" size={14} />
+                  DwC-A (.zip)
+                </button>
+                <button
+                  type="button"
+                  className="vp-dropdown-item"
+                  onClick={() => {
+                    setExportMenuOpen(false);
+                    handleServerExport("xlsx");
+                  }}
+                  disabled={Boolean(exportingFmt)}
+                >
+                  <Icon name="file" size={14} />
+                  Excel (.xlsx)
+                </button>
+                <button
+                  type="button"
+                  className="vp-dropdown-item"
+                  onClick={() => {
+                    setExportMenuOpen(false);
+                    handleServerExport("geojson");
+                  }}
+                  disabled={Boolean(exportingFmt)}
+                >
+                  <Icon name="globe" size={14} />
+                  GeoJSON
+                </button>
+              </div>
+            ) : null}
+          </div>
+
           {isAdmin ? (
             <>
-              <Link to="/admin/specimens/import" className="button button-ghost">
-                <Icon name="upload" size={16} />
+              <Link to="/admin/specimens/import" className="vp-btn">
+                <Icon name="upload" size={15} />
                 {t("specimen.importExcel")}
               </Link>
-              <Link to="/admin/specimens/batch-edit" className="button button-ghost">
-                <Icon name="edit" size={16} />
+              <Link to="/admin/specimens/batch-edit" className="vp-btn">
+                <Icon name="edit" size={15} />
                 {t("specimen.batchEdit")}
               </Link>
-              <Link to="/admin/specimens/labels" className="button button-ghost">
-                <Icon name="printer" size={16} />
+              <Link to="/admin/specimens/labels" className="vp-btn">
+                <Icon name="printer" size={15} />
                 {t("specimen.printLabels")}
               </Link>
               <button
                 type="button"
-                className="button button-primary"
+                className="vp-btn vp-btn-primary"
                 onClick={() => {
                   setEditingItem(null);
                   setModalOpen(true);
                 }}
               >
-                <Icon name="plus" size={16} />
+                <Icon name="plus" size={15} />
                 {t("specimen.addSpecimen")}
               </button>
             </>
           ) : (
-            <Link to="/search/advanced" className="button button-secondary">
-              <Icon name="filter" size={16} />
+            <Link to="/search/advanced" className="vp-btn vp-btn-primary">
+              <Icon name="filter" size={15} />
               {t("navigation.advancedSearch")}
             </Link>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* KPI Metrics Strip */}
+      {/* 2. Compact Data Summary Strip (Real API data only) */}
       {stats ? (
-        <div className="metric-grid" style={{ marginBottom: 20 }}>
-          <article className="card metric-card">
-            <div className="metric-head">
-              <span>{t("specimen.totalSpecimens")}</span>
-              <span className="metric-icon">
-                <Icon name="bug" size={16} />
-              </span>
-            </div>
-            <div className="metric-value">{formatNumber(stats.totalSpecimens || 0, i18n.language)}</div>
-            <div className="metric-foot">
-              {t("specimen.withGps", { count: formatNumber(stats.withCoordinates || 0, i18n.language) })}
-            </div>
-          </article>
+        <section className="vi-summary-strip" aria-label={isEn ? "Data summary" : "Tổng quan dữ liệu"}>
+          <div className="vi-summary-item">
+            <span className="vi-summary-label">{t("specimen.totalSpecimens")}</span>
+            <span className="vi-summary-value">
+              {formatNumber(stats.totalSpecimens || 0, i18n.language)}
+            </span>
+            <span className="vi-summary-meta">
+              {t("specimen.withGps", {
+                count: formatNumber(stats.withCoordinates || 0, i18n.language),
+              })}
+            </span>
+          </div>
 
-          <article className="card metric-card">
-            <div className="metric-head">
-              <span>{t("specimen.digitizedSpecies")}</span>
-              <span className="metric-icon">
-                <Icon name="leaf" size={16} />
-              </span>
-            </div>
-            <div className="metric-value">
-              {formatNumber(stats.taxa?.species || stats.distinctBinomialSpecies || 0, i18n.language)}
-            </div>
-            <div className="metric-foot">
+          <div className="vi-summary-item">
+            <span className="vi-summary-label">
+              {isEn ? "Insect Orders" : "Số bộ côn trùng"}
+            </span>
+            <span className="vi-summary-value">
+              {formatNumber(lookups.orders.length || 0, i18n.language)}
+            </span>
+            <span className="vi-summary-meta">
               {t("specimen.familiesGenera", {
                 families: formatNumber(stats.taxa?.families || 0, i18n.language),
                 genera: formatNumber(stats.taxa?.genera || 0, i18n.language),
               })}
-            </div>
-          </article>
+            </span>
+          </div>
 
-          <article className="card metric-card">
-            <div className="metric-head">
-              <span>{t("specimen.geoCoverage")}</span>
-              <span className="metric-icon">
-                <Icon name="map" size={16} />
-              </span>
-            </div>
-            <div className="metric-value">{stats.provincesCovered || 0} / 34</div>
-            <div className="metric-foot">{t("specimen.standardizedProvinces")}</div>
-          </article>
+          <div className="vi-summary-item">
+            <span className="vi-summary-label">
+              {isEn ? "Provinces Recorded" : "Tỉnh / thành có ghi nhận"}
+            </span>
+            <span className="vi-summary-value">
+              {stats.provincesCovered || 0} / 34
+            </span>
+            <span className="vi-summary-meta">{t("specimen.standardizedProvinces")}</span>
+          </div>
 
-          <article className="card metric-card">
-            <div className="metric-head">
-              <span>{t("specimen.matchingResults")}</span>
-              <span className="metric-icon">
-                <Icon name="filter" size={16} />
-              </span>
-            </div>
-            <div className="metric-value">{formatNumber(pagination.total || 0, i18n.language)}</div>
-            <div className="metric-foot">
-              {t("specimen.pageOf", {
-                page: pagination.page,
-                total: Math.max(1, pagination.totalPages),
-              })}
-            </div>
-          </article>
-        </div>
+          <div className="vi-summary-item">
+            <span className="vi-summary-label">{t("specimen.digitizedSpecies")}</span>
+            <span className="vi-summary-value">
+              {formatNumber(
+                stats.taxa?.species || stats.distinctBinomialSpecies || 0,
+                i18n.language,
+              )}
+            </span>
+            <span className="vi-summary-meta">
+              {isEn
+                ? `${Object.keys(BASIS_OF_RECORD_LABELS).length} DwC record types`
+                : `${Object.keys(BASIS_OF_RECORD_LABELS).length} chuẩn nguồn bản ghi DwC`}
+            </span>
+          </div>
+        </section>
       ) : null}
 
-      {/* Filter Workbench */}
-      <section className="card panel" style={{ marginBottom: 18 }}>
-        <div className="vi-filter-grid">
-          <div className="form-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="flt-q">{t("specimen.keywordLabel")}</label>
-            <div style={{ position: "relative" }}>
-              <input
-                id="flt-q"
-                value={qInput}
-                onChange={(e) => setQInput(e.target.value)}
-                placeholder={t("specimen.keywordPlaceholder")}
-              />
-              {qInput ? (
-                <button
-                  type="button"
-                  className="icon-button"
-                  style={{ position: "absolute", right: 4, top: 4, width: 32, height: 32 }}
-                  onClick={() => setQInput("")}
-                  aria-label={t("specimen.clearKeyword")}
-                >
-                  <Icon name="close" size={14} />
-                </button>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="form-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="flt-order">{t("specimen.order")}</label>
-            <select
-              id="flt-order"
-              value={filters.order}
-              onChange={(e) => updateFilter("order", e.target.value)}
-            >
-              <option value="">{t("specimen.allOrders")}</option>
-              {lookups.orders.map((o) => {
-                const localizedName = t(`orders.${o.scientificName}`, {
-                  defaultValue: i18n.language.startsWith("en")
-                    ? o.vernacularNameEn || ""
-                    : o.vernacularNameVn || "",
-                });
-                return (
-                  <option key={o.id} value={o.scientificName}>
-                    {o.scientificName} {localizedName ? `(${localizedName})` : ""}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-
-          <div className="form-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="flt-prov">{t("specimen.province")}</label>
-            <select
-              id="flt-prov"
-              value={filters.provinceId}
-              onChange={(e) => updateFilter("provinceId", e.target.value)}
-            >
-              <option value="">{t("specimen.allProvinces")}</option>
-              {lookups.provinces.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nameVn}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="flt-basis">{t("specimen.basisOfRecord")}</label>
-            <select
-              id="flt-basis"
-              value={filters.basisOfRecord}
-              onChange={(e) => updateFilter("basisOfRecord", e.target.value)}
-            >
-              <option value="">{t("specimen.allSources")}</option>
-              {Object.entries(BASIS_OF_RECORD_LABELS).map(([code, label]) => (
-                <option key={code} value={code}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="flt-from">{t("specimen.dateFrom")}</label>
+      {/* 3. Structured Search & Filter Panel */}
+      <form className="vi-search-panel" onSubmit={handleSearchSubmit}>
+        {/* Main Full-Width Keyword Search */}
+        <div className="vi-search-main">
+          <div className="vi-search-input-wrap">
+            <span className="vi-search-icon">
+              <Icon name="search" size={16} />
+            </span>
             <input
-              id="flt-from"
-              type="date"
-              value={filters.dateFrom}
-              onChange={(e) => updateFilter("dateFrom", e.target.value)}
+              id="flt-q"
+              className="vi-search-input"
+              value={qInput}
+              onChange={(e) => setQInput(e.target.value)}
+              placeholder={
+                isEn
+                  ? "Search by scientific name, catalog code, locality, collector..."
+                  : "Tìm theo tên khoa học, mã mẫu vật, địa điểm, người thu mẫu..."
+              }
+              aria-label={t("specimen.keywordLabel")}
             />
-          </div>
-
-          <div className="form-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="flt-to">{t("specimen.dateTo")}</label>
-            <input
-              id="flt-to"
-              type="date"
-              value={filters.dateTo}
-              onChange={(e) => updateFilter("dateTo", e.target.value)}
-            />
-          </div>
-
-          {isAdmin ? (
-            <div className="form-field" style={{ marginBottom: 0 }}>
-              <label htmlFor="flt-pub">{t("specimen.sharingStatus")}</label>
-              <select
-                id="flt-pub"
-                value={filters.isPublic}
-                onChange={(e) => updateFilter("isPublic", e.target.value)}
+            {qInput ? (
+              <button
+                type="button"
+                className="vi-search-clear"
+                onClick={() => {
+                  setQInput("");
+                  updateFilter("q", "");
+                }}
+                aria-label={t("specimen.clearKeyword")}
               >
-                <option value="">{t("specimen.allSharing")}</option>
-                <option value="true">{t("specimen.currentlyPublic")}</option>
-                <option value="false">{t("specimen.currentlyPrivate")}</option>
-              </select>
-            </div>
-          ) : null}
+                <Icon name="close" size={14} />
+              </button>
+            ) : null}
+          </div>
         </div>
 
-        {/* Toolbar phụ: PostGIS Radius + Sắp xếp + Cột hiển thị */}
-        <div className="vi-filter-subbar">
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-            <button
-              type="button"
-              className={`button button-sm ${showSpatialFilter ? "button-secondary" : "button-ghost"}`}
-              onClick={() => setShowSpatialFilter((v) => !v)}
-            >
-              <Icon name="map" size={14} />
-              {t("specimen.spatialQuery")}
-            </button>
+        {/* Basic Filters Grid (6 balanced fields: 3x2 on desktop, 2x3 on tablet, 1x6 on mobile) */}
+        <div className="vi-search-body">
+          <div className={`vi-basic-grid ${isAdmin ? "is-admin" : ""}`}>
+            <div className="vp-field">
+              <label htmlFor="flt-order">{t("specimen.order")}</label>
+              <select
+                id="flt-order"
+                value={filters.order}
+                onChange={(e) => updateFilter("order", e.target.value)}
+              >
+                <option value="">{t("specimen.allOrders")}</option>
+                {lookups.orders.map((o) => {
+                  const localizedName = t(`orders.${o.scientificName}`, {
+                    defaultValue: isEn
+                      ? o.vernacularNameEn || ""
+                      : o.vernacularNameVn || "",
+                  });
+                  return (
+                    <option key={o.id} value={o.scientificName}>
+                      {o.scientificName} {localizedName ? `(${localizedName})` : ""}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
 
-            <button type="button" className="button button-sm button-ghost" onClick={resetFilters}>
-              {t("specimen.resetFilters")}
-            </button>
+            <div className="vp-field">
+              <label htmlFor="flt-prov">{t("specimen.province")}</label>
+              <select
+                id="flt-prov"
+                value={filters.provinceId}
+                onChange={(e) => updateFilter("provinceId", e.target.value)}
+              >
+                <option value="">{t("specimen.allProvinces")}</option>
+                {lookups.provinces.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nameVn}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="vp-field">
+              <label htmlFor="flt-basis">{t("specimen.basisOfRecord")}</label>
+              <select
+                id="flt-basis"
+                value={filters.basisOfRecord}
+                onChange={(e) => updateFilter("basisOfRecord", e.target.value)}
+              >
+                <option value="">{t("specimen.allSources")}</option>
+                {Object.entries(BASIS_OF_RECORD_LABELS).map(([code, label]) => (
+                  <option key={code} value={code}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="vp-field">
+              <label htmlFor="flt-from">{t("specimen.dateFrom")}</label>
+              <input
+                id="flt-from"
+                type="date"
+                value={filters.dateFrom}
+                onChange={(e) => updateFilter("dateFrom", e.target.value)}
+              />
+            </div>
+
+            <div className="vp-field">
+              <label htmlFor="flt-to">{t("specimen.dateTo")}</label>
+              <input
+                id="flt-to"
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => updateFilter("dateTo", e.target.value)}
+              />
+            </div>
+
+            <div className="vp-field">
+              <label htmlFor="flt-sort">{t("search.sortBy")}</label>
+              <select
+                id="flt-sort"
+                value={`${filters.sortBy}:${filters.sortOrder}`}
+                onChange={(e) => {
+                  const [sortBy, sortOrder] = e.target.value.split(":");
+                  setFilters((prev) => ({ ...prev, sortBy, sortOrder, page: 1 }));
+                }}
+              >
+                {sortOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {isAdmin ? (
+              <div className="vp-field">
+                <label htmlFor="flt-pub">{t("specimen.sharingStatus")}</label>
+                <select
+                  id="flt-pub"
+                  value={filters.isPublic}
+                  onChange={(e) => updateFilter("isPublic", e.target.value)}
+                >
+                  <option value="">{t("specimen.allSharing")}</option>
+                  <option value="true">{t("specimen.currentlyPublic")}</option>
+                  <option value="false">{t("specimen.currentlyPrivate")}</option>
+                </select>
+              </div>
+            ) : null}
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8, position: "relative" }}>
-            <select
-              className="vi-compact-select"
-              value={`${filters.sortBy}:${filters.sortOrder}`}
-              onChange={(e) => {
-                const [sortBy, sortOrder] = e.target.value.split(":");
-                setFilters((prev) => ({ ...prev, sortBy, sortOrder, page: 1 }));
-              }}
-              aria-label={t("search.sortBy")}
-            >
-              <option value="collectionDate:desc">{t("specimen.sortDateDesc")}</option>
-              <option value="collectionDate:asc">{t("specimen.sortDateAsc")}</option>
-              <option value="scientificName:asc">{t("specimen.sortNameAsc")}</option>
-              <option value="individualCount:desc">{t("specimen.sortCountDesc")}</option>
-              <option value="specimenId:desc">{t("specimen.sortNewest")}</option>
-            </select>
-
+          {/* Collapsible Advanced Filters (PostGIS Spatial Radius) */}
+          <div className="vi-advanced-section">
             <button
               type="button"
-              className="button button-sm button-ghost"
-              onClick={() => setColMenuOpen((v) => !v)}
+              className="vi-advanced-toggle"
+              onClick={() => setShowSpatialFilter((v) => !v)}
+              aria-expanded={showSpatialFilter}
             >
-              <Icon name="layers" size={14} />
-              {t("specimen.columns")}
+              <Icon name="map" size={14} />
+              {isEn ? "Advanced Filters" : "Bộ lọc nâng cao"} ({t("specimen.spatialQuery")})
+              <span>{showSpatialFilter ? "▴" : "▾"}</span>
             </button>
 
-            {colMenuOpen ? (
-              <div className="vi-dropdown-popover">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={visibleCols.basis}
-                    onChange={(e) => setVisibleCols((c) => ({ ...c, basis: e.target.checked }))}
-                  />
-                  {t("specimen.basisOfRecord")}
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={visibleCols.coords}
-                    onChange={(e) => setVisibleCols((c) => ({ ...c, coords: e.target.checked }))}
-                  />
-                  {t("specimen.colCoords")}
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={visibleCols.collector}
-                    onChange={(e) =>
-                      setVisibleCols((c) => ({ ...c, collector: e.target.checked }))
-                    }
-                  />
-                  {t("specimen.colCollector")}
-                </label>
+            {showSpatialFilter ? (
+              <div className="vi-advanced-content">
+                <div className="vi-hotspots-row">
+                  <span className="vi-hotspots-label">{t("specimen.hotspots")}</span>
+                  {SPATIAL_PRESETS.map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      className="vp-btn vp-btn-sm"
+                      onClick={() =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          lat: preset.lat,
+                          lon: preset.lon,
+                          radiusKm: preset.radiusKm,
+                          page: 1,
+                        }))
+                      }
+                    >
+                      {preset.label} ({preset.radiusKm}km)
+                    </button>
+                  ))}
+                </div>
+                <div className="vi-spatial-grid">
+                  <div className="vp-field">
+                    <label htmlFor="flt-lat">{t("specimen.centerLat")}</label>
+                    <input
+                      id="flt-lat"
+                      type="number"
+                      step="any"
+                      value={filters.lat}
+                      onChange={(e) => updateFilter("lat", e.target.value)}
+                      placeholder="20.3167"
+                    />
+                  </div>
+                  <div className="vp-field">
+                    <label htmlFor="flt-lon">{t("specimen.centerLon")}</label>
+                    <input
+                      id="flt-lon"
+                      type="number"
+                      step="any"
+                      value={filters.lon}
+                      onChange={(e) => updateFilter("lon", e.target.value)}
+                      placeholder="105.6083"
+                    />
+                  </div>
+                  <div className="vp-field">
+                    <label htmlFor="flt-radius">{t("specimen.radiusKm")}</label>
+                    <input
+                      id="flt-radius"
+                      type="number"
+                      min="1"
+                      max="500"
+                      value={filters.radiusKm}
+                      onChange={(e) => updateFilter("radiusKm", e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
             ) : null}
           </div>
         </div>
 
-        {/* Khung lọc bán kính không gian PostGIS */}
-        {showSpatialFilter ? (
-          <div className="vi-spatial-box">
-            <div className="vi-spatial-presets">
-              <span>{t("specimen.hotspots")}</span>
-              {SPATIAL_PRESETS.map((preset) => (
-                <button
-                  key={preset.label}
-                  type="button"
-                  className="button button-sm button-ghost"
-                  onClick={() =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      lat: preset.lat,
-                      lon: preset.lon,
-                      radiusKm: preset.radiusKm,
-                      page: 1,
-                    }))
-                  }
-                >
-                  {preset.label} ({preset.radiusKm}km)
-                </button>
-              ))}
-            </div>
-            <div className="vi-form-grid-3" style={{ marginTop: 10 }}>
-              <div className="form-field" style={{ marginBottom: 0 }}>
-                <label>{t("specimen.centerLat")}</label>
-                <input
-                  type="number"
-                  step="any"
-                  value={filters.lat}
-                  onChange={(e) => updateFilter("lat", e.target.value)}
-                  placeholder="20.3167"
-                />
-              </div>
-              <div className="form-field" style={{ marginBottom: 0 }}>
-                <label>{t("specimen.centerLon")}</label>
-                <input
-                  type="number"
-                  step="any"
-                  value={filters.lon}
-                  onChange={(e) => updateFilter("lon", e.target.value)}
-                  placeholder="105.6083"
-                />
-              </div>
-              <div className="form-field" style={{ marginBottom: 0 }}>
-                <label>{t("specimen.radiusKm")}</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="500"
-                  value={filters.radiusKm}
-                  onChange={(e) => updateFilter("radiusKm", e.target.value)}
-                />
-              </div>
-            </div>
+        {/* Filter Footer Actions */}
+        <div className="vi-search-footer">
+          <div className="vi-search-footer-left">
+            <button type="button" className="vp-btn vp-btn-sm" onClick={resetFilters}>
+              {t("specimen.resetFilters")}
+            </button>
+            <span className="vi-filter-count-badge">
+              {activeChips.length > 0 ? (
+                <>
+                  <strong>{activeChips.length}</strong>{" "}
+                  {isEn ? "active filters" : "bộ lọc đang áp dụng"}
+                </>
+              ) : isEn ? (
+                "No filters applied"
+              ) : (
+                "Chưa áp dụng bộ lọc"
+              )}
+            </span>
           </div>
-        ) : null}
-      </section>
+
+          <button type="submit" className="vp-btn vp-btn-primary">
+            <Icon name="search" size={15} />
+            {isEn ? "Search Specimens" : "Tìm kiếm mẫu vật"}
+          </button>
+        </div>
+      </form>
+
+      {/* 4. Active Filter Chips */}
+      {activeChips.length > 0 ? (
+        <div className="vi-chips-bar" role="region" aria-label={isEn ? "Active filters" : "Bộ lọc đang áp dụng"}>
+          <span className="vi-chips-title">{isEn ? "Active:" : "Đang lọc:"}</span>
+          {activeChips.map((chip) => (
+            <span key={chip.key} className="vi-filter-chip">
+              {chip.label}
+              <button
+                type="button"
+                onClick={chip.onRemove}
+                aria-label={`${isEn ? "Remove" : "Xóa"} ${chip.label}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          <button type="button" className="vi-chips-clear-all" onClick={resetFilters}>
+            {isEn ? "Clear all" : "Xóa tất cả"}
+          </button>
+        </div>
+      ) : null}
 
       {/* Thanh tác vụ hàng loạt Admin */}
       {isAdmin && selectedIds.length > 0 ? (
@@ -709,8 +902,102 @@ export default function SpecimenListPage() {
         </div>
       ) : null}
 
-      {/* Data Table */}
-      <section className="card" style={{ overflow: "hidden" }}>
+      {/* 5. Results Section */}
+      <section className="vi-results-card">
+        {/* Results Topbar: count, page, active sort, per-page, view switch & column picker */}
+        <div className="vi-results-topbar">
+          <div className="vi-results-meta">
+            <span>
+              <strong>{formatNumber(pagination.total || 0, i18n.language)}</strong>{" "}
+              {isEn ? "results" : "kết quả"}
+            </span>
+            <span className="vi-results-divider" />
+            <span>
+              {t("specimen.pageOf", {
+                page: pagination.page,
+                total: Math.max(1, pagination.totalPages),
+              })}
+            </span>
+            <span className="vi-results-divider" />
+            <span>
+              {isEn ? "Sorted by:" : "Sắp xếp:"} <strong>{activeSortLabel}</strong>
+            </span>
+          </div>
+
+          <div className="vi-results-controls">
+            <select
+              className="vp-compact-select"
+              value={filters.limit}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, limit: Number(e.target.value), page: 1 }))
+              }
+              aria-label={t("common.page")}
+            >
+              <option value={25}>{t("specimen.perPage", { n: 25 })}</option>
+              <option value={50}>{t("specimen.perPage", { n: 50 })}</option>
+              <option value={100}>{t("specimen.perPage", { n: 100 })}</option>
+            </select>
+
+            <div className="vp-dropdown-wrap" ref={colMenuRef}>
+              <button
+                type="button"
+                className="vp-btn vp-btn-sm"
+                onClick={() => setColMenuOpen((v) => !v)}
+                aria-expanded={colMenuOpen}
+              >
+                <Icon name="layers" size={14} />
+                {t("specimen.columns")}
+              </button>
+
+              {colMenuOpen ? (
+                <div className="vp-dropdown-menu">
+                  <label className="vp-dropdown-check">
+                    <input
+                      type="checkbox"
+                      checked={visibleCols.basis}
+                      onChange={(e) => setVisibleCols((c) => ({ ...c, basis: e.target.checked }))}
+                    />
+                    {t("specimen.basisOfRecord")}
+                  </label>
+                  <label className="vp-dropdown-check">
+                    <input
+                      type="checkbox"
+                      checked={visibleCols.coords}
+                      onChange={(e) => setVisibleCols((c) => ({ ...c, coords: e.target.checked }))}
+                    />
+                    {t("specimen.colCoords")}
+                  </label>
+                  <label className="vp-dropdown-check">
+                    <input
+                      type="checkbox"
+                      checked={visibleCols.collector}
+                      onChange={(e) =>
+                        setVisibleCols((c) => ({ ...c, collector: e.target.checked }))
+                      }
+                    />
+                    {t("specimen.colCollector")}
+                  </label>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="vi-view-switch" role="group" aria-label={isEn ? "View mode" : "Chế độ hiển thị"}>
+              <button type="button" className="vi-view-switch-btn is-active" aria-current="page">
+                <Icon name="database" size={13} />
+                {isEn ? "List" : "Danh sách"}
+              </button>
+              <button
+                type="button"
+                className="vi-view-switch-btn"
+                onClick={() => navigate(isAdmin ? "/admin/map" : "/map")}
+              >
+                <Icon name="map" size={13} />
+                {isEn ? "Map" : "Bản đồ"}
+              </button>
+            </div>
+          </div>
+        </div>
+
         {status === "loading" ? (
           <LoadingState label={t("specimen.loadingList")} />
         ) : status === "error" ? (
@@ -719,7 +1006,7 @@ export default function SpecimenListPage() {
             title={t("specimen.queryError")}
             description={errorMsg}
             action={
-              <button className="button button-ghost" onClick={fetchList}>
+              <button type="button" className="vp-btn" onClick={fetchList}>
                 {t("specimen.retry")}
               </button>
             }
@@ -730,15 +1017,15 @@ export default function SpecimenListPage() {
             title={t("specimen.emptyTitle")}
             description={t("specimen.emptyDescription")}
             action={
-              <button className="button button-ghost" onClick={resetFilters}>
+              <button type="button" className="vp-btn" onClick={resetFilters}>
                 {t("search.clearFilters")}
               </button>
             }
           />
         ) : (
           <>
-            <div className="vi-table-scroll">
-              <table className="vi-data-table">
+            <div className="vi-portal-table-wrap">
+              <table className="vi-portal-table">
                 <thead>
                   <tr>
                     {isAdmin ? (
@@ -781,7 +1068,7 @@ export default function SpecimenListPage() {
                         <td>
                           <Link
                             to={`${detailBasePath}/${item.id}`}
-                            className="vi-code-link"
+                            className="vp-code-mono"
                           >
                             {item.specimenCode}
                           </Link>
@@ -789,46 +1076,36 @@ export default function SpecimenListPage() {
                         <td>
                           <Link
                             to={`${detailBasePath}/${item.id}`}
-                            className="taxonomy-name"
-                            style={{ display: "block", fontSize: 14 }}
+                            className="vp-sci-name"
                           >
                             {item.scientificName}
                           </Link>
                           {item.commonNameVn ? (
-                            <span style={{ fontSize: 12, color: "var(--vi-muted)" }}>
-                              {item.commonNameVn}
-                            </span>
+                            <span className="vp-sub-text">{item.commonNameVn}</span>
                           ) : null}
                         </td>
                         <td>
                           <span
-                            className="status-badge"
-                            style={{
-                              background: orderColor,
-                              color: "#FFFFFF",
-                              borderColor: "#111111",
-                            }}
+                            className="vp-order-pill"
+                            style={{ background: orderColor }}
                           >
                             {item.orderName || item.taxonName}
                           </span>
                           {item.familyName ? (
-                            <div style={{ fontSize: 11, color: "var(--vi-muted)", marginTop: 3 }}>
-                              {item.familyName}
-                            </div>
+                            <span className="vp-sub-text">{item.familyName}</span>
                           ) : null}
                         </td>
-                        <td style={{ whiteSpace: "nowrap", fontWeight: 600, color: "#111111" }}>
+                        <td style={{ whiteSpace: "nowrap", fontWeight: 500 }}>
                           {item.collectionDate || "—"}
                         </td>
-                        <td style={{ color: "#111111" }}>
-                          <div style={{ fontWeight: 600, color: "#111111" }}>
+                        <td>
+                          <div style={{ fontWeight: 600 }}>
                             {item.provinceNameVn || t("specimen.unassignedProvince")}
                           </div>
                           {item.localityDetail ? (
                             <div
+                              className="vp-sub-text"
                               style={{
-                                fontSize: 11,
-                                color: "#555555",
                                 maxWidth: 220,
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
@@ -840,7 +1117,7 @@ export default function SpecimenListPage() {
                             </div>
                           ) : null}
                           {item.distanceKm !== undefined ? (
-                            <span style={{ fontSize: 11, color: "#2E7D32", fontWeight: 700 }}>
+                            <span style={{ fontSize: 11, color: "#155B35", fontWeight: 700 }}>
                               {t("specimen.distanceFromCenter", { km: item.distanceKm })}
                             </span>
                           ) : null}
@@ -848,11 +1125,9 @@ export default function SpecimenListPage() {
                         {visibleCols.coords ? (
                           <td
                             style={{
-                              fontFamily: "monospace",
+                              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
                               fontSize: 12,
                               whiteSpace: "nowrap",
-                              color: "#111111",
-                              fontWeight: 600,
                             }}
                           >
                             {item.latitude != null && item.longitude != null
@@ -862,7 +1137,7 @@ export default function SpecimenListPage() {
                         ) : null}
                         {visibleCols.basis ? (
                           <td>
-                            <span style={{ fontSize: 12, color: "var(--vi-muted)", fontWeight: 600 }}>
+                            <span className="vp-sub-text" style={{ marginTop: 0 }}>
                               {formatBasisOfRecord(item.basisOfRecord)}
                             </span>
                           </td>
@@ -888,7 +1163,7 @@ export default function SpecimenListPage() {
                         <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                           <Link
                             to={`${detailBasePath}/${item.id}`}
-                            className="button button-sm button-ghost"
+                            className="vp-btn vp-btn-sm"
                             style={{ marginRight: isAdmin ? 6 : 0 }}
                           >
                             {t("common.details")}
@@ -932,8 +1207,8 @@ export default function SpecimenListPage() {
             </div>
 
             {/* Pagination Footer */}
-            <div className="vi-pagination-bar">
-              <div style={{ fontSize: 13, color: "var(--vi-muted)" }}>
+            <div className="vi-portal-pagination">
+              <div style={{ fontSize: 13, color: "var(--vp-muted)" }}>
                 {t("specimen.showingRange", {
                   from: (pagination.page - 1) * pagination.limit + 1,
                   to: Math.min(pagination.page * pagination.limit, pagination.total),
@@ -942,33 +1217,20 @@ export default function SpecimenListPage() {
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <select
-                  className="vi-compact-select"
-                  value={filters.limit}
-                  onChange={(e) =>
-                    setFilters((prev) => ({ ...prev, limit: Number(e.target.value), page: 1 }))
-                  }
-                  aria-label={t("common.page")}
-                >
-                  <option value={25}>{t("specimen.perPage", { n: 25 })}</option>
-                  <option value={50}>{t("specimen.perPage", { n: 50 })}</option>
-                  <option value={100}>{t("specimen.perPage", { n: 100 })}</option>
-                </select>
-
                 <button
                   type="button"
-                  className="button button-sm button-ghost"
+                  className="vp-btn vp-btn-sm"
                   disabled={pagination.page <= 1}
                   onClick={() => setFilters((prev) => ({ ...prev, page: prev.page - 1 }))}
                 >
                   {t("specimen.prevPage")}
                 </button>
-                <span style={{ fontSize: 13, fontWeight: 800, padding: "0 8px" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, padding: "0 6px" }}>
                   {pagination.page} / {pagination.totalPages}
                 </span>
                 <button
                   type="button"
-                  className="button button-sm button-ghost"
+                  className="vp-btn vp-btn-sm"
                   disabled={pagination.page >= pagination.totalPages}
                   onClick={() => setFilters((prev) => ({ ...prev, page: prev.page + 1 }))}
                 >

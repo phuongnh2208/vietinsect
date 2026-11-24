@@ -1,0 +1,534 @@
+/* ==========================================================================
+   Reports & Species Checklist — Polished Scientific Layout
+   ========================================================================== */
+
+.vi-report-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* 1. Official VAST Masthead Card */
+.vi-report-hero {
+  background: #ffffff;
+  border: 1px solid #d7e3dc;
+  border-radius: 0;
+  padding: 20px 24px 22px;
+}
+
+.vi-report-masthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #e2ebe6;
+}
+
+.vi-report-org-top {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #166534;
+  text-transform: uppercase;
+}
+
+.vi-report-org-main {
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #111827;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.vi-report-national {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.vi-report-national-top {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #111827;
+}
+
+.vi-report-national-motto {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #374151;
+  margin-top: 2px;
+}
+
+.vi-report-title-block {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.vi-report-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: #15803d;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.vi-report-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+  line-height: 1.25;
+}
+
+.vi-report-subtitle {
+  font-size: 13.5px;
+  color: #4b5563;
+  margin: 0;
+}
+
+/* KPI Summary Strip */
+.vi-report-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.vi-report-kpi-card {
+  background: #f8fbf9;
+  border: 1px solid #e2ebe6;
+  border-radius: 0;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vi-report-kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.vi-report-kpi-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f3820;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.vi-report-kpi-sub {
+  font-size: 11.5px;
+  color: #6b7280;
+}
+
+/* Grouped Action Toolbar */
+.vi-report-actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid #dce2e8;
+}
+
+.vi-report-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.vi-report-toolbar-hint {
+  font-size: 12.5px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.vi-rp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid #dce2e8;
+  border-radius: 2px;
+  background: #ffffff;
+  color: #171717;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.vi-rp-btn:hover:not(:disabled) {
+  background: #f7f9f7;
+  border-color: #b8c4ce;
+}
+
+.vi-rp-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vi-rp-btn-primary {
+  background: #155b35;
+  border-color: #155b35;
+  color: #ffffff;
+}
+
+.vi-rp-btn-primary:hover:not(:disabled) {
+  background: #103d27;
+  border-color: #103d27;
+  color: #ffffff;
+}
+
+.vi-report-dropdown {
+  position: relative;
+}
+
+.vi-report-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 40;
+  min-width: 210px;
+  padding: 6px;
+  border: 1px solid #dce2e8;
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(16, 61, 39, 0.08);
+  display: grid;
+  gap: 2px;
+}
+
+.vi-report-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: #171717;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.vi-report-dropdown-item:hover:not(:disabled) {
+  background: #f7f9f7;
+  color: #103d27;
+}
+
+.vi-report-dropdown-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vi-report-action-group .button {
+  border-radius: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vi-report-action-divider {
+  width: 1px;
+  height: 24px;
+  background: #d7e3dc;
+  margin: 0 2px;
+}
+
+/* 2. Filter Bar Card */
+.vi-report-filter-card {
+  background: #ffffff;
+  border: 1px solid #d7e3dc;
+  border-radius: 0;
+  padding: 16px 20px;
+}
+
+.vi-report-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.vi-report-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.vi-report-filter-field label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #334155;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vi-report-filter-field select,
+.vi-report-filter-field input {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  font-size: 13px;
+  color: #111827;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.vi-report-filter-field select:focus,
+.vi-report-filter-field input:focus {
+  outline: none;
+  border-color: #15803d;
+  box-shadow: 0 0 0 2px rgba(21, 128, 61, 0.12);
+}
+
+/* 3. Checklist Table Card */
+.vi-report-table-card {
+  background: #ffffff;
+  border: 1px solid #d7e3dc;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.vi-report-table-header {
+  padding: 14px 20px;
+  background: #f8fbf9;
+  border-bottom: 1px solid #d7e3dc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.vi-report-table-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f3820;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vi-report-count-pill {
+  background: #dcfce7;
+  color: #166534;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.vi-report-table-meta {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.vi-report-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.vi-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.vi-report-table thead th {
+  background: #f1f5f3;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 11px 14px;
+  border-bottom: 1px solid #d7e3dc;
+  white-space: nowrap;
+}
+
+.vi-report-table thead th.is-num,
+.vi-report-table tbody td.is-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.vi-report-table tbody tr {
+  border-bottom: 1px solid #edf2ef;
+  transition: background-color 0.12s ease;
+}
+
+.vi-report-table tbody tr:nth-child(even) {
+  background: #fafcfb;
+}
+
+.vi-report-table tbody tr:hover {
+  background: #f0f9f3;
+}
+
+.vi-report-table tbody td {
+  padding: 11px 14px;
+  vertical-align: middle;
+  color: #1e293b;
+}
+
+.vi-report-stt {
+  color: #64748b;
+  font-size: 12px;
+  width: 48px;
+}
+
+.vi-report-species-link {
+  color: #0f3820;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 13.5px;
+}
+
+.vi-report-species-link:hover {
+  color: #15803d;
+  text-decoration: underline;
+}
+
+.vi-report-vernacular {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.vi-report-order-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+.vi-report-order-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 0;
+  flex-shrink: 0;
+}
+
+.vi-report-iucn-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.vi-report-iucn-badge.is-threatened {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.vi-report-iucn-badge.is-lc {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.vi-report-specimen-count {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 0;
+  background: #ecfdf5;
+  color: #15803d;
+  font-weight: 800;
+  font-size: 12.5px;
+}
+
+.vi-report-prov-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 96px;
+}
+
+.vi-report-prov-bar {
+  width: 44px;
+  height: 5px;
+  background: #e2e8f0;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.vi-report-prov-fill {
+  height: 100%;
+  background: #15803d;
+  border-radius: 0;
+}
+
+@media (max-width: 1100px) {
+  .vi-report-kpi-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .vi-report-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .vi-report-masthead {
+    flex-direction: column;
+  }
+  .vi-report-national {
+    text-align: left;
+  }
+  .vi-report-kpi-strip,
+  .vi-report-filter-grid {
+    grid-template-columns: 1fr;
+  }
+}

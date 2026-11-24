@@ -16,6 +16,9 @@ const dateIsoPattern = /^\d{4}-\d{2}-\d{2}$/;
 const listSpecimensQuerySchema = Joi.object({
   q: Joi.string().trim().max(120).allow(""),
   order: Joi.string().trim().max(80).allow(""),
+  family: Joi.string().trim().max(80).allow(""),
+  genus: Joi.string().trim().max(80).allow(""),
+  species: Joi.string().trim().max(120).allow(""),
   taxonId: Joi.number().integer().positive(),
   provinceId: Joi.number().integer().positive(),
   habitatId: Joi.number().integer().positive(),

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Icon from "../../../components/ui/Icon";
 import LoadingState from "../../../components/ui/LoadingState";
@@ -286,7 +286,7 @@ export default function DnaFormPage() {
                   minWidth: 240,
                   minHeight: 42,
                   padding: "0 14px",
-                  border: "1px solid #111111",
+                  border: "1px solid #D1D5DB",
                   fontFamily: "monospace",
                   fontSize: 14,
                   fontWeight: 700,

@@ -72,7 +72,13 @@ function applyFilters(qb, filters, { includePrivate = false, needRegistryJoin = 
   }
 
   // Lọc theo taxonId hoặc theo bậc phân loại (Species -> Genus -> Family -> Order) bằng CTE đệ quy
-  if (filters.taxonId) {
+  if (Array.isArray(filters._resolvedTaxonIds)) {
+    if (filters._resolvedTaxonIds.length === 0) {
+      qb.whereRaw("1 = 0");
+    } else {
+      qb.whereIn("s.taxon_id", filters._resolvedTaxonIds);
+    }
+  } else if (filters.taxonId) {
     qb.whereRaw(
       `s.taxon_id IN (
         WITH RECURSIVE sub_taxa AS (
@@ -191,18 +197,61 @@ const SORT_COLUMN_MAP = {
   individualCount: "s.individual_count",
 };
 
+async function resolveTaxonSubtreeIds(filters) {
+  let baseSql = null;
+  let binding = null;
+  if (filters.taxonId) {
+    baseSql = "SELECT taxon_id FROM taxa WHERE taxon_id = ?";
+    binding = Number(filters.taxonId);
+  } else if (filters.species && String(filters.species).trim()) {
+    baseSql = "SELECT taxon_id FROM taxa WHERE lower(scientific_name) = lower(?) AND taxon_rank = 'Species'";
+    binding = String(filters.species).trim();
+  } else if (filters.genus && String(filters.genus).trim()) {
+    baseSql = "SELECT taxon_id FROM taxa WHERE lower(scientific_name) = lower(?) AND taxon_rank = 'Genus'";
+    binding = String(filters.genus).trim();
+  } else if (filters.family && String(filters.family).trim()) {
+    baseSql = "SELECT taxon_id FROM taxa WHERE lower(scientific_name) = lower(?) AND taxon_rank = 'Family'";
+    binding = String(filters.family).trim();
+  } else if (filters.order && String(filters.order).trim()) {
+    baseSql = "SELECT taxon_id FROM taxa WHERE lower(scientific_name) = lower(?) AND taxon_rank = 'Order'";
+    binding = String(filters.order).trim();
+  } else {
+    return null;
+  }
+
+  const res = await knex.raw(
+    `WITH RECURSIVE sub_taxa AS (
+      ${baseSql}
+      UNION ALL
+      SELECT c.taxon_id FROM taxa c JOIN sub_taxa st ON c.parent_id = st.taxon_id
+    )
+    SELECT taxon_id FROM sub_taxa`,
+    [binding],
+  );
+  return (res.rows || []).map((r) => Number(r.taxon_id));
+}
+
 async function findMany(filters, { includePrivate = false } = {}) {
   const page = Number(filters.page) || 1;
   const limit = Number(filters.limit) || 25;
   const offset = (page - 1) * limit;
   const needRegistryJoin = Boolean(filters.basisOfRecord || (filters.q && filters.q.trim()));
 
+  // Tối ưu: giải cây taxon_id 1 lần rồi dùng WHERE s.taxon_id IN (...) để tránh PostgreSQL quét chậm trên 250 partition
+  const resolvedTaxonIds = await resolveTaxonSubtreeIds(filters);
+  if (Array.isArray(resolvedTaxonIds) && resolvedTaxonIds.length === 0) {
+    return { items: [], total: 0, page, limit, totalPages: 0 };
+  }
+  const effectiveFilters = Array.isArray(resolvedTaxonIds)
+    ? { ...filters, _resolvedTaxonIds: resolvedTaxonIds }
+    : filters;
+
   // 1. Đếm tổng bản ghi khớp điều kiện (tối ưu: chỉ join specimen_registry khi thực sự lọc theo cột của nó)
   const countQb = knex({ s: "specimens" });
   if (needRegistryJoin) {
     countQb.join({ sr: "specimen_registry" }, "s.specimen_id", "sr.specimen_id");
   }
-  applyFilters(countQb, filters, { includePrivate, needRegistryJoin });
+  applyFilters(countQb, effectiveFilters, { includePrivate, needRegistryJoin });
   const [{ total }] = await countQb.count("* as total");
   const totalInt = parseInt(total, 10);
 
@@ -279,7 +328,7 @@ async function findMany(filters, { includePrivate = false } = {}) {
     );
   }
 
-  applyFilters(dataQb, filters, { includePrivate, needRegistryJoin: true });
+  applyFilters(dataQb, effectiveFilters, { includePrivate, needRegistryJoin: true });
 
   const sortCol = SORT_COLUMN_MAP[filters.sortBy] || "s.collection_date";
   const sortDir = filters.sortOrder === "asc" ? "asc" : "desc";

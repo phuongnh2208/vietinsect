@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ResponsiveContainer,
@@ -11,9 +11,11 @@ import {
   Legend,
 } from "recharts";
 import specimenService from "../../specimen/specimen.service";
+import { getOrderColor } from "../../specimen/specimen.constants";
 import http from "../../../services/http";
 import useAuthStore from "../../../stores/auth.store";
 import Icon from "../../../components/ui/Icon";
+import "./ReportsPages.css";
 
 function fmtNum(n) {
   return Number(n || 0).toLocaleString("vi-VN");
@@ -50,6 +52,18 @@ export function ReportsChecklistPage() {
   });
   const [loading, setLoading] = useState(true);
   const [exportingFormat, setExportingFormat] = useState(null);
+  const [openMenu, setOpenMenu] = useState(null); // null | "data" | "checklist"
+  const toolbarRef = useRef(null);
+
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (toolbarRef.current && !toolbarRef.current.contains(e.target)) {
+        setOpenMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
 
   useEffect(() => {
     Promise.all([specimenService.getLookups(), specimenService.getStats()])
@@ -144,65 +158,203 @@ export function ReportsChecklistPage() {
   const selectedProvName =
     lookups.provinces?.find((p) => String(p.id) === String(filters.provinceId))?.nameVn ||
     "Toàn quốc (34 Tỉnh/Thành phố)";
+  const hasActiveFilters = Boolean(filters.order || filters.provinceId || filters.q);
 
   return (
-    <section className="page-container">
+    <section className="page-container vi-report-page">
       {/* Official VAST Header for Print / PDF (F-RP-05) */}
-      <div
-        className="card"
-        style={{
-          padding: "20px 24px",
-          marginBottom: 20,
-          border: "2px solid #0F3820",
-          background: "#FAFDFB",
-        }}
-      >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 16,
-            borderBottom: "1px solid #0F3820",
-            paddingBottom: 12,
-            marginBottom: 14,
-          }}
-        >
+      <div className="vi-report-hero">
+        <div className="vi-report-masthead">
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#0F3820", textTransform: "uppercase" }}>
+            <div className="vi-report-org-top">
               VIỆN HÀN LÂM KHOA HỌC VÀ CÔNG NGHỆ VIỆT NAM
             </div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: "#111111", textTransform: "uppercase" }}>
+            <div className="vi-report-org-main">
               VIỆN CÔNG NGHỆ THÔNG TIN · HỆ THỐNG CSDL CÔN TRÙNG VIỆT NAM (VIETINSECT)
             </div>
           </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: "#111111" }}>
+          <div className="vi-report-national">
+            <div className="vi-report-national-top">
               CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
             </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#111111" }}>
+            <div className="vi-report-national-motto">
               Độc lập - Tự do - Hạnh phúc
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
+        <div className="vi-report-title-block">
           <div>
-            <span className="eyebrow">
+            <span className="vi-report-eyebrow">
               <Icon name="report" size={14} /> BÁO CÁO KHOA HỌC & DANH MỤC LOÀI CHUẨN HÓA (CHECKLIST)
             </span>
-            <h1 style={{ fontSize: 24, margin: "4px 0" }}>
+            <h1 className="vi-report-title">
               Danh mục Đa dạng Loài Côn trùng — {selectedProvName}
             </h1>
-            <p className="subtitle" style={{ margin: 0 }}>
-              Phạm vi: {filters.order ? `Bộ ${filters.order}` : "Toàn bộ 16 Bộ Côn trùng"} · Tổng mẫu cơ sở dữ liệu:{" "}
-              <strong>{fmtNum(stats?.totalSpecimens)}</strong> mẫu · Tổng danh pháp bậc Loài:{" "}
-              <strong>{fmtNum(stats?.taxa?.species)}</strong> loài.
+            <p className="vi-report-subtitle">
+              Phạm vi: <strong>{filters.order ? `Bộ ${filters.order}` : "Toàn bộ 16 Bộ Côn trùng"}</strong> · Chuẩn danh pháp ICZN & Darwin Core Archive (DwC-A).
             </p>
           </div>
-          <div className="hero-actions" style={{ marginTop: 0 }}>
+        </div>
+
+        {/* Summary KPI Strip */}
+        <div className="vi-report-kpi-strip">
+          <div className="vi-report-kpi-card">
+            <span className="vi-report-kpi-label">Tổng mẫu cơ sở dữ liệu</span>
+            <strong className="vi-report-kpi-value">{fmtNum(stats?.totalSpecimens)}</strong>
+            <span className="vi-report-kpi-sub">Tiêu bản đã số hóa</span>
+          </div>
+          <div className="vi-report-kpi-card">
+            <span className="vi-report-kpi-label">Tổng danh pháp bậc Loài</span>
+            <strong className="vi-report-kpi-value">{fmtNum(stats?.taxa?.species)}</strong>
+            <span className="vi-report-kpi-sub">Đang hiển thị {fmtNum(checklist.length)} loài</span>
+          </div>
+          <div className="vi-report-kpi-card">
+            <span className="vi-report-kpi-label">Phạm vi phân loại</span>
+            <strong className="vi-report-kpi-value">
+              {filters.order || `${(lookups.orders || []).length || 16} Bộ`}
+            </strong>
+            <span className="vi-report-kpi-sub">Lớp Côn trùng (Insecta)</span>
+          </div>
+          <div className="vi-report-kpi-card">
+            <span className="vi-report-kpi-label">Phạm vi hành chính</span>
+            <strong className="vi-report-kpi-value">
+              {filters.provinceId ? "1 Tỉnh/TP" : "34 Tỉnh/TP"}
+            </strong>
+            <span className="vi-report-kpi-sub">Theo Nghị quyết 202</span>
+          </div>
+        </div>
+
+        {/* Grouped Action Toolbar: Left = Report Navigation, Right = Export & Print */}
+        <div className="vi-report-actions-bar" ref={toolbarRef}>
+          <div className="vi-report-action-group">
+            {canManage ? (
+              <>
+                <Link to="/admin/reports/kpi" className="vi-rp-btn">
+                  <Icon name="chart" size={14} /> Báo cáo KPI Số hóa
+                </Link>
+                <Link to="/admin/reports/custom" className="vi-rp-btn">
+                  <Icon name="filter" size={14} /> Tùy chỉnh Báo cáo
+                </Link>
+              </>
+            ) : (
+              <span className="vi-report-toolbar-hint">
+                Trích xuất dữ liệu chuẩn ICZN &amp; Darwin Core Archive
+              </span>
+            )}
+          </div>
+
+          <div className="vi-report-action-group">
+            {/* Dropdown 1: Xuất dữ liệu bảng/GIS */}
+            <div className="vi-report-dropdown">
+              <button
+                type="button"
+                className="vi-rp-btn"
+                disabled={Boolean(exportingFormat)}
+                aria-expanded={openMenu === "data"}
+                onClick={() => setOpenMenu((m) => (m === "data" ? null : "data"))}
+              >
+                <Icon name="download" size={14} />
+                Xuất dữ liệu ▾
+              </button>
+              {openMenu === "data" && (
+                <div className="vi-report-dropdown-menu">
+                  <button
+                    type="button"
+                    className="vi-report-dropdown-item"
+                    onClick={() => {
+                      setOpenMenu(null);
+                      handleExportChecklistCsv();
+                    }}
+                  >
+                    <Icon name="file" size={14} /> Danh lục (.CSV)
+                  </button>
+                  <button
+                    type="button"
+                    className="vi-report-dropdown-item"
+                    disabled={Boolean(exportingFormat)}
+                    onClick={() => {
+                      setOpenMenu(null);
+                      handleExport("xlsx");
+                    }}
+                  >
+                    <Icon name="file" size={14} /> Bảng tính Excel (.XLSX)
+                  </button>
+                  <button
+                    type="button"
+                    className="vi-report-dropdown-item"
+                    disabled={Boolean(exportingFormat)}
+                    onClick={() => {
+                      setOpenMenu(null);
+                      handleExport("dwca");
+                    }}
+                  >
+                    <Icon name="globe" size={14} /> GBIF DwC-A (.ZIP)
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Dropdown 2: Xuất danh lục văn bản */}
+            <div className="vi-report-dropdown">
+              <button
+                type="button"
+                className="vi-rp-btn"
+                disabled={Boolean(exportingFormat)}
+                aria-expanded={openMenu === "checklist"}
+                onClick={() => setOpenMenu((m) => (m === "checklist" ? null : "checklist"))}
+              >
+                <Icon name="report" size={14} />
+                Xuất danh lục ▾
+              </button>
+              {openMenu === "checklist" && (
+                <div className="vi-report-dropdown-menu">
+                  <button
+                    type="button"
+                    className="vi-report-dropdown-item"
+                    disabled={Boolean(exportingFormat)}
+                    onClick={() => {
+                      setOpenMenu(null);
+                      handleServerReport(
+                        "/reports/checklist",
+                        {
+                          format: "pdf",
+                          provinceId: filters.provinceId || undefined,
+                          order: filters.order || undefined,
+                        },
+                        `vietinsect-checklist-${new Date().toISOString().slice(0, 10)}.pdf`
+                      );
+                    }}
+                  >
+                    <Icon name="download" size={14} /> Danh lục loài (PDF)
+                  </button>
+                  <button
+                    type="button"
+                    className="vi-report-dropdown-item"
+                    disabled={Boolean(exportingFormat)}
+                    onClick={() => {
+                      setOpenMenu(null);
+                      handleServerReport(
+                        "/reports/checklist",
+                        {
+                          format: "docx",
+                          provinceId: filters.provinceId || undefined,
+                          order: filters.order || undefined,
+                        },
+                        `vietinsect-checklist-${new Date().toISOString().slice(0, 10)}.docx`
+                      );
+                    }}
+                  >
+                    <Icon name="download" size={14} /> Danh lục loài (.DOCX)
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Single Primary CTA */}
             <button
               type="button"
-              className="button button-primary"
+              className="vi-rp-btn vi-rp-btn-primary"
               disabled={Boolean(exportingFormat)}
               onClick={() =>
                 handleServerReport(
@@ -214,78 +366,14 @@ export function ReportsChecklistPage() {
             >
               <Icon name="printer" size={14} /> Báo cáo tổng hợp (PDF)
             </button>
-            <button
-              type="button"
-              className="button button-secondary"
-              disabled={Boolean(exportingFormat)}
-              onClick={() =>
-                handleServerReport(
-                  "/reports/checklist",
-                  { format: "pdf", provinceId: filters.provinceId || undefined, order: filters.order || undefined },
-                  `vietinsect-checklist-${new Date().toISOString().slice(0, 10)}.pdf`
-                )
-              }
-            >
-              <Icon name="download" size={14} /> Danh lục loài (PDF)
-            </button>
-            <button
-              type="button"
-              className="button button-secondary"
-              disabled={Boolean(exportingFormat)}
-              onClick={() =>
-                handleServerReport(
-                  "/reports/checklist",
-                  { format: "docx", provinceId: filters.provinceId || undefined, order: filters.order || undefined },
-                  `vietinsect-checklist-${new Date().toISOString().slice(0, 10)}.docx`
-                )
-              }
-            >
-              <Icon name="download" size={14} /> Danh lục loài (.DOCX)
-            </button>
-            <button type="button" className="button button-ghost" onClick={handleExportChecklistCsv}>
-              <Icon name="download" size={14} /> Xuất CSV
-            </button>
-            <button
-              type="button"
-              className="button button-ghost"
-              disabled={Boolean(exportingFormat)}
-              onClick={() => handleExport("xlsx")}
-            >
-              <Icon name="download" size={14} /> Excel Mẫu vật (.XLSX)
-            </button>
-            <button
-              type="button"
-              className="button button-ghost"
-              disabled={Boolean(exportingFormat)}
-              onClick={() => handleExport("dwca")}
-            >
-              <Icon name="globe" size={14} /> Gói GBIF DwC-A (.ZIP)
-            </button>
-            {canManage && (
-              <>
-                <Link to="/admin/reports/kpi" className="button button-ghost">
-                  <Icon name="chart" size={14} /> Báo cáo KPI Số hóa
-                </Link>
-                <Link to="/admin/reports/custom" className="button button-ghost">
-                  <Icon name="filter" size={14} /> Tùy chỉnh Báo cáo
-                </Link>
-              </>
-            )}
           </div>
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="card" style={{ padding: 16, marginBottom: 20 }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: 12,
-            alignItems: "end",
-          }}
-        >
-          <div className="form-field" style={{ margin: 0 }}>
+      <div className="vi-report-filter-card">
+        <div className="vi-report-filter-grid">
+          <div className="vi-report-filter-field">
             <label>BỘ CÔN TRÙNG (ORDER)</label>
             <select
               value={filters.order}
@@ -300,8 +388,8 @@ export function ReportsChecklistPage() {
             </select>
           </div>
 
-          <div className="form-field" style={{ margin: 0 }}>
-            <label>TỈNH / THÀNH PHỐ (34 TỈNH/THÀNH NQ 202)</label>
+          <div className="vi-report-filter-field">
+            <label>TỈNH / THÀNH PHỐ (34 TỈNH/THÀNH)</label>
             <select
               value={filters.provinceId}
               onChange={(e) => setFilters((p) => ({ ...p, provinceId: e.target.value }))}
@@ -315,7 +403,7 @@ export function ReportsChecklistPage() {
             </select>
           </div>
 
-          <div className="form-field" style={{ margin: 0 }}>
+          <div className="vi-report-filter-field">
             <label>TỪ KHÓA TÊN KHOA HỌC / TÊN VIỆT NAM</label>
             <input
               type="text"
@@ -325,7 +413,7 @@ export function ReportsChecklistPage() {
             />
           </div>
 
-          <div className="form-field" style={{ margin: 0 }}>
+          <div className="vi-report-filter-field">
             <label>SỐ LOÀI HIỂN THỊ TỐI ĐA</label>
             <select
               value={filters.limit}
@@ -336,29 +424,35 @@ export function ReportsChecklistPage() {
               <option value={500}>Top 500 loài phổ biến</option>
             </select>
           </div>
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              className="button button-ghost"
+              style={{ height: 38, borderRadius: 0, whiteSpace: "nowrap" }}
+              onClick={() => setFilters({ order: "", provinceId: "", q: "", limit: 200 })}
+            >
+              Đặt lại
+            </button>
+          )}
         </div>
       </div>
 
       {/* Checklist Table */}
-      <div className="card" style={{ padding: 0 }}>
-        <div
-          style={{
-            padding: "14px 20px",
-            borderBottom: "1px solid #111111",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <strong>
-            DANH MỤC LOÀI CHUẨN HÓA ({fmtNum(checklist.length)} loài hiển thị / {fmtNum(stats?.taxa?.species)} loài trong CSDL)
-          </strong>
-          <span className="mono" style={{ fontSize: 12, color: "#525252" }}>
+      <div className="vi-report-table-card">
+        <div className="vi-report-table-header">
+          <div className="vi-report-table-title">
+            <span>DANH MỤC LOÀI CHUẨN HÓA</span>
+            <span className="vi-report-count-pill">
+              {fmtNum(checklist.length)} / {fmtNum(stats?.taxa?.species)} loài
+            </span>
+          </div>
+          <span className="mono vi-report-table-meta">
             Ngày trích xuất: {new Date().toLocaleDateString("vi-VN")} · Chuẩn ICZN & Darwin Core
           </span>
         </div>
-        <div className="table-responsive">
-          <table className="data-table">
+        <div className="vi-report-table-scroll">
+          <table className="vi-report-table">
             <thead>
               <tr>
                 <th>STT</th>
@@ -368,55 +462,84 @@ export function ReportsChecklistPage() {
                 <th>HỌ (FAMILY)</th>
                 <th>GIỐNG (GENUS)</th>
                 <th>IUCN</th>
-                <th>SỐ MẪU VẬT</th>
-                <th>SỐ TỈNH</th>
+                <th className="is-num">SỐ MẪU VẬT</th>
+                <th className="is-num">SỐ TỈNH</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: "center", padding: 36 }}>
+                  <td colSpan={9} style={{ textAlign: "center", padding: 40, color: "#64748b" }}>
                     Đang tổng hợp danh mục loài khoa học...
                   </td>
                 </tr>
               ) : checklist.length === 0 ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: "center", padding: 36 }}>
+                  <td colSpan={9} style={{ textAlign: "center", padding: 40, color: "#64748b" }}>
                     Không tìm thấy loài khớp điều kiện lọc.
                   </td>
                 </tr>
               ) : (
-                checklist.map((sp, idx) => (
-                  <tr key={sp.taxon_id}>
-                    <td className="mono">{idx + 1}</td>
-                    <td>
-                      <Link
-                        to={canManage ? `/admin/species/${sp.slug}` : `/species/${sp.slug}`}
-                        style={{ color: "#0F3820", fontWeight: 700, textDecoration: "none" }}
-                      >
-                        <em>{sp.scientific_name}</em>
-                      </Link>
-                      {sp.vernacular_name_vn && (
-                        <div style={{ fontSize: 11, color: "#525252" }}>{sp.vernacular_name_vn}</div>
-                      )}
-                    </td>
-                    <td style={{ fontSize: 12 }}>{sp.author_year || "—"}</td>
-                    <td>
-                      <span className="badge badge-order">{sp.order_name || "Insecta"}</span>
-                    </td>
-                    <td style={{ fontSize: 12, fontWeight: 600 }}>{sp.family_name || "—"}</td>
-                    <td style={{ fontSize: 12 }}>
-                      <em>{sp.genus_name || "—"}</em>
-                    </td>
-                    <td>
-                      <span className="badge">{sp.iucn_status || "NE"}</span>
-                    </td>
-                    <td className="mono" style={{ fontWeight: 800, color: "#15803D" }}>
-                      {fmtNum(sp.specimen_count)}
-                    </td>
-                    <td className="mono">{fmtNum(sp.province_count)} / 34</td>
-                  </tr>
-                ))
+                checklist.map((sp, idx) => {
+                  const iucn = (sp.iucn_status || "NE").toUpperCase();
+                  const iucnClass = ["CR", "EN", "VU"].includes(iucn)
+                    ? "is-threatened"
+                    : iucn === "LC"
+                      ? "is-lc"
+                      : "";
+                  const provCount = Number(sp.province_count || 0);
+                  const provPct = Math.min(100, Math.round((provCount / 34) * 100));
+                  return (
+                    <tr key={sp.taxon_id}>
+                      <td className="mono vi-report-stt">{idx + 1}</td>
+                      <td>
+                        <Link
+                          to={canManage ? `/admin/species/${sp.slug}` : `/species/${sp.slug}`}
+                          className="vi-report-species-link"
+                        >
+                          <em>{sp.scientific_name}</em>
+                        </Link>
+                        {sp.vernacular_name_vn && (
+                          <div className="vi-report-vernacular">{sp.vernacular_name_vn}</div>
+                        )}
+                      </td>
+                      <td style={{ fontSize: 12, color: "#475569" }}>{sp.author_year || "—"}</td>
+                      <td>
+                        <span className="vi-report-order-pill">
+                          <span
+                            className="vi-report-order-dot"
+                            style={{ backgroundColor: getOrderColor(sp.order_name) }}
+                          />
+                          {sp.order_name || "Insecta"}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: 12.5, fontWeight: 600, color: "#334155" }}>
+                        {sp.family_name || "—"}
+                      </td>
+                      <td style={{ fontSize: 12.5, color: "#475569" }}>
+                        <em>{sp.genus_name || "—"}</em>
+                      </td>
+                      <td>
+                        <span className={`vi-report-iucn-badge ${iucnClass}`}>{iucn}</span>
+                      </td>
+                      <td className="is-num">
+                        <span className="mono vi-report-specimen-count">
+                          {fmtNum(sp.specimen_count)}
+                        </span>
+                      </td>
+                      <td className="is-num">
+                        <span className="vi-report-prov-cell">
+                          <span className="vi-report-prov-bar" aria-hidden="true">
+                            <span className="vi-report-prov-fill" style={{ width: `${provPct}%` }} />
+                          </span>
+                          <span className="mono" style={{ fontSize: 12, color: "#334155" }}>
+                            {fmtNum(provCount)} / 34
+                          </span>
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -555,7 +678,7 @@ export function DigitizationKpiPage() {
                             flex: 1,
                             height: 10,
                             background: "#E5E5E5",
-                            border: "1px solid #111111",
+                            border: "1px solid #D1D5DB",
                             overflow: "hidden",
                           }}
                         >
@@ -882,7 +1005,7 @@ export function CustomReportBuilderPage() {
         <div
           style={{
             padding: "14px 20px",
-            borderBottom: "1px solid #111111",
+            borderBottom: "1px solid #D1D5DB",
             display: "flex",
             justifyContent: "space-between",
           }}

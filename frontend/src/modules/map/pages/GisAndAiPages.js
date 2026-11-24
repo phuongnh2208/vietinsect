@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+﻿import React, { useEffect, useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, CircleMarker, Circle, Tooltip as LeafletTooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -173,7 +173,7 @@ export function LayerManagerPage() {
                       type="color"
                       value={layer.color}
                       onChange={(e) => updateLayerProp(layer.id, "color", e.target.value)}
-                      style={{ width: 32, height: 24, border: "1px solid #111", padding: 0, cursor: "pointer" }}
+                      style={{ width: 32, height: 24, border: "1px solid #D1D5DB", padding: 0, cursor: "pointer" }}
                     />
                   </div>
                   <div className="mono" style={{ fontSize: 11, color: "#525252", marginBottom: 8 }}>
@@ -239,7 +239,7 @@ export function LayerManagerPage() {
             </div>
           </div>
 
-          <div style={{ width: "100%", height: 470, border: "1px solid #111111" }}>
+          <div style={{ width: "100%", height: 470, border: "1px solid #D1D5DB" }}>
             <MapContainer center={[16.2, 106.2]} zoom={5} style={{ width: "100%", height: "100%" }}>
               <TileLayer
                 url={
@@ -455,7 +455,7 @@ export function AiSpeciesIdPage() {
           </label>
 
           {previewUrl && (
-            <div style={{ marginBottom: 16, border: "1px solid #111", padding: 8, textAlign: "center" }}>
+            <div style={{ marginBottom: 16, border: "1px solid #D1D5DB", padding: 8, textAlign: "center" }}>
               <img
                 src={previewUrl}
                 alt="Preview"
@@ -550,7 +550,7 @@ export function AiSpeciesIdPage() {
                       width: "100%",
                       height: 8,
                       background: "#E5E5E5",
-                      border: "1px solid #111111",
+                      border: "1px solid #D1D5DB",
                       marginBottom: 8,
                     }}
                   >
@@ -793,7 +793,7 @@ export function SdmPredictionPage() {
               {loading ? "Đang tính toán envelope..." : `${suitabilityZones.length} vùng sinh thái`}
             </span>
           </div>
-          <div style={{ width: "100%", height: 500, border: "1px solid #111111" }}>
+          <div style={{ width: "100%", height: 500, border: "1px solid #D1D5DB" }}>
             <MapContainer center={[16.2, 106.2]} zoom={5} style={{ width: "100%", height: "100%" }}>
               <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}" />
               {suitabilityZones.map((z, idx) => (

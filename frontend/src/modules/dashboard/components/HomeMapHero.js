@@ -1,16 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+﻿import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import Icon from "../../../components/ui/Icon";
 import specimenService from "../../specimen/specimen.service";
 import { formatNumber } from "../../../utils/formatters";
 
-const ESRI_STREET_URL =
-  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
-const ESRI_SATELLITE_URL =
-  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const GOOGLE_VN_MAP_URL =
+  "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=vi&gl=VN";
 
 function getDensityColor(count) {
   if (count >= 5000) return "#B0241A";
@@ -18,8 +15,7 @@ function getDensityColor(count) {
   return "#2E7D32";
 }
 
-function getMarkerRadius(count, mode) {
-  if (mode === "points") return 7;
+function getMarkerRadius(count) {
   if (count >= 8000) return 16;
   if (count >= 3000) return 13;
   if (count >= 1000) return 10;
@@ -28,10 +24,6 @@ function getMarkerRadius(count, mode) {
 
 export default function HomeMapHero({ stats = null }) {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
-  const [mode, setMode] = useState("density");
-  const [basemap, setBasemap] = useState("street");
-  const [query, setQuery] = useState("");
   const [fetchedProvinces, setFetchedProvinces] = useState([]);
 
   useEffect(() => {
@@ -46,179 +38,57 @@ export default function HomeMapHero({ stats = null }) {
 
   const provinces = stats?.topProvinces || fetchedProvinces;
 
-  const visibleProvinces = useMemo(() => {
-    const normalized = query.trim().toLocaleLowerCase("vi");
-    if (!normalized) return provinces;
-    return provinces.filter((p) =>
-      String(p.province_name_vn || "")
-        .toLocaleLowerCase("vi")
-        .includes(normalized)
-    );
-  }, [provinces, query]);
-
   return (
-    <section className="home-map-section" aria-labelledby="home-map-title">
-      <div className="home-map-heading">
-        <div>
-          <span className="eyebrow">
-            <Icon name="map" size={14} />
-            {t("home.mapEyebrow")}
-          </span>
-          <h2 id="home-map-title">{t("home.mapTitle")}</h2>
-          <p>{t("home.mapDesc")}</p>
-        </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <div className="map-mode-toggle" role="group" aria-label={t("gis.mapView")}>
-            <button
-              type="button"
-              className={mode === "points" ? "active" : ""}
-              onClick={() => setMode("points")}
-            >
-              {t("home.modePoints")}
-            </button>
-            <button
-              type="button"
-              className={mode === "density" ? "active" : ""}
-              onClick={() => setMode("density")}
-            >
-              {t("home.modeDensity")}
-            </button>
-          </div>
-          <div className="map-mode-toggle" role="group" aria-label={t("gis.layers")}>
-            <button
-              type="button"
-              className={basemap === "street" ? "active" : ""}
-              onClick={() => setBasemap("street")}
-            >
-              {t("home.basemapStreet")}
-            </button>
-            <button
-              type="button"
-              className={basemap === "satellite" ? "active" : ""}
-              onClick={() => setBasemap("satellite")}
-            >
-              {t("home.basemapSatellite")}
-            </button>
-          </div>
-          <button
-            type="button"
-            className="button button-sm button-primary"
-            onClick={() => navigate("/map")}
-          >
-            {t("home.openFullMap")}
-          </button>
-        </div>
-      </div>
-
-      <div className="home-map-card" style={{ padding: 0, overflow: "hidden" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "12px 16px",
-            borderBottom: "1px solid #111111",
-            background: "#F8FAF9",
-            flexWrap: "wrap",
-            gap: 10,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              background: "#FFFFFF",
-              border: "1px solid #111111",
-              padding: "6px 12px",
-              minWidth: 260,
-            }}
-          >
-            <Icon name="search" size={16} />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("home.filterProvincePlaceholder")}
-              aria-label={t("common.search")}
-              style={{
-                border: 0,
-                outline: 0,
-                width: "100%",
-                fontSize: 13,
+    <div
+      style={{
+        width: "100%",
+        height: 500,
+        border: "1px solid #D1D5DB",
+        borderRadius: 0,
+        overflow: "hidden",
+        position: "relative",
+        zIndex: 0,
+        isolation: "isolate",
+      }}
+    >
+      <MapContainer
+        center={[15.8, 108.5]}
+        zoom={6}
+        style={{ height: "100%", width: "100%", borderRadius: 0 }}
+        scrollWheelZoom={false}
+      >
+        <TileLayer attribution="&copy; Google Maps" url={GOOGLE_VN_MAP_URL} />
+        {provinces.map((prov) =>
+          prov.lat != null && prov.lon != null ? (
+            <CircleMarker
+              key={prov.province_id}
+              center={[prov.lat, prov.lon]}
+              radius={getMarkerRadius(Number(prov.count))}
+              pathOptions={{
                 color: "#111111",
-                background: "transparent",
+                weight: 1.5,
+                fillColor: getDensityColor(Number(prov.count)),
+                fillOpacity: 0.85,
               }}
-            />
-            {query && (
-              <button
-                type="button"
-                className="icon-button"
-                onClick={() => setQuery("")}
-                aria-label={t("common.reset")}
-              >
-                <Icon name="close" size={14} />
-              </button>
-            )}
-          </div>
-
-          <div className="map-legend" style={{ margin: 0 }}>
-            <span>
-              <i className="legend-dot legend-low" /> {t("home.legendLow")}
-            </span>
-            <span>
-              <i className="legend-dot legend-mid" /> {t("home.legendMid")}
-            </span>
-            <span>
-              <i className="legend-dot legend-high" /> {t("home.legendHigh")}
-            </span>
-          </div>
-        </div>
-
-        <div style={{ height: 460, width: "100%" }}>
-          <MapContainer
-            center={[16.2, 106.5]}
-            zoom={6}
-            style={{ height: "100%", width: "100%" }}
-            scrollWheelZoom={false}
-          >
-            <TileLayer
-              key={basemap}
-              attribution="Tiles &copy; Esri"
-              url={basemap === "satellite" ? ESRI_SATELLITE_URL : ESRI_STREET_URL}
-            />
-            {visibleProvinces.map((prov) =>
-              prov.lat != null && prov.lon != null ? (
-                <CircleMarker
-                  key={prov.province_id}
-                  center={[prov.lat, prov.lon]}
-                  radius={getMarkerRadius(Number(prov.count), mode)}
-                  pathOptions={{
-                    color: "#111111",
-                    weight: 1.5,
-                    fillColor: getDensityColor(Number(prov.count)),
-                    fillOpacity: 0.85,
-                  }}
-                >
-                  <Popup>
-                    <div style={{ fontSize: 12.5, color: "#111111" }}>
-                      <strong>{prov.province_name_vn}</strong>
-                      <div>
-                        {t("home.recordedSpecimens")}{" "}
-                        <strong>{formatNumber(prov.count, i18n.language)}</strong>
-                      </div>
-                      <div style={{ marginTop: 6 }}>
-                        <Link to={`/specimens/search?provinceId=${prov.province_id}`}>
-                          {t("home.searchAtProvince", { province: prov.province_name_vn })}
-                        </Link>
-                      </div>
-                    </div>
-                  </Popup>
-                </CircleMarker>
-              ) : null
-            )}
-          </MapContainer>
-        </div>
-      </div>
-    </section>
+            >
+              <Popup>
+                <div style={{ fontSize: 12.5, color: "#111111" }}>
+                  <strong>{prov.province_name_vn}</strong>
+                  <div>
+                    {t("home.recordedSpecimens")}{" "}
+                    <strong>{formatNumber(prov.count, i18n.language)}</strong>
+                  </div>
+                  <div style={{ marginTop: 6 }}>
+                    <Link to={`/specimens/search?provinceId=${prov.province_id}`}>
+                      {t("home.searchAtProvince", { province: prov.province_name_vn })}
+                    </Link>
+                  </div>
+                </div>
+              </Popup>
+            </CircleMarker>
+          ) : null
+        )}
+      </MapContainer>
+    </div>
   );
 }

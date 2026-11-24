@@ -18,52 +18,47 @@ const TREEMAP_COLORS = [
 function ListView({ items, detailBase }) {
   const { t } = useTranslation();
   return (
-    <div className="overflow-x-auto bg-white border border-slate-200 rounded-xl shadow-sm">
-      <table className="w-full text-sm text-left" data-testid="view-list">
-        <thead className="bg-slate-50 text-xs uppercase text-slate-600 border-b border-slate-200">
+    <div className="srv-card srv-table-wrap">
+      <table className="srv-table" data-testid="view-list">
+        <thead>
           <tr>
-            <th className="px-4 py-3">{t("search.columns.catalogNumber", "Mã mẫu")}</th>
-            <th className="px-4 py-3">{t("search.columns.scientificName", "Tên khoa học")}</th>
-            <th className="px-4 py-3">{t("search.columns.taxon", "Bộ / Họ")}</th>
-            <th className="px-4 py-3">{t("search.columns.province", "Tỉnh")}</th>
-            <th className="px-4 py-3">{t("search.columns.year", "Năm")}</th>
-            <th className="px-4 py-3">{t("search.columns.elevation", "Độ cao (m)")}</th>
-            <th className="px-4 py-3">{t("search.columns.iucn", "IUCN")}</th>
+            <th>{t("search.columns.catalogNumber", "Mã mẫu")}</th>
+            <th>{t("search.columns.scientificName", "Tên khoa học")}</th>
+            <th>{t("search.columns.taxon", "Bộ / Họ")}</th>
+            <th>{t("search.columns.province", "Tỉnh")}</th>
+            <th>{t("search.columns.year", "Năm")}</th>
+            <th>{t("search.columns.elevation", "Độ cao (m)")}</th>
+            <th>{t("search.columns.iucn", "IUCN")}</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody>
           {items.map((item) => (
-            <tr key={item.id} className="hover:bg-slate-50">
-              <td className="px-4 py-2.5 font-mono text-xs">
-                <Link
-                  to={`${detailBase}/${item.id}`}
-                  className="text-emerald-700 hover:underline font-medium"
-                >
+            <tr key={item.id}>
+              <td>
+                <Link to={`${detailBase}/${item.id}`} className="srv-code-link">
                   {item.catalog_number || item.catalogNumber || item.id}
                 </Link>
               </td>
-              <td className="px-4 py-2.5 italic font-medium text-slate-900">
+              <td style={{ fontStyle: "italic", fontWeight: 600, color: "#111111" }}>
                 {item.scientific_name || item.scientificName || "—"}
               </td>
-              <td className="px-4 py-2.5 text-slate-600">
+              <td style={{ color: "#444444" }}>
                 {[item.order_name || item.orderName, item.family_name || item.familyName]
                   .filter(Boolean)
                   .join(" / ") || "—"}
               </td>
-              <td className="px-4 py-2.5 text-slate-600">
+              <td style={{ color: "#444444" }}>
                 {item.province_name || item.provinceName || "—"}
               </td>
-              <td className="px-4 py-2.5 text-slate-600">
+              <td style={{ color: "#444444" }}>
                 {item.collection_year || item.collectionYear || "—"}
               </td>
-              <td className="px-4 py-2.5 text-slate-600">
+              <td style={{ color: "#444444" }}>
                 {item.elevation_m != null ? `${item.elevation_m} m` : "—"}
               </td>
-              <td className="px-4 py-2.5">
+              <td>
                 {item.iucn_status ? (
-                  <span className="inline-block px-2 py-0.5 text-xs font-semibold rounded bg-amber-100 text-amber-800">
-                    {item.iucn_status}
-                  </span>
+                  <span className="srv-iucn-badge">{item.iucn_status}</span>
                 ) : (
                   "—"
                 )}
@@ -78,34 +73,23 @@ function ListView({ items, detailBase }) {
 
 function LabelView({ items, detailBase }) {
   return (
-    <div
-      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-      data-testid="view-label"
-    >
+    <div className="srv-label-grid" data-testid="view-label">
       {items.map((item) => (
-        <article
-          key={item.id}
-          className="bg-amber-50/40 border-2 border-slate-800 rounded-md p-4 font-serif shadow-sm flex flex-col justify-between"
-        >
+        <article key={item.id} className="srv-label-card">
           <div>
-            <div className="flex items-center justify-between border-b border-slate-400 pb-1.5 mb-2">
-              <span className="text-[11px] uppercase tracking-wider font-sans font-bold text-slate-700">
-                VIETINSECT COLLECTION
-              </span>
-              <Link
-                to={`${detailBase}/${item.id}`}
-                className="font-mono text-xs font-bold text-emerald-800 hover:underline"
-              >
+            <div className="srv-label-head">
+              <span>VIETINSECT COLLECTION</span>
+              <Link to={`${detailBase}/${item.id}`} className="srv-code-link">
                 {item.catalog_number || item.catalogNumber}
               </Link>
             </div>
-            <h3 className="text-base italic font-bold text-slate-900">
+            <h3 style={{ margin: 0, fontSize: 15, fontStyle: "italic", fontWeight: 700 }}>
               {item.scientific_name || item.scientificName}
             </h3>
-            <p className="text-xs text-slate-600 font-sans mt-0.5">
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: "#555555" }}>
               {[item.order_name, item.family_name, item.genus_name].filter(Boolean).join(" · ")}
             </p>
-            <div className="mt-3 text-xs text-slate-800 space-y-1 font-sans">
+            <div style={{ marginTop: 10, fontSize: 12, color: "#222222", display: "grid", gap: 4 }}>
               <div>
                 <strong>Loc.:</strong> {item.locality || item.province_name || "—"}
                 {item.elevation_m != null ? `, ${item.elevation_m} m` : ""}
@@ -123,7 +107,15 @@ function LabelView({ items, detailBase }) {
             </div>
           </div>
           {item.iucn_status && (
-            <div className="mt-2 pt-1.5 border-t border-slate-300 text-[11px] font-sans text-amber-900 font-semibold">
+            <div
+              style={{
+                paddingTop: 6,
+                borderTop: "1px solid #cbd5e1",
+                fontSize: 11,
+                fontWeight: 700,
+                color: "#92400e",
+              }}
+            >
               IUCN: {item.iucn_status}
             </div>
           )}
@@ -139,10 +131,7 @@ function GalleryView({ items, detailBase }) {
 
   if (publicImages.length === 0) {
     return (
-      <div
-        className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500 text-sm"
-        data-testid="view-gallery-empty"
-      >
+      <div className="adv-search-empty" data-testid="view-gallery-empty">
         {t(
           "search.gallery.empty",
           "Không có mẫu công khai kèm ảnh nào trong trang kết quả hiện tại."
@@ -152,35 +141,46 @@ function GalleryView({ items, detailBase }) {
   }
 
   return (
-    <div
-      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-      data-testid="view-gallery"
-    >
+    <div className="srv-gallery-grid" data-testid="view-gallery">
       {publicImages.map((item) => (
-        <Link
-          key={item.id}
-          to={`${detailBase}/${item.id}`}
-          className="group bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition"
-        >
-          <div className="aspect-[4/3] bg-slate-100 flex items-center justify-center overflow-hidden">
+        <Link key={item.id} to={`${detailBase}/${item.id}`} className="srv-gallery-card">
+          <div className="srv-gallery-thumb">
             {item.thumbnail_url ? (
               <img
                 src={item.thumbnail_url}
                 alt={item.scientific_name || item.catalog_number}
-                className="w-full h-full object-cover group-hover:scale-105 transition"
                 loading="lazy"
               />
             ) : (
-              <span className="text-xs text-slate-400 font-mono">
+              <span style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace" }}>
                 {item.catalog_number}
               </span>
             )}
           </div>
-          <div className="p-3">
-            <div className="text-sm italic font-semibold text-slate-900 truncate">
+          <div className="srv-gallery-body">
+            <div
+              style={{
+                fontSize: 13.5,
+                fontStyle: "italic",
+                fontWeight: 700,
+                color: "#111111",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
               {item.scientific_name}
             </div>
-            <div className="text-xs text-slate-500 truncate mt-0.5">
+            <div
+              style={{
+                fontSize: 12,
+                color: "#555555",
+                marginTop: 2,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
               {item.catalog_number} · {item.province_name || "—"}
             </div>
           </div>
@@ -190,52 +190,59 @@ function GalleryView({ items, detailBase }) {
   );
 }
 
+function getItemCoords(item) {
+  const lat = item?.decimal_latitude ?? item?.latitude ?? item?.location?.lat;
+  const lon = item?.decimal_longitude ?? item?.longitude ?? item?.location?.lon;
+  if (lat == null || lon == null) return null;
+  const latNum = Number(lat);
+  const lonNum = Number(lon);
+  if (Number.isNaN(latNum) || Number.isNaN(lonNum)) return null;
+  return { lat: latNum, lon: lonNum };
+}
+
 function MapView({ items, detailBase }) {
   const { t } = useTranslation();
-  const geoItems = items.filter(
-    (item) =>
-      item.decimal_latitude != null &&
-      item.decimal_longitude != null &&
-      !Number.isNaN(Number(item.decimal_latitude)) &&
-      !Number.isNaN(Number(item.decimal_longitude))
-  );
+  const geoItems = items
+    .map((item) => ({ item, coords: getItemCoords(item) }))
+    .filter((entry) => entry.coords !== null);
 
   return (
-    <div
-      className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm"
-      data-testid="view-map"
-    >
-      <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 text-xs text-slate-600">
+    <div className="srv-card" data-testid="view-map">
+      <div className="srv-map-bar">
         {t("search.map.showingCount", {
           count: geoItems.length,
           defaultValue: `Hiển thị ${geoItems.length} mẫu có tọa độ GPS trong trang hiện tại`,
         })}
       </div>
-      <div className="h-[480px] w-full">
+      <div style={{ height: 480, width: "100%" }}>
         <MapContainer
-          center={[16.0471, 108.2068]}
+          center={[15.8, 109.5]}
           zoom={5}
           style={{ height: "100%", width: "100%" }}
         >
           <TileLayer
-            attribution="&copy; OpenStreetMap contributors"
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution="&copy; Google Maps"
+            url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=vi&gl=VN"
           />
-          {geoItems.map((item) => (
+          {geoItems.map(({ item, coords }) => (
             <CircleMarker
-              key={item.id}
-              center={[Number(item.decimal_latitude), Number(item.decimal_longitude)]}
+              key={item.id || item.specimen_id}
+              center={[coords.lat, coords.lon]}
               radius={6}
               pathOptions={{ color: "#15803d", fillColor: "#22c55e", fillOpacity: 0.7 }}
             >
               <Popup>
-                <div className="text-xs">
-                  <div className="font-bold italic">{item.scientific_name}</div>
-                  <div className="font-mono">{item.catalog_number}</div>
-                  <div>{item.province_name || item.locality || ""}</div>
+                <div style={{ fontSize: 12 }}>
+                  <div style={{ fontWeight: 700, fontStyle: "italic" }}>
+                    {item.scientific_name || item.scientificName}
+                  </div>
+                  <div style={{ fontFamily: "monospace" }}>
+                    {item.catalog_number || item.specimen_code || item.catalogNumber}
+                  </div>
+                  <div>{item.province_name || item.province_name_vn || item.locality || ""}</div>
                   <Link
-                    to={`${detailBase}/${item.id}`}
-                    className="text-emerald-700 underline mt-1 inline-block"
+                    to={`${detailBase}/${item.id || item.specimen_id}`}
+                    style={{ color: "#0f3820", textDecoration: "underline", marginTop: 4, display: "inline-block" }}
                   >
                     {t("search.map.viewDetail", "Xem chi tiết")}
                   </Link>
@@ -293,33 +300,28 @@ function TreemapView({ facets, onSelectOrder }) {
 
   if (data.length === 0) {
     return (
-      <div
-        className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500 text-sm"
-        data-testid="view-treemap-empty"
-      >
+      <div className="adv-search-empty" data-testid="view-treemap-empty">
         {t("search.treemap.empty", "Không có dữ liệu phân bố Bộ để hiển thị Treemap.")}
       </div>
     );
   }
 
   return (
-    <div
-      className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm"
-      data-testid="view-treemap"
-    >
-      <p className="text-xs text-slate-500 mb-3">
+    <div className="srv-treemap-wrap" data-testid="view-treemap">
+      <p className="srv-treemap-hint">
         {t(
           "search.treemap.hint",
           "Nhấp vào một Bộ để lọc nhanh kết quả theo Bộ đó."
         )}
       </p>
-      <div className="h-[420px] w-full">
+      <div style={{ height: 420, width: "100%" }}>
         <ResponsiveContainer width="100%" height="100%">
           <Treemap
             data={data}
             dataKey="size"
             nameKey="name"
             stroke="#fff"
+            isAnimationActive={false}
             content={<TreemapCell onSelectOrder={onSelectOrder} />}
           >
             <Tooltip />

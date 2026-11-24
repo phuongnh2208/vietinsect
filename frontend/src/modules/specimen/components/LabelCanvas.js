@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 
 /**
  * LabelCanvas — Preview lưới nhãn mẫu vật chuẩn Specify 7 (SCR-11, F-SP-09).
@@ -31,7 +31,7 @@ export default function LabelCanvas({ specimens = [], layoutConfig = {} }) {
       style={{
         padding: 24,
         background: "#FFFFFF",
-        border: "2px solid #111111",
+        border: "2px solid #D1D5DB",
         fontFamily: `'${fontFamily}', 'DejaVu Sans', sans-serif`,
       }}
     >
@@ -46,7 +46,7 @@ export default function LabelCanvas({ specimens = [], layoutConfig = {} }) {
           <div
             key={s.id}
             style={{
-              border: "2px solid #111111",
+              border: "2px solid #D1D5DB",
               padding: 12,
               background: "#FFFFFF",
               display: "flex",
@@ -62,7 +62,7 @@ export default function LabelCanvas({ specimens = [], layoutConfig = {} }) {
                   fontSize: Math.max(8, fontSize - 1),
                   fontWeight: 800,
                   letterSpacing: "0.06em",
-                  borderBottom: "1px solid #111111",
+                  borderBottom: "1px solid #D1D5DB",
                   paddingBottom: 4,
                   marginBottom: 6,
                   display: "flex",
@@ -97,7 +97,7 @@ export default function LabelCanvas({ specimens = [], layoutConfig = {} }) {
 
             <div
               style={{
-                borderTop: "1px dashed #111111",
+                borderTop: "1px dashed #D1D5DB",
                 paddingTop: 6,
                 marginTop: 8,
                 display: "flex",
@@ -114,7 +114,7 @@ export default function LabelCanvas({ specimens = [], layoutConfig = {} }) {
                   style={{
                     fontSize: 9,
                     padding: "2px 6px",
-                    border: "1px solid #111111",
+                    border: "1px solid #D1D5DB",
                     background: "#F5F5F5",
                     fontWeight: 700,
                   }}

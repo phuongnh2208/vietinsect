@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+﻿import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import specimenService from "../specimen.service";
 import http from "../../../services/http";
@@ -445,7 +445,7 @@ export function BulkImportWorkbenchPage() {
         <div
           style={{
             padding: "14px 20px",
-            borderBottom: "1px solid #111111",
+            borderBottom: "1px solid #D1D5DB",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -771,7 +771,7 @@ export function BatchEditPage() {
         <div
           style={{
             padding: "14px 20px",
-            borderBottom: "1px solid #111111",
+            borderBottom: "1px solid #D1D5DB",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",

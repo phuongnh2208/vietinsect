@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+﻿import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   ResponsiveContainer,
@@ -414,7 +414,7 @@ export default function AnalyticsDashboardPage() {
             </ResponsiveContainer>
           </div>
 
-          <div className="table-responsive" style={{ maxHeight: 360, overflowY: "auto", border: "1px solid #111111" }}>
+          <div className="table-responsive" style={{ maxHeight: 360, overflowY: "auto", border: "1px solid #D1D5DB" }}>
             <table className="data-table">
               <thead>
                 <tr>

@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    SCR-16: Advanced Search & Query Builder (GBIF-inspired VietInsect theme)
    ========================================================================== */
 
@@ -14,7 +14,7 @@
   flex-wrap: wrap;
   margin-bottom: 22px;
   padding-bottom: 18px;
-  border-bottom: 1px solid var(--vi-border, #111111);
+  border-bottom: 1px solid var(--vi-border, #D1D5DB);
 }
 
 .qb-header-title-group {
@@ -49,7 +49,7 @@
   align-items: center;
   gap: 6px;
   padding: 9px 14px;
-  border: 1px solid var(--vi-border, #111111);
+  border: 1px solid var(--vi-border, #D1D5DB);
   background: var(--vi-surface-2, #f2f7f2);
   color: var(--vi-secondary, #0f3820);
   font-size: 13px;
@@ -66,7 +66,7 @@
 /* Mode tabs for Admin */
 .qb-mode-tabs {
   display: inline-flex;
-  border: 1px solid var(--vi-border, #111111);
+  border: 1px solid var(--vi-border, #D1D5DB);
   background: #ffffff;
 }
 
@@ -82,7 +82,7 @@
 }
 
 .qb-mode-tab + .qb-mode-tab {
-  border-left: 1px solid var(--vi-border, #111111);
+  border-left: 1px solid var(--vi-border, #D1D5DB);
 }
 
 .qb-mode-tab.active {
@@ -118,7 +118,7 @@
 
 /* Cards */
 .qb-panel {
-  border: 1px solid var(--vi-border, #111111);
+  border: 1px solid var(--vi-border, #D1D5DB);
   background: #ffffff;
 }
 
@@ -129,7 +129,7 @@
   gap: 12px;
   padding: 13px 18px;
   background: var(--vi-surface-2, #f2f7f2);
-  border-bottom: 1px solid var(--vi-border, #111111);
+  border-bottom: 1px solid var(--vi-border, #D1D5DB);
 }
 
 .qb-panel-title {
@@ -152,7 +152,7 @@
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
-  border: 1px solid var(--vi-border, #111111);
+  border: 1px solid var(--vi-border, #D1D5DB);
   background: #ffffff;
   color: var(--vi-ink, #111111);
 }
@@ -176,7 +176,7 @@
 }
 
 .qb-rule-row:hover {
-  border-color: var(--vi-border, #111111);
+  border-color: var(--vi-border, #D1D5DB);
   background: #ffffff;
 }
 
@@ -202,7 +202,7 @@
   width: 100%;
   height: 38px;
   padding: 0 10px;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0;
   background: #ffffff;
   color: #111111;
@@ -301,7 +301,7 @@
   gap: 6px;
   height: 40px;
   padding: 0 16px;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0;
   font-size: 13px;
   font-weight: 700;
@@ -476,7 +476,7 @@
   text-align: left;
   padding: 11px 14px;
   background: #f8faf8;
-  border-bottom: 1px solid var(--vi-border, #111111);
+  border-bottom: 1px solid var(--vi-border, #D1D5DB);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -547,7 +547,7 @@
   width: 100%;
   min-height: 130px;
   padding: 14px;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   background: #0f172a;
   color: #e2e8f0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

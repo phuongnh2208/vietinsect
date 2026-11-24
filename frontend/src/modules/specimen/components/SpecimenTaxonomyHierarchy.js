@@ -12,7 +12,7 @@ export default function SpecimenTaxonomyHierarchy({
   isAdmin = false,
 }) {
   const { t } = useTranslation();
-  const basePath = isAdmin ? "/admin/search" : "/search";
+  const basePath = isAdmin ? "/admin/specimens" : "/specimens/search";
 
   const ranks = [
     { rank: t("specimenDetail.rankKingdom"), name: "Animalia", term: "kingdom" },

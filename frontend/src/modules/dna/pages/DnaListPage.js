@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Icon from "../../../components/ui/Icon";
@@ -483,7 +483,7 @@ export default function DnaListPage() {
                             style={{
                               background: orderColor,
                               color: "#FFFFFF",
-                              borderColor: "#111111",
+                              borderColor: "#D1D5DB",
                             }}
                           >
                             {item.orderName || item.taxonName}

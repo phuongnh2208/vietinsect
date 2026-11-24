@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+﻿import React, { useCallback, useEffect, useState } from "react";
 import Icon from "../../../components/ui/Icon";
 import LoadingState from "../../../components/ui/LoadingState";
 import EmptyState from "../../../components/ui/EmptyState";
@@ -332,7 +332,7 @@ export default function SystemAdminPage() {
                         flex: 1,
                         minHeight: 38,
                         padding: "0 12px",
-                        border: "1px solid #111111",
+                        border: "1px solid #D1D5DB",
                         fontSize: 13,
                       }}
                       value={draftValues[cfg.key] ?? ""}

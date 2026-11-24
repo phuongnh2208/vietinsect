@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Icon from "../../../components/ui/Icon";
@@ -123,7 +123,7 @@ export default function SpecimenHeader({
           <div className="specimen-badges-wrap">
             <span
               className="taxonomy-badge"
-              style={{ backgroundColor: orderColor, color: "#FFFFFF", borderColor: "#111111" }}
+              style={{ backgroundColor: orderColor, color: "#FFFFFF", borderColor: "#D1D5DB" }}
             >
               {t("specimenDetail.orderPrefix")}: {specimen.orderName || "Insecta"}
             </span>

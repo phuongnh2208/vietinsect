@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
 
 :root {
   --vi-bg: #FFFFFF;
@@ -13,8 +13,8 @@
   --vi-danger: #B0241A;
   --vi-warning: #9C7A1F;
   --vi-success: #2E7D32;
-  --vi-border: #111111;
-  --vi-border-strong: #111111;
+  --vi-border: #D1D5DB;
+  --vi-border-strong: #9CA3AF;
   --vi-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   --vi-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.03);
   --vi-radius: 0px; /* Không bo góc - góc vuông kỹ thuật */
@@ -32,8 +32,8 @@
   --vi-surface-3: #E8F2E8;
   --vi-ink: #111111;
   --vi-muted: #555555;
-  --vi-border: #111111;
-  --vi-border-strong: #111111;
+  --vi-border: #D1D5DB;
+  --vi-border-strong: #9CA3AF;
   --vi-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   --vi-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.05);
 }
@@ -80,7 +80,7 @@ a { color: inherit; text-decoration: none; }
   height: var(--vi-topbar);
   padding: 0 34px;
   background: #FFFFFF;
-  border-bottom: 1px solid #111111;
+  border-bottom: 1px solid #D1D5DB;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
 }
 .topbar-search {
@@ -89,7 +89,7 @@ a { color: inherit; text-decoration: none; }
   gap: 10px;
   width: min(430px, 44vw);
   padding: 8px 14px;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px; /* Không bo góc */
   background: #FFFFFF;
   color: #111111;
@@ -105,10 +105,10 @@ a { color: inherit; text-decoration: none; }
 }
 .topbar-search input::placeholder { color: #888888; }
 .topbar-actions { display: flex; align-items: center; gap: 11px; }
-.topbar-divider { width: 1px; height: 28px; background: #111111; margin: 0 5px; }
+.topbar-divider { width: 1px; height: 28px; background: #D1D5DB; margin: 0 5px; }
 .language-toggle {
   display: inline-flex;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px; /* Không bo góc */
   overflow: hidden;
   background: #FFFFFF;
@@ -132,7 +132,7 @@ a { color: inherit; text-decoration: none; }
   width: 36px;
   height: 36px;
   border-radius: 0px; /* Không bo góc */
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   background: #0F3820; /* Xanh lá đậm */
   color: #FFFFFF;
   font-size: 12px;
@@ -153,7 +153,7 @@ a { color: inherit; text-decoration: none; }
   flex-direction: column;
   padding: 25px 18px 20px;
   background: #0F3820; /* Xanh lá đậm */
-  border-right: 1px solid #111111;
+  border-right: 1px solid #D1D5DB;
   color: #FFFFFF;
   overflow-y: auto;
 }
@@ -203,7 +203,7 @@ a { color: inherit; text-decoration: none; }
 .sidebar-link.active {
   background: #2E7D32;
   color: #FFFFFF;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   font-weight: 800;
 }
 .sidebar-footer { margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.14); }
@@ -220,7 +220,7 @@ a { color: inherit; text-decoration: none; }
   height: 74px;
   padding: 0 5vw;
   background: #FFFFFF;
-  border-bottom: 1px solid #111111;
+  border-bottom: 1px solid #D1D5DB;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 .public-header .brand { padding: 0; }
@@ -235,15 +235,15 @@ a { color: inherit; text-decoration: none; }
 .public-nav a:hover {
   color: #111111;
   background: #F4F8F3;
-  border-color: #111111;
+  border-color: #D1D5DB;
 }
 .public-nav a.active {
   color: #FFFFFF;
   background: #111111;
-  border-color: #111111;
+  border-color: #D1D5DB;
 }
 .public-header-actions { display: flex; align-items: center; gap: 11px; min-width: 38px; }
-.public-footer { padding: 42px 5vw; background: #0F3820; /* Xanh lá đậm */ color: #FFFFFF; border-top: 1px solid #111111; }
+.public-footer { padding: 42px 5vw; background: #0F3820; /* Xanh lá đậm */ color: #FFFFFF; border-top: 1px solid #D1D5DB; }
 .public-footer-inner { display: flex; justify-content: space-between; gap: 30px; width: min(1440px, 100%); margin: 0 auto; }
 .public-footer p { max-width: 400px; color: rgba(255, 255, 255, 0.7); font-size: 13px; line-height: 1.7; }
 
@@ -255,7 +255,7 @@ a { color: inherit; text-decoration: none; }
   gap: 8px;
   min-height: 40px;
   padding: 0 18px;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px !important; /* Không bo góc - đồng bộ khung banner */
   font-family: 'Manrope', 'Inter', sans-serif;
   font-size: 13px;
@@ -285,7 +285,7 @@ a { color: inherit; text-decoration: none; }
 }
 .button-secondary:hover {
   background: #111111;
-  border-color: #111111;
+  border-color: #D1D5DB;
 }
 .button-danger {
   background: #B0241A;
@@ -299,7 +299,7 @@ a { color: inherit; text-decoration: none; }
 }
 .button-ghost {
   background: #FFFFFF;
-  border-color: #111111;
+  border-color: #D1D5DB;
   color: #111111;
 }
 .button-ghost:hover {
@@ -327,7 +327,7 @@ a { color: inherit; text-decoration: none; }
 }
 .icon-button:hover {
   background: #F1F5F9;
-  border-color: #111111;
+  border-color: #D1D5DB;
   color: #111111;
 }
 .icon-button:active {
@@ -336,7 +336,7 @@ a { color: inherit; text-decoration: none; }
 
 /* Global Card & Panel System (Góc vuông sắc sảo 0px) */
 .card {
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px !important; /* Không bo góc */
   background: #FFFFFF;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
@@ -350,7 +350,7 @@ a { color: inherit; text-decoration: none; }
   position: relative;
   overflow: hidden;
   padding: 20px 22px;
-  border: 1px solid #111111 !important;
+  border: 1px solid #D1D5DB !important;
   border-radius: 0px !important;
   background: #FFFFFF;
   transition: transform 180ms ease, box-shadow 180ms ease;
@@ -379,7 +379,7 @@ a { color: inherit; text-decoration: none; }
   border-radius: 0px; /* Không bo góc */
   background: #F4F8F3;
   color: #111111;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
 }
 .metric-value {
   position: relative;
@@ -408,7 +408,7 @@ a { color: inherit; text-decoration: none; }
   gap: 5px;
   padding: 3px 8px;
   border-radius: 0px !important; /* Không bo góc */
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
@@ -417,7 +417,7 @@ a { color: inherit; text-decoration: none; }
 .status-public {
   background: #111111;
   color: #FFFFFF;
-  border-color: #111111;
+  border-color: #D1D5DB;
 }
 .status-private {
   background: #E2E8F0;
@@ -438,9 +438,15 @@ a { color: inherit; text-decoration: none; }
 /* Dashboard & Panels */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1.3fr 0.7fr;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
   gap: 16px;
   margin-top: 16px;
+  width: 100%;
+}
+.dashboard-grid > .panel {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 .panel {
   padding: 22px;
@@ -481,7 +487,7 @@ a { color: inherit; text-decoration: none; }
   font-size: 12px;
   font-weight: 800;
   transition: transform 180ms var(--ease-out);
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
 }
 .treemap-block:hover {
   transform: translateY(-2px);
@@ -503,7 +509,7 @@ a { color: inherit; text-decoration: none; }
   place-items: center;
   overflow: hidden;
   border-radius: 0px !important; /* Không bo góc */
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   background: #FFFFFF;
 }
 .map-preview::before {
@@ -518,7 +524,7 @@ a { color: inherit; text-decoration: none; }
   position: absolute;
   width: 10px;
   height: 10px;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px;
   background: #2E7D32;
   box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.2);
@@ -859,7 +865,7 @@ a { color: inherit; text-decoration: none; }
   top: 0;
   z-index: 50;
   background: #ffffff;
-  border-bottom: 2px solid #111111;
+  border-bottom: 2px solid #D1D5DB;
   padding: 0;
 }
 .header-container {
@@ -915,7 +921,7 @@ a { color: inherit; text-decoration: none; }
 /* 3. Technical Frame (Crop marks & Square registration markers) */
 .technical-frame-wrapper {
   position: relative;
-  border: 2px solid #111111;
+  border: 2px solid #D1D5DB;
   background: #ffffff;
   box-sizing: border-box;
 }
@@ -1047,7 +1053,7 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   background: #ffffff;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px !important; /* Không bo góc - góc vuông chuẩn TechnicalFrame */
   padding: 7px 14px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
@@ -1149,13 +1155,13 @@ a { color: inherit; text-decoration: none; }
 .stat-technical-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px !important;
   background: #ffffff;
 }
 .stat-box {
   padding: 26px 22px;
-  border-right: 1px solid #111111;
+  border-right: 1px solid #D1D5DB;
   border-radius: 0px !important;
   display: flex;
   flex-direction: column;
@@ -1224,14 +1230,40 @@ a { color: inherit; text-decoration: none; }
   margin: 0;
 }
 
+.header-login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  padding: 6px 14px;
+  background: #ffffff;
+  color: #111111;
+  border: 1px solid #D1D5DB;
+  border-radius: 0;
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+.header-login-btn:hover {
+  background: #0F3820;
+  color: #ffffff;
+  border-color: #0F3820;
+}
+
 .editorial-cards-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
   gap: 36px 28px;
+  align-items: stretch;
 }
 .editorial-feature-card {
   display: flex;
   flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
   background: #ffffff;
   border: 1px solid #E2E8F0;
   border-radius: 0px !important; /* Không bo góc */
@@ -1245,7 +1277,7 @@ a { color: inherit; text-decoration: none; }
 }
 /* Khung viền mảng đen / xanh lá đậm cho các thẻ ảnh khác (không dùng crop-mark) */
 .card-solid-frame {
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px !important; /* Không bo góc */
   background: #ffffff;
   overflow: hidden;
@@ -1258,9 +1290,9 @@ a { color: inherit; text-decoration: none; }
 .card-image-slot {
   position: relative;
   width: 100%;
-  height: 100%;
-  min-height: 200px;
+  height: 220px;
   background: #EEF2F6;
+  overflow: hidden;
 }
 .card-img {
   width: 100%;
@@ -1314,6 +1346,8 @@ a { color: inherit; text-decoration: none; }
   flex: 1;
 }
 .card-action-link {
+  margin-top: auto;
+  padding-top: 12px;
   font-family: 'Manrope', 'Inter', sans-serif;
   font-size: 13px;
   font-weight: 800;
@@ -1335,7 +1369,7 @@ a { color: inherit; text-decoration: none; }
   background: #ffffff;
 }
 .map-solid-frame {
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px !important;
   background: #ffffff;
   padding: 8px;
@@ -1350,7 +1384,7 @@ a { color: inherit; text-decoration: none; }
   background: #0F3820; /* Xanh lá đậm */
   color: #ffffff;
   padding: 60px 0 0;
-  border-top: 1px solid #111111;
+  border-top: 1px solid #D1D5DB;
 }
 .editorial-footer .vietinsect-brand-logo .brand-title {
   color: #ffffff;
@@ -1426,9 +1460,31 @@ a { color: inherit; text-decoration: none; }
   }
   .stat-box:nth-child(1),
   .stat-box:nth-child(2) {
-    border-bottom: 1px solid #111111;
+    border-bottom: 1px solid #D1D5DB;
   }
-  .editorial-cards-grid {
+  .header-login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  padding: 6px 14px;
+  background: #ffffff;
+  color: #111111;
+  border: 1px solid #D1D5DB;
+  border-radius: 0;
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+.header-login-btn:hover {
+  background: #0F3820;
+  color: #ffffff;
+  border-color: #0F3820;
+}
+
+.editorial-cards-grid {
     grid-template-columns: 1fr;
   }
   .footer-container {
@@ -1479,7 +1535,7 @@ a { color: inherit; text-decoration: none; }
   }
   .stat-box {
     border-right: none;
-    border-bottom: 1px solid #111111;
+    border-bottom: 1px solid #D1D5DB;
   }
   .stat-box:last-child {
     border-bottom: none;
@@ -1509,7 +1565,7 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  border-right: 1px solid #111111;
+  border-right: 1px solid #D1D5DB;
 }
 .auth-visual .vietinsect-brand-logo .brand-title {
   color: #ffffff;
@@ -1545,7 +1601,7 @@ a { color: inherit; text-decoration: none; }
 .auth-card {
   width: min(440px, 100%);
   background: #ffffff;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px !important; /* Không bo góc */
   padding: 38px 34px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
@@ -1579,7 +1635,7 @@ a { color: inherit; text-decoration: none; }
 }
 .form-field input, .form-field select, .form-field textarea {
   padding: 10px 14px;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px !important; /* Không bo góc */
   font-size: 14px;
   background: #ffffff;
@@ -1599,7 +1655,7 @@ a { color: inherit; text-decoration: none; }
   font-weight: 800;
   background: #111111;
   color: #ffffff;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px !important;
   margin-top: 10px;
   cursor: pointer;
@@ -1647,7 +1703,7 @@ a { color: inherit; text-decoration: none; }
   margin-left: 6px;
 }
 .taxonomy-tree-pane {
-  border: 1px solid #111111 !important;
+  border: 1px solid #D1D5DB !important;
   border-radius: 0px !important;
   background: #ffffff;
 }
@@ -1656,7 +1712,7 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   gap: 10px;
   padding: 8px 14px;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px !important; /* Không bo góc */
   background: #ffffff;
   position: relative;
@@ -1677,7 +1733,7 @@ a { color: inherit; text-decoration: none; }
   left: 0;
   right: 0;
   background: #ffffff;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px !important; /* Không bo góc */
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   z-index: 40;
@@ -1731,7 +1787,7 @@ a { color: inherit; text-decoration: none; }
 .tabs-row {
   display: flex;
   gap: 6px;
-  border-bottom: 1px solid #111111;
+  border-bottom: 1px solid #D1D5DB;
   margin-bottom: 22px;
   overflow-x: auto;
 }
@@ -1774,13 +1830,13 @@ a { color: inherit; text-decoration: none; }
 
 /* 4. Panels & Cards Solid Styling */
 .card.panel {
-  border: 1px solid #111111 !important;
+  border: 1px solid #D1D5DB !important;
   border-radius: 0px !important; /* Không bo góc */
   background: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 .card.metric-card {
-  border: 1px solid #111111 !important;
+  border: 1px solid #D1D5DB !important;
   border-radius: 0px !important;
 }
 
@@ -1792,7 +1848,7 @@ a { color: inherit; text-decoration: none; }
     padding: 36px 24px;
     min-height: 280px;
     border-right: none;
-    border-bottom: 1px solid #111111;
+    border-bottom: 1px solid #D1D5DB;
   }
   .species-tab-grid {
     grid-template-columns: 1fr;
@@ -1820,7 +1876,7 @@ a { color: inherit; text-decoration: none; }
   position: relative;
   width: min(480px, 100%);
   background: #ffffff;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px !important; /* Không bo góc */
   padding: 32px 28px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
@@ -1846,7 +1902,7 @@ a { color: inherit; text-decoration: none; }
   border-radius: 0px !important;
   display: grid;
   place-items: center;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
 }
 .dialog-icon-danger {
   background: #FEE2E2;
@@ -1883,7 +1939,7 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   gap: 10px;
   padding: 12px 18px;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px !important; /* Không bo góc */
   background: #ffffff;
   color: #111111;
@@ -1936,12 +1992,12 @@ a { color: inherit; text-decoration: none; }
 /* Placeholder Rows & Info Blocks (Góc vuông) */
 .placeholder-row {
   border-radius: 0px !important;
-  border: 1px solid #111111 !important;
+  border: 1px solid #D1D5DB !important;
   background: #FFFFFF;
 }
 .info-block {
   border-radius: 0px !important;
-  border: 1px solid #111111 !important;
+  border: 1px solid #D1D5DB !important;
   background: #FFFFFF;
 }
 
@@ -1983,7 +2039,7 @@ a { color: inherit; text-decoration: none; }
 .vi-compact-select {
   min-height: 32px;
   padding: 0 10px;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px !important;
   background: #FFFFFF;
   color: #111111;
@@ -1999,7 +2055,7 @@ a { color: inherit; text-decoration: none; }
   min-width: 210px;
   padding: 12px 14px;
   background: #FFFFFF;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.12);
   display: grid;
   gap: 8px;
@@ -2015,7 +2071,7 @@ a { color: inherit; text-decoration: none; }
 .vi-spatial-box {
   margin-top: 14px;
   padding: 14px 16px;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   background: #F4F8F3;
 }
 .vi-spatial-presets {
@@ -2035,7 +2091,7 @@ a { color: inherit; text-decoration: none; }
   margin-bottom: 14px;
   background: #0F3820;
   color: #FFFFFF;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
 }
 
 .vi-table-scroll {
@@ -2050,7 +2106,7 @@ a { color: inherit; text-decoration: none; }
 }
 .vi-data-table thead tr {
   background: #F2F7F2;
-  border-bottom: 1px solid #111111;
+  border-bottom: 1px solid #D1D5DB;
 }
 .vi-data-table th {
   padding: 13px 14px;
@@ -2090,7 +2146,7 @@ a { color: inherit; text-decoration: none; }
   gap: 12px;
   padding: 14px 18px;
   background: #FFFFFF;
-  border-top: 1px solid #111111;
+  border-top: 1px solid #D1D5DB;
 }
 
 /* Form Grids & Detail KV Grid */
@@ -2137,14 +2193,14 @@ a { color: inherit; text-decoration: none; }
 /* GIS Map Workbench (SCR-18) */
 .vi-segmented-group {
   display: inline-flex;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   background: #FFFFFF;
 }
 .vi-segmented-group button {
   min-height: 38px;
   padding: 0 14px;
   border: 0;
-  border-right: 1px solid #111111;
+  border-right: 1px solid #D1D5DB;
   background: #FFFFFF;
   color: #111111;
   font-family: 'Manrope', 'Inter', sans-serif;
@@ -2174,7 +2230,7 @@ a { color: inherit; text-decoration: none; }
   position: relative;
   height: 740px;
   overflow: hidden;
-  border: 1px solid #111111 !important;
+  border: 1px solid #D1D5DB !important;
   transition: all 0.2s ease-in-out;
 }
 .vi-gis-stage.is-fullscreen {
@@ -2194,7 +2250,7 @@ a { color: inherit; text-decoration: none; }
   gap: 6px;
   padding: 6px 12px;
   background: rgba(255, 255, 255, 0.95);
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   font-size: 11px;
   font-weight: 700;
   color: #111111;
@@ -2230,7 +2286,7 @@ a { color: inherit; text-decoration: none; }
 .vi-map-counter-chip {
   padding: 8px 14px;
   background: rgba(255, 255, 255, 0.94);
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   font-size: 12px;
   font-weight: 800;
   color: #111111;
@@ -2247,7 +2303,7 @@ a { color: inherit; text-decoration: none; }
   gap: 12px;
   padding: 8px 14px;
   background: rgba(255, 255, 255, 0.95);
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   font-size: 11px;
   font-weight: 700;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
@@ -2261,7 +2317,7 @@ a { color: inherit; text-decoration: none; }
   display: inline-block;
   width: 10px;
   height: 10px;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
 }
 .vi-province-rank-list {
   display: grid;
@@ -2284,7 +2340,7 @@ a { color: inherit; text-decoration: none; }
 }
 .leaflet-popup-content-wrapper {
   border-radius: 0px !important;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.16) !important;
 }
 
@@ -2319,7 +2375,7 @@ a { color: inherit; text-decoration: none; }
    ========================================================================== */
 
 .vi-fasta-terminal {
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   background: #0F3820;
   color: #E8F2E8;
   overflow: hidden;
@@ -2392,14 +2448,14 @@ a { color: inherit; text-decoration: none; }
   flex-direction: column;
   align-items: center;
   padding: 16px 12px;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   background: #FAFCFA;
 }
 .vi-base-bar-track {
   width: 44px;
   height: 120px;
   background: #E2E8F0;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   display: flex;
   align-items: flex-end;
 }
@@ -2432,7 +2488,7 @@ a { color: inherit; text-decoration: none; }
   width: 100%;
   aspect-ratio: 4 / 3;
   background: #111111;
-  border-bottom: 1px solid #111111;
+  border-bottom: 1px solid #D1D5DB;
   overflow: hidden;
   cursor: pointer;
 }
@@ -2628,7 +2684,7 @@ a { color: inherit; text-decoration: none; }
 /* Specimen Image Gallery */
 .vi-specimen-gallery {
   overflow: hidden;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   background: #FFFFFF;
 }
 .vi-specimen-gallery-empty {
@@ -2665,7 +2721,7 @@ a { color: inherit; text-decoration: none; }
 
 .gallery-source-tabs {
   display: flex;
-  border-bottom: 1px solid #111111;
+  border-bottom: 1px solid #D1D5DB;
   background: #F8FAF9;
 }
 .gallery-source-btn {
@@ -3056,13 +3112,13 @@ a.taxonomy-node-name:hover {
 
 /* Sidebar Map Card */
 .vi-specimen-map-card {
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   background: #FFFFFF;
   overflow: hidden;
 }
 .map-card-header {
   padding: 12px 14px;
-  border-bottom: 1px solid #111111;
+  border-bottom: 1px solid #D1D5DB;
   background: #F8FAF9;
   display: flex;
   align-items: center;
@@ -3086,7 +3142,7 @@ a.taxonomy-node-name:hover {
 .specimen-sidebar-map {
   width: 100%;
   height: 340px;
-  border-bottom: 1px solid #111111;
+  border-bottom: 1px solid #D1D5DB;
   z-index: 1;
 }
 .map-coordinates-box {
@@ -3668,7 +3724,7 @@ a.taxonomy-node-name:hover {
   max-width: 520px;
   width: 100%;
   background: #FFFFFF;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   padding: 20px;
 }
 .label-modal-header {
@@ -3694,7 +3750,7 @@ a.taxonomy-node-name:hover {
   width: 220px;
   padding: 10px 12px;
   background: #FFFFFF;
-  border: 2px solid #000000;
+  border: 2px solid #D1D5DB;
   box-shadow: 2px 2px 0px #000000;
   font-family: "Courier New", Courier, monospace;
   font-size: 11px;
@@ -3704,7 +3760,7 @@ a.taxonomy-node-name:hover {
 .label-institute {
   font-size: 9px;
   font-weight: 800;
-  border-bottom: 1px solid #000000;
+  border-bottom: 1px solid #D1D5DB;
   padding-bottom: 4px;
   margin-bottom: 6px;
   text-align: center;
@@ -3738,7 +3794,7 @@ a.taxonomy-node-name:hover {
   display: flex;
   justify-content: space-between;
   font-size: 9px;
-  border-top: 1px solid #000000;
+  border-top: 1px solid #D1D5DB;
   padding-top: 4px;
 }
 .label-modal-footer {
@@ -3836,7 +3892,7 @@ a.taxonomy-node-name:hover {
     left: 0;
     top: 0;
     width: 55mm;
-    border: 1px solid #000;
+    border: 1px solid #D1D5DB;
     box-shadow: none;
   }
 }
@@ -3848,7 +3904,7 @@ a.taxonomy-node-name:hover {
 .vi-role-context-bar {
   background: #0F3820;
   color: #FFFFFF;
-  border-bottom: 1px solid #111111;
+  border-bottom: 1px solid #D1D5DB;
   font-size: 12px;
   padding: 7px 0;
 }
@@ -3889,7 +3945,7 @@ a.taxonomy-node-name:hover {
 .vi-role-pill.is-admin {
   background: #103B25;
   color: #FFFFFF;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
 }
 .vi-role-desc {
   color: #DCE8D2;
@@ -3904,7 +3960,7 @@ a.taxonomy-node-name:hover {
   padding: 3px 10px;
   background: #FFFFFF;
   color: #111111;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px;
   font-size: 11.5px;
   font-weight: 800;
@@ -3933,7 +3989,7 @@ a.taxonomy-node-name:hover {
 .vi-role-switch-btn.is-to-admin {
   background: #F59E0B;
   color: #111111;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
 }
 .vi-role-switch-btn.is-to-admin:hover {
   background: #D97706;
@@ -3982,7 +4038,7 @@ a.taxonomy-node-name:hover {
   padding: 6px 14px;
   background: #FFFFFF;
   color: #111111;
-  border: 1px solid #111111;
+  border: 1px solid #D1D5DB;
   border-radius: 0px;
   font-size: 12.5px;
   font-weight: 800;
