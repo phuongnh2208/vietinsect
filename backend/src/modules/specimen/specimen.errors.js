@@ -29,6 +29,11 @@ const SpecimenError = {
     message: "Vĩ độ (latitude) và kinh độ (longitude) phải được cung cấp đồng thời",
     statusCode: 400,
   },
+  RESTORE_EXPIRED: {
+    code: "SPECIMEN.RESTORE_EXPIRED",
+    message: "Mẫu vật đã xóa quá thời hạn 30 ngày nên không thể khôi phục",
+    statusCode: 400,
+  },
 };
 
 module.exports = SpecimenError;

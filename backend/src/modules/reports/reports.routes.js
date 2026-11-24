@@ -5,7 +5,7 @@ const fs = require("fs");
 const express = require("express");
 const rateLimit = require("express-rate-limit");
 const router = express.Router();
-const { optionalAdmin } = require("../../middleware/auth.middleware");
+const { optionalAdmin, requireAdmin } = require("../../middleware/auth.middleware");
 const reportsService = require("./reports.service");
 const labelService = require("../specimen/label.service");
 const { createExportJob, getExportJob } = require("./pdfGenerator.service");
@@ -73,7 +73,7 @@ router.get("/summary", optionalAdmin, async (req, res, next) => {
 
     if (isAsync) {
       const job = createExportJob({
-        ownerKey: isAdmin ? `admin:${req.admin.adminId}` : "public",
+        ownerKey: resolveJobOwnerKey(req),
         filename: `vietinsect-summary-${stamp}.pdf`,
         contentType: "application/pdf",
         runFn: () => reportsService.generateSummaryPdf({ isAdmin }),
@@ -132,7 +132,7 @@ router.get("/checklist", optionalAdmin, async (req, res, next) => {
 
     if (isAsync) {
       const job = createExportJob({
-        ownerKey: isAdmin ? `admin:${req.admin.adminId}` : "public",
+        ownerKey: resolveJobOwnerKey(req),
         filename: `vietinsect-checklist-${stamp}.pdf`,
         contentType: "application/pdf",
         runFn: () => reportsService.generateChecklistPdf(filters, { isAdmin }),
@@ -175,7 +175,7 @@ router.post("/labels/pdf", optionalAdmin, async (req, res, next) => {
     const stamp = new Date().toISOString().slice(0, 10);
     if (forceAsync || specimenIds.length > LARGE_LABEL_THRESHOLD) {
       const job = createExportJob({
-        ownerKey: isAdmin ? `admin:${req.admin.adminId}` : "public",
+        ownerKey: resolveJobOwnerKey(req),
         filename: `vietinsect-labels-${stamp}.pdf`,
         contentType: "application/pdf",
         runFn: async () => {
@@ -189,6 +189,36 @@ router.post("/labels/pdf", optionalAdmin, async (req, res, next) => {
     const { buffer } = await labelService.generateLabelsPdf(specimenIds, options, { isAdmin });
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="vietinsect-labels-${stamp}.pdf"`);
+    return res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/reports/kpi?format=xlsx|json&dateFrom=&dateTo=
+ * F-RP-03 / SCR-27: Báo cáo KPI số hóa theo tháng & xuất Excel (.xlsx)
+ */
+router.get("/kpi", requireAdmin, async (req, res, next) => {
+  try {
+    const format = String(req.query.format || "xlsx").toLowerCase();
+    const dateFrom = req.query.dateFrom ? String(req.query.dateFrom).slice(0, 10) : undefined;
+    const dateTo = req.query.dateTo ? String(req.query.dateTo).slice(0, 10) : undefined;
+    const { buffer, monthlySeries, totals } = await reportsService.generateKpiExcel({
+      dateFrom,
+      dateTo,
+    });
+
+    if (format === "json") {
+      return res.json({ success: true, data: { monthlySeries, totals } });
+    }
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader("Content-Disposition", `attachment; filename="vietinsect-kpi-${stamp}.xlsx"`);
     return res.send(buffer);
   } catch (err) {
     next(err);

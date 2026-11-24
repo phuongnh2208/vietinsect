@@ -76,18 +76,48 @@ function previewImportRows(rows = []) {
   };
 }
 
+async function loadImportLookupMaps(db = knex) {
+  const [taxaRows, provRows] = await Promise.all([
+    db("taxa").select("taxon_id", "scientific_name", "taxon_rank"),
+    db("provinces").select("province_id", "province_name_vn", "province_name_en", "province_code"),
+  ]);
+
+  const taxonMap = new Map();
+  for (const t of taxaRows) {
+    taxonMap.set(String(t.scientific_name).trim().toLowerCase(), t.taxon_id);
+  }
+
+  const provMap = new Map();
+  for (const p of provRows) {
+    if (p.province_name_vn) provMap.set(String(p.province_name_vn).trim().toLowerCase(), p.province_id);
+    if (p.province_name_en) provMap.set(String(p.province_name_en).trim().toLowerCase(), p.province_id);
+    if (p.province_code) provMap.set(String(p.province_code).trim().toLowerCase(), p.province_id);
+  }
+
+  return { taxonMap, provMap };
+}
+
+function parseOptionalNumber(val) {
+  if (val === undefined || val === null || String(val).trim() === "") return null;
+  const n = Number(val);
+  return Number.isFinite(n) ? n : null;
+}
+
 /**
  * Xử lý 1 lô import trong transaction DB:
  * - Lỗi từng dòng không làm hỏng toàn bộ lô (dùng SAVEPOINT).
+ * - Ghi đầy đủ 22 trường chuẩn Darwin Core (gồm PostGIS collection_point, tỉnh/huyện/xã, độ cao, giới tính...).
  * - Ghi es_sync_outbox trong cùng transaction (không gọi ES từng dòng).
  */
-async function processBatchRows(batch, adminId) {
+async function processBatchRows(batch, adminId, lookupMaps = null) {
   let inserted = 0;
   let failed = 0;
   const insertedIds = [];
   const rowErrors = [];
 
   await knex.transaction(async (trx) => {
+    const maps = lookupMaps || (await loadImportLookupMaps(trx));
+
     for (const item of batch) {
       const { row, rowIndex } = item;
       const v = validateRow(row, rowIndex - 1);
@@ -101,16 +131,41 @@ async function processBatchRows(batch, adminId) {
       try {
         await trx.raw(`SAVEPOINT ${spName}`);
 
+        const sciName = String(row.scientificName || row.gbifScientificName || "").trim();
         let taxonId = row.taxonId ? Number(row.taxonId) : null;
-        if (!taxonId && row.scientificName) {
+        if (!taxonId && sciName) {
+          taxonId =
+            maps.taxonMap.get(sciName.toLowerCase()) ||
+            maps.taxonMap.get(sciName.split(/\s+/)[0].toLowerCase()) ||
+            (row.genusName && maps.taxonMap.get(String(row.genusName).trim().toLowerCase())) ||
+            (row.familyName && maps.taxonMap.get(String(row.familyName).trim().toLowerCase())) ||
+            (row.orderName && maps.taxonMap.get(String(row.orderName).trim().toLowerCase())) ||
+            null;
+        }
+        if (!taxonId && sciName) {
           const found = await trx("taxa")
-            .whereRaw("LOWER(scientific_name) = LOWER(?)", [String(row.scientificName).trim()])
+            .whereRaw("LOWER(scientific_name) = LOWER(?)", [sciName])
             .first();
           taxonId = found?.taxon_id || null;
         }
         if (!taxonId) {
-          throw new Error(`Không tìm thấy taxon '${row.scientificName}'`);
+          throw new Error(`Không tìm thấy taxon '${sciName || row.scientificName}'`);
         }
+
+        const provinceId =
+          (row.provinceId && Number(row.provinceId)) ||
+          (row.provinceName && maps.provMap.get(String(row.provinceName).trim().toLowerCase())) ||
+          null;
+
+        const lat = parseOptionalNumber(row.latitude);
+        const lon = parseOptionalNumber(row.longitude);
+        if ((lat != null && lon == null) || (lat == null && lon != null)) {
+          throw new Error("Vĩ độ (latitude) và kinh độ (longitude) phải được cung cấp đồng thời");
+        }
+        const pointExpr =
+          lat != null && lon != null
+            ? trx.raw("ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography", [lon, lat])
+            : null;
 
         const code =
           (row.specimenCode && String(row.specimenCode).trim()) ||
@@ -120,7 +175,11 @@ async function processBatchRows(batch, adminId) {
           .insert({
             specimen_code: code,
             basis_of_record: row.basisOfRecord || "PRESERVED_SPECIMEN",
-            recorded_by: row.recordedBy || "Bulk Import",
+            catalog_number: row.catalogNumber ? String(row.catalogNumber).trim() : null,
+            institution_code: row.institutionCode ? String(row.institutionCode).trim() : null,
+            recorded_by: row.recordedBy ? String(row.recordedBy).trim() : "Bulk Import",
+            identified_by: row.identifiedBy ? String(row.identifiedBy).trim() : null,
+            occurrence_remarks: row.occurrenceRemarks ? String(row.occurrenceRemarks).trim() : null,
           })
           .returning("specimen_id");
 
@@ -129,14 +188,27 @@ async function processBatchRows(batch, adminId) {
         await trx("specimens").insert({
           specimen_id: specimenId,
           taxon_id: taxonId,
-          gbif_scientific_name: row.scientificName || null,
-          common_name_vn: row.commonNameVn || null,
-          common_name_en: row.commonNameEn || null,
-          collection_date: row.collectionDate,
-          locality_detail: row.localityDetail || null,
-          notes: row.notes || null,
-          is_public: row.isPublic !== false && row.isPublic !== "false",
+          province_id: provinceId,
+          habitat_id: row.habitatId ? Number(row.habitatId) : null,
+          life_stage_id: row.lifeStageId ? Number(row.lifeStageId) : null,
+          status_id: row.statusId ? Number(row.statusId) : null,
+          gbif_scientific_name: sciName || null,
+          common_name_vn: row.commonNameVn ? String(row.commonNameVn).trim() : null,
+          common_name_en: row.commonNameEn ? String(row.commonNameEn).trim() : null,
+          district: row.district ? String(row.district).trim() : null,
+          commune: row.commune ? String(row.commune).trim() : null,
+          locality_detail: row.localityDetail ? String(row.localityDetail).trim() : null,
+          collection_point: pointExpr,
+          gps_accuracy_m: parseOptionalNumber(row.gpsAccuracyM),
+          elevation_m: parseOptionalNumber(row.elevationM),
+          collection_date: String(row.collectionDate).trim(),
+          sex: row.sex ? String(row.sex).trim().toLowerCase() : null,
+          individual_count: Math.max(1, parseInt(row.individualCount, 10) || 1),
+          storage_number: row.storageNumber ? String(row.storageNumber).trim() : null,
+          notes: row.notes ? String(row.notes).trim() : null,
+          is_public: row.isPublic !== false && String(row.isPublic).toLowerCase() !== "false",
           created_by: adminId || null,
+          updated_by: adminId || null,
         });
 
         await trx.raw(`RELEASE SAVEPOINT ${spName}`);
@@ -195,12 +267,13 @@ function startBulkImportJob({ rows, adminId, ipAddress }) {
     job.status = "processing";
     emitImportProgress(adminId, job);
     try {
+      const lookupMaps = await loadImportLookupMaps(knex).catch(() => null);
       for (let i = 0; i < rows.length; i += BATCH_SIZE) {
         const slice = rows.slice(i, i + BATCH_SIZE).map((row, idx) => ({
           row,
           rowIndex: i + idx + 1,
         }));
-        const res = await processBatchRows(slice, adminId);
+        const res = await processBatchRows(slice, adminId, lookupMaps);
         job.processed += slice.length;
         job.inserted += res.inserted;
         job.failed += res.failed;
@@ -281,12 +354,82 @@ async function generateImportTemplateExcel() {
   return Buffer.from(buf);
 }
 
+/**
+ * Đọc file Excel (.xlsx) thành danh sách headers + rows chuẩn hóa (bỏ qua dòng mô tả song ngữ & ghi chú nếu dùng template chuẩn).
+ */
+async function parseImportExcelBuffer(fileBuffer) {
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(fileBuffer);
+  const sheet = wb.worksheets[0];
+  if (!sheet || sheet.rowCount < 2) {
+    const err = new Error("Tệp Excel trống hoặc không có dòng dữ liệu");
+    err.statusCode = 400;
+    err.code = "IMPORT.EMPTY_FILE";
+    throw err;
+  }
+
+  const headerRow = sheet.getRow(1);
+  const headers = [];
+  headerRow.eachCell({ includeEmpty: false }, (cell, colNumber) => {
+    headers[colNumber - 1] = String(cell.text || cell.value || "").trim();
+  });
+  const cleanHeaders = headers.filter(Boolean);
+  if (cleanHeaders.length === 0) {
+    const err = new Error("Không đọc được dòng tiêu đề cột từ tệp Excel");
+    err.statusCode = 400;
+    err.code = "IMPORT.INVALID_HEADER";
+    throw err;
+  }
+
+  const rows = [];
+  sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+    if (rowNumber === 1) return;
+    const obj = {};
+    let hasValue = false;
+    headers.forEach((h, idx) => {
+      if (!h) return;
+      const cell = row.getCell(idx + 1);
+      let rawVal = cell.value;
+      if (rawVal instanceof Date && !Number.isNaN(rawVal.getTime())) {
+        rawVal = rawVal.toISOString().slice(0, 10);
+      } else if (rawVal && typeof rawVal === "object") {
+        rawVal = cell.text || "";
+      }
+      const strVal = rawVal == null ? "" : String(rawVal).trim();
+      if (strVal !== "") hasValue = true;
+      obj[h] = strVal;
+    });
+
+    if (!hasValue) return;
+    // Bỏ qua dòng 2–3 nếu là dòng nhãn song ngữ / hướng dẫn của chính template VietInsect
+    const firstVal = String(Object.values(obj)[0] || "");
+    if (
+      (rowNumber === 2 || rowNumber === 3) &&
+      (firstVal.includes("Mã mẫu vật / Specimen Code") || firstVal.startsWith("Chuỗi duy nhất (VD:"))
+    ) {
+      return;
+    }
+    rows.push(obj);
+  });
+
+  if (rows.length > MAX_IMPORT_ROWS) {
+    const err = new Error(`Vượt quá giới hạn tối đa ${MAX_IMPORT_ROWS} dòng/lần import`);
+    err.statusCode = 400;
+    err.code = "IMPORT.LIMIT_EXCEEDED";
+    throw err;
+  }
+
+  return { headers: cleanHeaders, rows };
+}
+
 module.exports = {
   MAX_IMPORT_ROWS,
   PREVIEW_LIMIT,
   TEMPLATE_22_COLUMNS,
   previewImportRows,
+  processBatchRows,
   startBulkImportJob,
   getImportJob,
   generateImportTemplateExcel,
+  parseImportExcelBuffer,
 };

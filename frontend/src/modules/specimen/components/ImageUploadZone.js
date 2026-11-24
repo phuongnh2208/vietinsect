@@ -45,10 +45,19 @@ export default function ImageUploadZone({ onFilesSelected, disabled = false }) {
       setError(rejected.join("; "));
     }
     if (accepted.length > 0) {
-      setItems((prev) => [...prev, ...accepted]);
+      const next = [...items, ...accepted];
+      setItems(next);
       if (onFilesSelected) {
-        onFilesSelected(accepted);
+        onFilesSelected(next);
       }
+    }
+  };
+
+  const handleRemoveItem = (removeIdx) => {
+    const next = items.filter((_, idx) => idx !== removeIdx);
+    setItems(next);
+    if (onFilesSelected) {
+      onFilesSelected(next);
     }
   };
 
@@ -115,8 +124,25 @@ export default function ImageUploadZone({ onFilesSelected, disabled = false }) {
       {items.length > 0 && (
         <ul data-testid="image-upload-list" style={{ marginTop: 10, paddingLeft: 18, fontSize: 12 }}>
           {items.map((it, idx) => (
-            <li key={`${it.name}-${idx}`}>
-              {it.name} — góc chụp: <strong>{it.shotType}</strong>
+            <li key={`${it.name}-${idx}`} style={{ marginBottom: 4 }}>
+              {it.name} — góc chụp: <strong>{it.shotType}</strong>{" "}
+              {!disabled && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveItem(idx)}
+                  style={{
+                    marginLeft: 8,
+                    border: "none",
+                    background: "transparent",
+                    color: "#b91c1c",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                  }}
+                  aria-label={`Xóa ảnh ${it.name}`}
+                >
+                  ×
+                </button>
+              )}
             </li>
           ))}
         </ul>

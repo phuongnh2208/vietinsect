@@ -1,11 +1,18 @@
-﻿import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { io } from "socket.io-client";
 import specimenService from "../specimen.service";
 import http from "../../../services/http";
+import useAuthStore from "../../../stores/auth.store";
 import LabelCanvas from "../components/LabelCanvas";
 import ColumnMapperModal from "../components/ColumnMapperModal";
 import ImportPreviewTable from "../components/ImportPreviewTable";
 import Icon from "../../../components/ui/Icon";
+
+const SOCKET_URL =
+  process.env.REACT_APP_SOCKET_URL ||
+  (process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace(/\/api\/?$/, "") : "http://localhost:4000");
 
 function fmtNum(n) {
   return Number(n || 0).toLocaleString("vi-VN");
@@ -138,6 +145,11 @@ function validateImportRow(row, index) {
 
 export function BulkImportWorkbenchPage() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith("en");
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const socketRef = useRef(null);
+  const activeJobIdRef = useRef(null);
   const [rawCsv, setRawCsv] = useState("");
   const [parsedRows, setParsedRows] = useState([]);
   const [sourceHeaders, setSourceHeaders] = useState(TEMPLATE_HEADERS);
@@ -146,6 +158,32 @@ export function BulkImportWorkbenchPage() {
   const [socketProgress, setSocketProgress] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
+
+  useEffect(() => {
+    if (!accessToken) return undefined;
+    const sock = io(SOCKET_URL, {
+      auth: { token: accessToken },
+      transports: ["websocket", "polling"],
+      autoConnect: true,
+    });
+    socketRef.current = sock;
+    sock.on("import:progress", (payload) => {
+      if (!payload) return;
+      if (activeJobIdRef.current && payload.jobId && payload.jobId !== activeJobIdRef.current) {
+        return;
+      }
+      setSocketProgress({
+        percent: Number(payload.percent || 0),
+        processed: Number(payload.processed || 0),
+        total: Number(payload.total || 0),
+        status: payload.status || "processing",
+      });
+    });
+    return () => {
+      sock.disconnect();
+      socketRef.current = null;
+    };
+  }, [accessToken]);
 
   const parseCsvContent = useCallback(
     (text, customMap = columnMapping) => {
@@ -182,7 +220,7 @@ export function BulkImportWorkbenchPage() {
   const previewTableRows = useMemo(
     () =>
       parsedRows.slice(0, 20).map((r) => ({
-        rowIndex: r._rowNumber,
+        rowIndex: r._rowNum,
         severity: r._errors.length > 0 ? "error" : r._warnings.length > 0 ? "warning" : "ok",
         errors: r._errors,
         warnings: r._warnings,
@@ -219,9 +257,42 @@ export function BulkImportWorkbenchPage() {
     downloadBlob(blob, "vietinsect-import-template-22cols-dwc.csv");
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setImportResult(null);
+
+    const lowerName = String(file.name || "").toLowerCase();
+    if (lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls")) {
+      try {
+        const parsed = await specimenService.parseImportFile(file);
+        const hdrs = parsed?.headers || TEMPLATE_HEADERS;
+        const excelRows = parsed?.rows || [];
+        setSourceHeaders(hdrs);
+        const validated = excelRows.map((rawObj, idx) => {
+          const obj = { ...rawObj };
+          Object.entries(columnMapping || {}).forEach(([targetKey, sourceCol]) => {
+            if (sourceCol && rawObj[sourceCol] !== undefined) {
+              obj[targetKey] = rawObj[sourceCol];
+            }
+          });
+          return validateImportRow(obj, idx);
+        });
+        setParsedRows(validated);
+        const csvLines = [
+          hdrs.join(","),
+          ...excelRows.map((r) => hdrs.map((h) => `"${String(r[h] ?? "").replace(/"/g, '""')}"`).join(",")),
+        ];
+        setRawCsv(csvLines.join("\n"));
+      } catch (err) {
+        setImportResult({
+          insertedCount: 0,
+          errors: [{ row: 0, message: err.response?.data?.message || "Không thể đọc tệp Excel (.xlsx)" }],
+        });
+      }
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (ev) => {
       const content = String(ev.target?.result || "");
@@ -253,22 +324,62 @@ export function BulkImportWorkbenchPage() {
     if (validRows.length === 0) return;
     setImporting(true);
     setImportResult(null);
-    setSocketProgress({ percent: 10, processed: 0, total: validRows.length, status: "processing" });
+    setSocketProgress({ percent: 5, processed: 0, total: validRows.length, status: "pending" });
     try {
-      const res = await specimenService.bulkImportSpecimens(validRows);
-      setSocketProgress({
-        percent: 100,
-        processed: validRows.length,
-        total: validRows.length,
-        status: "done",
-      });
-      setImportResult(res);
+      const started = await specimenService.startAsyncBulkImport(validRows);
+      activeJobIdRef.current = started.jobId;
+
+      let finalJob = null;
+      for (let attempt = 0; attempt < 120; attempt += 1) {
+        await new Promise((r) => setTimeout(r, 500));
+        const job = await specimenService.getBulkImportJob(started.jobId);
+        setSocketProgress({
+          percent: Number(job.percent || 0),
+          processed: Number(job.processed || 0),
+          total: Number(job.total || validRows.length),
+          status: job.status || "processing",
+        });
+        if (job.status === "done" || job.status === "failed") {
+          finalJob = job;
+          break;
+        }
+      }
+
+      if (finalJob) {
+        setImportResult({
+          insertedCount: Number(finalJob.inserted || 0),
+          errors: (finalJob.rowErrors || []).map((re) => ({
+            row: re.rowIndex,
+            message: Array.isArray(re.errors) ? re.errors.join("; ") : String(re.errors || ""),
+          })),
+        });
+      }
     } catch (err) {
-      setImportResult({
-        insertedCount: 0,
-        errors: [{ row: 0, message: err.response?.data?.error?.message || "Lỗi khi nhập dữ liệu hàng loạt" }],
-      });
+      try {
+        const res = await specimenService.bulkImportSpecimens(validRows);
+        setSocketProgress({
+          percent: 100,
+          processed: validRows.length,
+          total: validRows.length,
+          status: "done",
+        });
+        setImportResult(res);
+      } catch (fallbackErr) {
+        setImportResult({
+          insertedCount: 0,
+          errors: [
+            {
+              row: 0,
+              message:
+                fallbackErr.response?.data?.message ||
+                fallbackErr.response?.data?.error?.message ||
+                "Lỗi khi nhập dữ liệu hàng loạt",
+            },
+          ],
+        });
+      }
     } finally {
+      activeJobIdRef.current = null;
       setImporting(false);
     }
   };
@@ -277,20 +388,17 @@ export function BulkImportWorkbenchPage() {
     <section className="page-container">
       <div style={{ marginBottom: 12 }}>
         <button type="button" className="button button-ghost" onClick={() => navigate("/admin/specimens")}>
-          <Icon name="arrowLeft" size={14} /> Quay lại
+          <Icon name="arrowLeft" size={14} /> {t("batch.back", "Quay lại")}
         </button>
       </div>
 
       <div className="page-header">
         <div>
           <span className="eyebrow">
-            <Icon name="upload" size={14} /> NHẬP DỮ LIỆU MẪU VẬT HÀNG LOẠT (BULK IMPORT WORKBENCH)
+            <Icon name="upload" size={14} /> {t("batch.importEyebrow")}
           </span>
-          <h1>Bàn làm việc Nhập Mẫu vật Hàng loạt từ Excel / CSV</h1>
-          <p className="subtitle">
-            Tải biểu mẫu 22 cột chuẩn Darwin Core song ngữ, kiểm tra tự động tọa độ lãnh thổ Việt Nam và nhập trực tiếp
-            vào cơ sở dữ liệu PostgreSQL / PostGIS.
-          </p>
+          <h1>{t("batch.importTitle")}</h1>
+          <p className="subtitle">{t("batch.importSubtitle")}</p>
         </div>
         <div className="hero-actions" style={{ marginTop: 0 }}>
           <button
@@ -299,7 +407,7 @@ export function BulkImportWorkbenchPage() {
             data-testid="open-column-mapper-btn"
             onClick={() => setMapperOpen(true)}
           >
-            Ánh xạ cột (Drag & Drop)
+            {t("batch.mapColumnsBtn")}
           </button>
           <button
             type="button"
@@ -307,10 +415,10 @@ export function BulkImportWorkbenchPage() {
             data-testid="download-excel-template-btn"
             onClick={handleDownloadExcelTemplate}
           >
-            <Icon name="download" size={14} /> Tải Template Excel 22 cột (.XLSX)
+            <Icon name="download" size={14} /> {t("batch.downloadXlsxBtn")}
           </button>
           <button type="button" className="button button-secondary" onClick={handleDownloadTemplate}>
-            <Icon name="download" size={14} /> Tải Biểu mẫu 22 cột Chuẩn (.CSV)
+            <Icon name="download" size={14} /> {t("batch.downloadCsvBtn")}
           </button>
           <button
             type="button"
@@ -319,7 +427,9 @@ export function BulkImportWorkbenchPage() {
             onClick={handleConfirmImport}
           >
             <Icon name="check" size={14} />{" "}
-            {importing ? "Đang ghi vào CSDL..." : `Xác nhận Nhập ${validRows.length} bản ghi hợp lệ`}
+            {importing
+              ? t("batch.importingBtn")
+              : t("batch.confirmImportBtn", { count: validRows.length })}
           </button>
         </div>
       </div>
@@ -360,7 +470,9 @@ export function BulkImportWorkbenchPage() {
           style={{ padding: 14, marginBottom: 16, background: "#F8FAFC", border: "1px solid #0F3820" }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, marginBottom: 6 }}>
-            <span>Tiến độ xử lý nền (Socket.io Realtime): {socketProgress.status}</span>
+            <span>
+              {t("batch.socketProgressLabel")}: {socketProgress.status}
+            </span>
             <span>
               {socketProgress.processed}/{socketProgress.total} ({socketProgress.percent}%)
             </span>
@@ -405,15 +517,15 @@ export function BulkImportWorkbenchPage() {
           }}
         >
           <div>
-            <strong style={{ display: "block", marginBottom: 8 }}>1. TẢI LÊN TỆP CSV / EXCEL (.CSV UTF-8)</strong>
+            <strong style={{ display: "block", marginBottom: 8 }}>{t("batch.uploadTitle")}</strong>
             <p style={{ fontSize: 12, color: "#525252", marginBottom: 12 }}>
-              Hỗ trợ tối đa 5.000 dòng/lần. Hệ thống tự động kiểm tra bắt buộc đối với{" "}
-              <code>scientificName</code>, <code>collectionDate</code> và kiểm định tọa độ Việt Nam{" "}
-              <code>(8.18–23.39°N, 102.14–109.46°E)</code>.
+              {isEn
+                ? "Supports .xlsx and .csv up to 5,000 rows per batch with Darwin Core & Vietnam territory GPS validation."
+                : "Hỗ trợ tệp Excel (.xlsx) và CSV tối đa 5.000 dòng/lần. Tự động kiểm tra tên khoa học, ngày thu và tọa độ lãnh thổ Việt Nam."}
             </p>
             <input
               type="file"
-              accept=".csv,.txt"
+              accept=".xlsx,.xls,.csv,.txt"
               onChange={handleFileUpload}
               style={{
                 width: "100%",
@@ -425,7 +537,7 @@ export function BulkImportWorkbenchPage() {
           </div>
 
           <div className="form-field" style={{ margin: 0 }}>
-            <label>2. HOẶC DÁN / CHỈNH SỬA TRỰC TIẾP DỮ LIỆU CSV DƯỚI ĐÂY</label>
+            <label>{t("batch.pasteTitle")}</label>
             <textarea
               rows={6}
               className="mono"
@@ -544,6 +656,7 @@ export function BulkImportWorkbenchPage() {
 // ============================================================================
 export function BatchEditPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [lookups, setLookups] = useState({ orders: [], provinces: [], habitats: [], lifeStages: [], statuses: [] });
   const [searchFilters, setSearchFilters] = useState({ q: "", order: "", provinceId: "", limit: 25 });
   const [specimens, setSpecimens] = useState([]);
@@ -620,16 +733,16 @@ export function BatchEditPage() {
     <section className="page-container">
       <div style={{ marginBottom: 12 }}>
         <button type="button" className="button button-ghost" onClick={() => navigate("/admin/specimens")}>
-          <Icon name="arrowLeft" size={14} /> Quay lại
+          <Icon name="arrowLeft" size={14} /> {t("batch.back", "Quay lại")}
         </button>
       </div>
 
       <div className="page-header">
         <div>
           <span className="eyebrow">
-            <Icon name="edit" size={14} /> CHỈNH SỬA MẪU VẬT HÀNG LOẠT (BATCH EDIT)
+            <Icon name="edit" size={14} /> {t("batch.batchEditEyebrow")}
           </span>
-          <h1>Cập nhật Hàng loạt Trường Thông tin Mẫu vật</h1>
+          <h1>{t("batch.batchEditTitle")}</h1>
           <p className="subtitle">
             Tìm kiếm, đánh dấu tập mẫu vật và áp dụng thay đổi đồng loạt đối với Tỉnh/Thành, Sinh cảnh, Giai đoạn sống,
             Người thu mẫu hoặc Trạng thái Chia sẻ (kèm tự động ghi vết Audit Log).
@@ -861,6 +974,7 @@ export function BatchEditPage() {
 // ============================================================================
 export function BatchLabelPrintPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [specimens, setSpecimens] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [searchQ, setSearchQ] = useState("");
@@ -917,16 +1031,16 @@ export function BatchLabelPrintPage() {
     <section className="page-container">
       <div style={{ marginBottom: 12 }}>
         <button type="button" className="button button-ghost" onClick={() => navigate("/admin/specimens")}>
-          <Icon name="arrowLeft" size={14} /> Quay lại
+          <Icon name="arrowLeft" size={14} /> {t("batch.back", "Quay lại")}
         </button>
       </div>
 
       <div className="page-header">
         <div>
           <span className="eyebrow">
-            <Icon name="printer" size={14} /> ĐỊNH DẠNG & IN NHÃN MẪU VẬT BẢO TÀNG HÀNG LOẠT
+            <Icon name="printer" size={14} /> {t("batch.labelsEyebrow")}
           </span>
-          <h1>Trình tạo Nhãn ghim Mẫu vật Côn trùng Chuẩn Specify 7</h1>
+          <h1>{t("batch.labelsTitle")}</h1>
           <p className="subtitle">
             Thiết lập bố cục khay giấy A4/A5, mật độ nhãn (35×55mm), tích hợp mã định danh QR / Barcode và in hàng loạt
             phục vụ lưu trữ tủ mẫu vật bảo tàng.
@@ -940,7 +1054,7 @@ export function BatchLabelPrintPage() {
             onClick={handleExportPdf}
           >
             <Icon name="printer" size={14} />{" "}
-            {exportingPdf ? "Đang tạo PDF..." : `Xuất PDF Nhãn QR (${selectedSpecimens.length} nhãn)`}
+            {exportingPdf ? "..." : t("batch.exportLabelsBtn", { count: selectedSpecimens.length })}
           </button>
         </div>
       </div>

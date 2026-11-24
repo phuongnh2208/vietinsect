@@ -189,6 +189,7 @@ async function createTaxon(payload, adminId) {
     taxon.is_verified = true;
   }
 
+  scheduleRefreshTaxonView();
   logger.info(`Admin ${adminId} tạo taxon mới: ${payload.scientificName} (#${taxon.taxon_id})`);
 
   return { taxon: toTaxonDto(taxon, 0), colSuggestions: colResult.candidates };
@@ -432,6 +433,10 @@ async function importChecklist(fileBuffer, adminId) {
   pendingRows.forEach((row) => {
     result.conflicts.push({ row: row.rowNumber, reason: `Không tìm thấy taxon cha "${row.parentName}"` });
   });
+
+  if (result.inserted > 0) {
+    scheduleRefreshTaxonView();
+  }
 
   logger.info(`Admin ${adminId} import danh lục: +${result.inserted} taxon, ${result.skipped} trùng, ${result.conflicts.length} lỗi`);
 

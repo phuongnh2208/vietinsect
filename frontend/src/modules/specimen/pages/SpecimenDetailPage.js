@@ -84,7 +84,7 @@ export default function SpecimenDetailPage() {
     try {
       await specimenService.deleteSpecimen(specimen.id);
       toast("Đã xóa mẫu vật thành công", "success");
-      navigate(isAdmin ? "/admin/specimens" : "/specimens/search");
+      navigate(isAdmin ? "/admin/specimens" : "/search");
     } catch (err) {
       toast(err.response?.data?.message || "Không thể xóa mẫu vật", "error");
     }
@@ -111,7 +111,7 @@ export default function SpecimenDetailPage() {
             action={
               <button
                 className="button button-primary"
-                onClick={() => navigate(isAdmin ? "/admin/specimens" : "/specimens/search")}
+                onClick={() => navigate(isAdmin ? "/admin/specimens" : "/search")}
               >
                 {t("specimenDetail.backToList")}
               </button>
@@ -176,7 +176,12 @@ export default function SpecimenDetailPage() {
           <SpecimenAiSection aiResults={specimen.aiResults || null} />
 
           {/* F. Lịch sử kiểm toán thay đổi dữ liệu (Admin Only) */}
-          {isAdmin && <SpecimenAuditTimeline history={specimen.changeHistory || []} />}
+          {isAdmin && (
+            <SpecimenAuditTimeline
+              specimenId={specimen.id}
+              history={specimen.changeHistory || []}
+            />
+          )}
         </main>
 
         {/* CỘT PHẢI: Thông tin không gian PostGIS & Bản quyền */}

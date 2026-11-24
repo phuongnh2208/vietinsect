@@ -27,6 +27,7 @@ const listSpecimensQuerySchema = Joi.object({
   basisOfRecord: Joi.string().trim().max(50).allow(""),
   sex: Joi.string().valid(...SEX_VALUES).allow(""),
   isPublic: Joi.boolean(),
+  deletedOnly: Joi.boolean(),
   hasCoordinates: Joi.boolean(),
   dateFrom: Joi.string().pattern(dateIsoPattern).allow(""),
   dateTo: Joi.string().pattern(dateIsoPattern).allow(""),
@@ -109,6 +110,8 @@ const createSpecimenSchema = Joi.object({
   catalogNumber: Joi.string().trim().max(100).allow(null, ""),
   institutionCode: Joi.string().trim().max(50).allow(null, ""),
   recordedBy: Joi.string().trim().max(500).allow(null, ""),
+  identifiedBy: Joi.string().trim().max(255).allow(null, ""),
+  dateIdentified: Joi.string().pattern(dateIsoPattern).allow(null, ""),
   occurrenceRemarks: Joi.string().trim().max(1000).allow(null, ""),
 });
 
@@ -165,6 +168,11 @@ const bulkImportRowSchema = Joi.object({
   catalogNumber: Joi.string().trim().max(100).allow(null, ""),
   institutionCode: Joi.string().trim().max(50).allow(null, ""),
   recordedBy: Joi.string().trim().max(500).allow(null, ""),
+  identifiedBy: Joi.string().trim().max(255).allow(null, ""),
+  gpsAccuracyM: Joi.alternatives().try(Joi.number().min(0).max(9999.99), Joi.string().allow("")).allow(null),
+  elevationM: Joi.alternatives().try(Joi.number().min(-500).max(9000), Joi.string().allow("")).allow(null),
+  commonNameEn: Joi.string().trim().max(255).allow(null, ""),
+  storageNumber: Joi.string().trim().max(100).allow(null, ""),
   occurrenceRemarks: Joi.string().trim().max(1000).allow(null, ""),
   notes: Joi.string().trim().max(5000).allow(null, ""),
   isPublic: Joi.boolean(),

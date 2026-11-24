@@ -22,17 +22,20 @@ const INITIAL_FORM = {
   latitude: "",
   longitude: "",
   gpsAccuracyM: "",
+  elevationM: "",
   collectionDate: new Date().toISOString().slice(0, 10),
   sex: "",
   individualCount: 1,
   basisOfRecord: "PRESERVED_SPECIMEN",
   recordedBy: "",
+  identifiedBy: "",
   institutionCode: "",
   catalogNumber: "",
   storageNumber: "",
   occurrenceRemarks: "",
   notes: "",
   isPublic: true,
+  pendingImages: [],
 };
 
 export default function SpecimenForm({ initialData = null, onSubmit, onCancel, submitting = false }) {
@@ -73,17 +76,20 @@ export default function SpecimenForm({ initialData = null, onSubmit, onCancel, s
         latitude: initialData.latitude ?? "",
         longitude: initialData.longitude ?? "",
         gpsAccuracyM: initialData.gpsAccuracyM ?? "",
+        elevationM: initialData.elevationM ?? "",
         collectionDate: initialData.collectionDate || new Date().toISOString().slice(0, 10),
         sex: initialData.sex || "",
         individualCount: initialData.individualCount || 1,
         basisOfRecord: initialData.basisOfRecord || "PRESERVED_SPECIMEN",
         recordedBy: initialData.recordedBy || "",
+        identifiedBy: initialData.identifiedBy || "",
         institutionCode: initialData.institutionCode || "",
         catalogNumber: initialData.catalogNumber || "",
         storageNumber: initialData.storageNumber || "",
         occurrenceRemarks: initialData.occurrenceRemarks || "",
         notes: initialData.notes || "",
         isPublic: initialData.isPublic ?? true,
+        pendingImages: [],
       });
     } else {
       setForm(INITIAL_FORM);
@@ -129,11 +135,13 @@ export default function SpecimenForm({ initialData = null, onSubmit, onCancel, s
       latitude: form.latitude !== "" ? Number(form.latitude) : null,
       longitude: form.longitude !== "" ? Number(form.longitude) : null,
       gpsAccuracyM: form.gpsAccuracyM !== "" ? Number(form.gpsAccuracyM) : null,
+      elevationM: form.elevationM !== "" ? Number(form.elevationM) : null,
       collectionDate: form.collectionDate,
       sex: form.sex || null,
       individualCount: Number(form.individualCount) || 1,
       basisOfRecord: form.basisOfRecord || "PRESERVED_SPECIMEN",
       recordedBy: form.recordedBy.trim() || null,
+      identifiedBy: form.identifiedBy.trim() || null,
       institutionCode: form.institutionCode.trim() || null,
       catalogNumber: form.catalogNumber.trim() || null,
       storageNumber: form.storageNumber.trim() || null,
@@ -141,7 +149,7 @@ export default function SpecimenForm({ initialData = null, onSubmit, onCancel, s
       notes: form.notes.trim() || null,
       isPublic: Boolean(form.isPublic),
     };
-    onSubmit(payload);
+    onSubmit(payload, form.pendingImages || []);
   };
 
   return (
@@ -359,7 +367,7 @@ export default function SpecimenForm({ initialData = null, onSubmit, onCancel, s
         </div>
       </div>
 
-      <div className="vi-form-grid-3">
+      <div className="vi-form-grid-4">
         <div className="form-field">
           <label htmlFor="sp-locality">Địa điểm thu mẫu chi tiết</label>
           <input
@@ -367,6 +375,19 @@ export default function SpecimenForm({ initialData = null, onSubmit, onCancel, s
             value={form.localityDetail}
             onChange={(e) => updateField("localityDetail", e.target.value)}
             placeholder="VD: Vườn quốc gia Cúc Phương, độ cao 450m"
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="sp-elev">Độ cao thu mẫu (m)</label>
+          <input
+            id="sp-elev"
+            type="number"
+            step="any"
+            min="-500"
+            max="9000"
+            value={form.elevationM}
+            onChange={(e) => updateField("elevationM", e.target.value)}
+            placeholder="VD: 450"
           />
         </div>
         <div className="form-field">
@@ -379,12 +400,45 @@ export default function SpecimenForm({ initialData = null, onSubmit, onCancel, s
           />
         </div>
         <div className="form-field">
+          <label htmlFor="sp-identified-by">Người định loại (identifiedBy)</label>
+          <input
+            id="sp-identified-by"
+            value={form.identifiedBy}
+            onChange={(e) => updateField("identifiedBy", e.target.value)}
+            placeholder="VD: TS. Trần Văn B"
+          />
+        </div>
+      </div>
+
+      <div className="vi-form-grid-3">
+        <div className="form-field">
           <label htmlFor="sp-inst">Đơn vị lưu trữ / Mã bảo tàng</label>
           <input
             id="sp-inst"
             value={form.institutionCode}
             onChange={(e) => updateField("institutionCode", e.target.value)}
             placeholder="VD: IEBR / VNMN"
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="sp-catnum">Số hiệu lưu trữ (catalogNumber)</label>
+          <input
+            id="sp-catnum"
+            value={form.catalogNumber}
+            onChange={(e) => updateField("catalogNumber", e.target.value)}
+            placeholder="VD: VNMN-ENT-001024"
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="sp-gpsacc">Sai số tọa độ GPS (m)</label>
+          <input
+            id="sp-gpsacc"
+            type="number"
+            min="0"
+            step="any"
+            value={form.gpsAccuracyM}
+            onChange={(e) => updateField("gpsAccuracyM", e.target.value)}
+            placeholder="VD: 10"
           />
         </div>
       </div>

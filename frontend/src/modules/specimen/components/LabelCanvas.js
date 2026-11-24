@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 
 /**
  * LabelCanvas — Preview lưới nhãn mẫu vật chuẩn Specify 7 (SCR-11, F-SP-09).

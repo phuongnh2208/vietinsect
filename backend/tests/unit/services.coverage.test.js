@@ -681,4 +681,94 @@ describe("DEF-105: Business Logic Service Unit Tests (Coverage >= 70%)", () => {
       expect(res.sequenceLengthBp).toBe(16);
     });
   });
+
+  // ── 8. Sprint 1 Audit Fixes Verification ──────────────────────────────
+  describe("Sprint 1 Fixes (NEW-001, NEW-006, F-SP-05, F-SP-12)", () => {
+    test("restoreSpecimen rejects specimens deleted > 30 days ago (F-SP-05)", async () => {
+      specRepo.restore.mockResolvedValueOnce({
+        restoredCount: 0,
+        expired: true,
+        unorphanedDnaCount: 0,
+      });
+      await expect(specService.restoreSpecimen(999, 1)).rejects.toMatchObject({
+        code: "SPECIMEN.RESTORE_EXPIRED",
+        statusCode: 400,
+      });
+    });
+
+    test("getSpecimenHistory maps change history records with date filters (F-SP-12)", async () => {
+      specRepo.findChangeHistory = jest.fn().mockResolvedValueOnce([
+        {
+          change_id: 7,
+          field_name: "identified_by",
+          old_value: null,
+          new_value: "TS. Nguyen Van A",
+          changed_at: "2026-11-24T03:00:00Z",
+          changed_by_username: "admin",
+        },
+      ]);
+      const items = await specService.getSpecimenHistory(100, {
+        dateFrom: "2026-11-01",
+        dateTo: "2026-11-30",
+      });
+      expect(items).toHaveLength(1);
+      expect(items[0].fieldName).toBe("identified_by");
+      expect(items[0].newValue).toBe("TS. Nguyen Van A");
+    });
+
+    test("generateImportTemplateExcel & parseImportExcelBuffer round-trip 22 columns (NEW-001 / F-SP-06)", async () => {
+      const bulkJob = require("../../src/modules/specimen/bulkImportJob.service");
+      const ExcelJS = require("exceljs");
+      const templateBuf = await bulkJob.generateImportTemplateExcel();
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(templateBuf);
+      const sheet = wb.worksheets[0];
+      sheet.addRow([
+        "VAST-2026-8888",
+        "Papilio demoleus",
+        "Bướm phượng chanh",
+        "Lime Butterfly",
+        "Lepidoptera",
+        "Papilionidae",
+        "Papilio",
+        "Ninh Bình",
+        "Nho Quan",
+        "Cúc Phương",
+        "VQG Cúc Phương",
+        "20.3168",
+        "105.6085",
+        "10",
+        "420",
+        "2026-05-01",
+        "VAST Team",
+        "VAST",
+        "PRESERVED_SPECIMEN",
+        "male",
+        "2",
+        "true",
+      ]);
+      const filledBuf = Buffer.from(await wb.xlsx.writeBuffer());
+      const parsed = await bulkJob.parseImportExcelBuffer(filledBuf);
+      expect(parsed.headers).toHaveLength(22);
+      expect(parsed.rows).toHaveLength(1);
+      expect(parsed.rows[0].scientificName).toBe("Papilio demoleus");
+      expect(parsed.rows[0].latitude).toBe("20.3168");
+      expect(parsed.rows[0].elevationM).toBe("420");
+    });
+
+    test("isUserTokenRevoked fails closed with 503 when REDIS_FAIL_CLOSED=true (NEW-006)", async () => {
+      const prev = process.env.REDIS_FAIL_CLOSED;
+      process.env.REDIS_FAIL_CLOSED = "true";
+      try {
+        const tokenBlacklist = require("../../src/modules/auth/tokenBlacklist");
+        await expect(tokenBlacklist.isUserTokenRevoked(1, Date.now())).rejects.toMatchObject({
+          code: "AUTH.REDIS_UNAVAILABLE",
+          statusCode: 503,
+        });
+      } finally {
+        if (prev === undefined) delete process.env.REDIS_FAIL_CLOSED;
+        else process.env.REDIS_FAIL_CLOSED = prev;
+      }
+    });
+  });
 });

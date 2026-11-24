@@ -383,6 +383,10 @@ function buildFacetFilterMap(filters = {}) {
     map.hasGps = [{ term: { has_gps: filters.hasGps } }];
   }
 
+  if (typeof filters.hasDna === "boolean") {
+    map.hasDna = [{ term: { has_dna: filters.hasDna } }];
+  }
+
   return map;
 }
 
@@ -428,7 +432,7 @@ function buildDisjunctiveAggs(facetMap, filters = {}) {
       [...orderClause, ...familyClause, ...genusClause],
     ),
     facet_province: wrap("province", {
-      buckets: { terms: { field: "province.keyword", size: 65 } },
+      buckets: { terms: { field: "province.keyword", size: 34 } },
     }),
     facet_year: wrap("year", {
       histogram: { histogram: { field: "year_collected", interval: 1, min_doc_count: 1 } },

@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Icon from "../../../components/ui/Icon";
@@ -8,7 +8,6 @@ import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { useToast } from "../../../components/ui/ToastProvider";
 import useIsAdminContext from "../../../hooks/useIsAdminContext";
 import { formatNumber } from "../../../utils/formatters";
-import getApiErrorMessage from "../../../utils/apiError";
 import dnaService, { GENE_MARKERS } from "../dna.service";
 import specimenService from "../../specimen/specimen.service";
 import { getOrderColor } from "../../specimen/specimen.constants";

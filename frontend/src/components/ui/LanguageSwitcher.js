@@ -11,6 +11,7 @@ function VietnamFlag({ size = 30 }) {
       viewBox="0 0 30 20"
       aria-hidden="true"
       focusable="false"
+      data-testid="flag-svg-vi"
       style={{ display: "block", borderRadius: 0, flexShrink: 0 }}
     >
       <rect width="30" height="20" fill="#DA251D" />
@@ -31,6 +32,7 @@ function UkFlag({ size = 30 }) {
       viewBox="0 0 30 20"
       aria-hidden="true"
       focusable="false"
+      data-testid="flag-svg-en"
       style={{ display: "block", borderRadius: 0, flexShrink: 0 }}
     >
       <rect width="30" height="20" fill="#012169" />

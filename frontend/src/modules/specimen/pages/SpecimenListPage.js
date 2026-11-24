@@ -10,6 +10,7 @@ import useIsAdminContext from "../../../hooks/useIsAdminContext";
 import { formatNumber } from "../../../utils/formatters";
 import getApiErrorMessage from "../../../utils/apiError";
 import specimenService from "../specimen.service";
+import mediaService from "../../media/media.service";
 import SpecimenForm from "../components/SpecimenForm";
 import {
   BASIS_OF_RECORD_LABELS,
@@ -37,6 +38,7 @@ export default function SpecimenListPage() {
     provinceId: searchParams.get("provinceId") || "",
     basisOfRecord: searchParams.get("basisOfRecord") || "",
     isPublic: "",
+    deletedOnly: false,
     dateFrom: "",
     dateTo: "",
     lat: "",
@@ -120,6 +122,7 @@ export default function SpecimenListPage() {
         taxonId: filters.taxonId ? Number(filters.taxonId) : undefined,
         isPublic:
           isAdmin && filters.isPublic !== "" ? filters.isPublic === "true" : undefined,
+        deletedOnly: isAdmin && filters.deletedOnly ? true : undefined,
         lat: showSpatialFilter && filters.lat !== "" ? Number(filters.lat) : undefined,
         lon: showSpatialFilter && filters.lon !== "" ? Number(filters.lon) : undefined,
         radiusKm:
@@ -178,6 +181,7 @@ export default function SpecimenListPage() {
       provinceId: "",
       basisOfRecord: "",
       isPublic: "",
+      deletedOnly: false,
       dateFrom: "",
       dateTo: "",
       lat: "",
@@ -235,16 +239,35 @@ export default function SpecimenListPage() {
     }
   };
 
-  const handleFormSubmit = async (payload) => {
+  const handleFormSubmit = async (payload, pendingImages = []) => {
     setSubmittingForm(true);
     try {
-      if (editingItem) {
-        await specimenService.updateSpecimen(editingItem.id, payload);
-        toast(`Đã cập nhật ${editingItem.specimenCode}`, "success");
-      } else {
-        const created = await specimenService.createSpecimen(payload);
-        toast(`Đã thêm mẫu vật mới ${created.specimenCode}`, "success");
+      const saved = editingItem
+        ? await specimenService.updateSpecimen(editingItem.id, payload)
+        : await specimenService.createSpecimen(payload);
+
+      if (Array.isArray(pendingImages) && pendingImages.length > 0) {
+        for (const img of pendingImages) {
+          const fileObj = img?.file || img;
+          if (!fileObj) continue;
+          await mediaService
+            .uploadMedia({
+              file: fileObj,
+              specimenId: saved.id,
+              licenseCode: "cc-by",
+              shotType: img?.shotType || "dorsal",
+              isPublic: Boolean(payload.isPublic),
+            })
+            .catch(() => {});
+        }
       }
+
+      toast(
+        editingItem
+          ? `Đã cập nhật ${editingItem.specimenCode}`
+          : `Đã thêm mẫu vật mới ${saved.specimenCode}`,
+        "success",
+      );
       setModalOpen(false);
       setEditingItem(null);
       fetchList();
@@ -253,6 +276,22 @@ export default function SpecimenListPage() {
       toast(err.response?.data?.message || "Không thể lưu mẫu vật", "error");
     } finally {
       setSubmittingForm(false);
+    }
+  };
+
+  const handleRestoreSpecimen = async (item) => {
+    try {
+      await specimenService.restoreSpecimen(item.id);
+      toast(
+        isEn
+          ? `Restored specimen ${item.specimenCode}`
+          : `Đã khôi phục mẫu vật ${item.specimenCode}`,
+        "success",
+      );
+      fetchList();
+      refreshStats();
+    } catch (err) {
+      toast(err.response?.data?.message || "Không thể khôi phục mẫu vật", "error");
     }
   };
 
@@ -520,6 +559,14 @@ export default function SpecimenListPage() {
                 <Icon name="printer" size={15} />
                 {t("specimen.printLabels")}
               </Link>
+              <button
+                type="button"
+                className={`vp-btn ${filters.deletedOnly ? "vp-btn-primary" : ""}`}
+                onClick={() => updateFilter("deletedOnly", !filters.deletedOnly)}
+              >
+                <Icon name="archive" size={15} />
+                {isEn ? "Trash (30d)" : "Thùng rác (30 ngày)"}
+              </button>
               <button
                 type="button"
                 className="vp-btn vp-btn-primary"
@@ -1169,34 +1216,44 @@ export default function SpecimenListPage() {
                             {t("common.details")}
                           </Link>
                           {isAdmin ? (
-                            <>
+                            filters.deletedOnly ? (
                               <button
                                 type="button"
-                                className="icon-button"
-                                title="Chỉnh sửa nhanh"
-                                onClick={async () => {
-                                  try {
-                                    const full = await specimenService.getSpecimenById(item.id);
-                                    setEditingItem(full);
-                                    setModalOpen(true);
-                                  } catch {
-                                    setEditingItem(item);
-                                    setModalOpen(true);
-                                  }
-                                }}
+                                className="vp-btn vp-btn-sm vp-btn-primary"
+                                onClick={() => handleRestoreSpecimen(item)}
                               >
-                                <Icon name="edit" size={15} />
+                                {isEn ? "Restore" : "Khôi phục"}
                               </button>
-                              <button
-                                type="button"
-                                className="icon-button"
-                                style={{ color: "#B0241A" }}
-                                title="Xóa bản ghi"
-                                onClick={() => setPendingDelete(item)}
-                              >
-                                <Icon name="close" size={15} />
-                              </button>
-                            </>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  className="icon-button"
+                                  title="Chỉnh sửa nhanh"
+                                  onClick={async () => {
+                                    try {
+                                      const full = await specimenService.getSpecimenById(item.id);
+                                      setEditingItem(full);
+                                      setModalOpen(true);
+                                    } catch {
+                                      setEditingItem(item);
+                                      setModalOpen(true);
+                                    }
+                                  }}
+                                >
+                                  <Icon name="edit" size={15} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="icon-button"
+                                  style={{ color: "#B0241A" }}
+                                  title="Xóa bản ghi"
+                                  onClick={() => setPendingDelete(item)}
+                                >
+                                  <Icon name="close" size={15} />
+                                </button>
+                              </>
+                            )
                           ) : null}
                         </td>
                       </tr>

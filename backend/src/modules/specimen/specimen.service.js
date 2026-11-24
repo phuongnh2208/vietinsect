@@ -53,7 +53,9 @@ function toSpecimenSummaryDto(row) {
     habitatLabelVn: row.habitat_label_vn || null,
     lifeStageLabelVn: row.life_stage_label_vn || null,
     statusLabelVn: row.status_label_vn || null,
+    elevationM: row.elevation_m != null ? Number(row.elevation_m) : null,
     isPublic: Boolean(row.is_public),
+    deletedAt: row.deleted_at || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -394,10 +396,11 @@ async function deleteSpecimen(specimenId, adminId) {
 }
 
 async function restoreSpecimen(specimenId, adminId) {
-  const { restoredCount, unorphanedDnaCount } = await specimenRepository.restore(
+  const { restoredCount, expired, unorphanedDnaCount } = await specimenRepository.restore(
     specimenId,
     adminId,
   );
+  if (expired) throw new AppError(SpecimenError.RESTORE_EXPIRED);
   if (!restoredCount) throw new AppError(SpecimenError.SPECIMEN_NOT_FOUND);
 
   logger.info(
@@ -409,6 +412,18 @@ async function restoreSpecimen(specimenId, adminId) {
     restored: true,
     unorphanedDnaCount,
   };
+}
+
+async function getSpecimenHistory(specimenId, filters = {}) {
+  const rows = await specimenRepository.findChangeHistory(specimenId, filters);
+  return (rows || []).map((ch) => ({
+    id: Number(ch.change_id),
+    fieldName: ch.field_name,
+    oldValue: ch.old_value,
+    newValue: ch.new_value,
+    changedAt: ch.changed_at,
+    changedByUsername: ch.changed_by_username || "admin",
+  }));
 }
 
 async function getLookups() {
@@ -461,6 +476,7 @@ module.exports = {
   bulkImportSpecimens,
   deleteSpecimen,
   restoreSpecimen,
+  getSpecimenHistory,
   getLookups,
   getStats,
   getAnalytics,

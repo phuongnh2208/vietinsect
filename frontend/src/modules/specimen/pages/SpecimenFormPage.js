@@ -4,6 +4,7 @@ import Icon from "../../../components/ui/Icon";
 import LoadingState from "../../../components/ui/LoadingState";
 import { useToast } from "../../../components/ui/ToastProvider";
 import specimenService from "../specimen.service";
+import mediaService from "../../media/media.service";
 import SpecimenForm from "../components/SpecimenForm";
 
 export default function SpecimenFormPage({ mode = "create" }) {
@@ -33,18 +34,54 @@ export default function SpecimenFormPage({ mode = "create" }) {
       .finally(() => setLoading(false));
   }, [specimenId, navigate, toast]);
 
-  const handleSubmit = async (payload) => {
+  const handleSubmit = async (payload, pendingImages = []) => {
     setSubmitting(true);
     try {
-      if (isEdit && initialData?.id) {
-        const updated = await specimenService.updateSpecimen(initialData.id, payload);
-        toast(`Đã cập nhật mẫu vật ${updated.specimenCode}`, "success");
-        navigate(`/admin/specimens/${updated.id}`);
+      const saved =
+        isEdit && initialData?.id
+          ? await specimenService.updateSpecimen(initialData.id, payload)
+          : await specimenService.createSpecimen(payload);
+
+      if (Array.isArray(pendingImages) && pendingImages.length > 0) {
+        let uploadedCount = 0;
+        let failedCount = 0;
+        for (const item of pendingImages) {
+          const fileObj = item?.file || item;
+          if (!fileObj) continue;
+          try {
+            await mediaService.uploadMedia({
+              file: fileObj,
+              specimenId: saved.id,
+              licenseCode: "cc-by",
+              shotType: item?.shotType || "dorsal",
+              isPublic: Boolean(payload.isPublic),
+            });
+            uploadedCount += 1;
+          } catch (_) {
+            failedCount += 1;
+          }
+        }
+        if (failedCount > 0) {
+          toast(
+            `Đã lưu mẫu ${saved.specimenCode} (${uploadedCount} ảnh thành công, ${failedCount} ảnh lỗi tải lên)`,
+            "warning",
+          );
+        } else if (uploadedCount > 0) {
+          toast(
+            `Đã lưu mẫu ${saved.specimenCode} kèm ${uploadedCount} hình ảnh đính kèm`,
+            "success",
+          );
+        }
       } else {
-        const created = await specimenService.createSpecimen(payload);
-        toast(`Đã thêm mẫu vật ${created.specimenCode}`, "success");
-        navigate(`/admin/specimens/${created.id}`);
+        toast(
+          isEdit
+            ? `Đã cập nhật mẫu vật ${saved.specimenCode}`
+            : `Đã thêm mẫu vật ${saved.specimenCode}`,
+          "success",
+        );
       }
+
+      navigate(`/admin/specimens/${saved.id}`);
     } catch (err) {
       toast(err.response?.data?.message || "Không thể lưu mẫu vật", "error");
     } finally {

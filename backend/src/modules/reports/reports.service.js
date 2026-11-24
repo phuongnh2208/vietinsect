@@ -413,6 +413,120 @@ async function generateChecklistDocx(filters = {}, { isAdmin = false } = {}) {
   return Packer.toBuffer(doc);
 }
 
+async function generateKpiExcel({ dateFrom, dateTo } = {}) {
+  const monthWhere = (qb, col) => {
+    if (dateFrom) qb.where(col, ">=", dateFrom);
+    if (dateTo) qb.where(col, "<=", `${dateTo}T23:59:59.999Z`);
+  };
+
+  const [specRows, editRows, imgRows, dnaRows, totalsRes] = await Promise.all([
+    knex("specimens")
+      .whereNull("deleted_at")
+      .modify((q) => {
+        if (dateFrom) q.where("created_at", ">=", dateFrom);
+        if (dateTo) q.where("created_at", "<=", `${dateTo}T23:59:59.999Z`);
+      })
+      .select(
+        knex.raw("TO_CHAR(created_at, 'YYYY-MM') AS month"),
+        knex.raw("COUNT(*)::int AS cnt"),
+      )
+      .groupByRaw("1")
+      .orderByRaw("1 ASC"),
+    knex("specimen_change_history")
+      .modify((q) => monthWhere(q, "changed_at"))
+      .select(
+        knex.raw("TO_CHAR(changed_at, 'YYYY-MM') AS month"),
+        knex.raw("COUNT(DISTINCT (specimen_id, DATE_TRUNC('minute', changed_at)))::int AS cnt"),
+      )
+      .groupByRaw("1")
+      .orderByRaw("1 ASC"),
+    knex("specimen_images")
+      .modify((q) => monthWhere(q, "uploaded_at"))
+      .select(
+        knex.raw("TO_CHAR(uploaded_at, 'YYYY-MM') AS month"),
+        knex.raw("COUNT(*)::int AS cnt"),
+      )
+      .groupByRaw("1")
+      .orderByRaw("1 ASC"),
+    knex("dna_sequences")
+      .modify((q) => monthWhere(q, "created_at"))
+      .select(
+        knex.raw("TO_CHAR(created_at, 'YYYY-MM') AS month"),
+        knex.raw("COUNT(*)::int AS cnt"),
+      )
+      .groupByRaw("1")
+      .orderByRaw("1 ASC"),
+    knex.raw(`
+      SELECT
+        (SELECT COUNT(*)::int FROM specimens WHERE deleted_at IS NULL) AS total_specimens,
+        (SELECT COUNT(*)::int FROM taxa WHERE taxon_rank = 'Species') AS total_species,
+        (SELECT COUNT(*)::int FROM specimens WHERE deleted_at IS NULL AND collection_point IS NOT NULL) AS with_gps,
+        (SELECT COUNT(*)::int FROM specimen_images) AS total_images,
+        (SELECT COUNT(*)::int FROM dna_sequences) AS total_dna
+    `),
+  ]);
+
+  const monthSet = new Set();
+  const toMap = (rows) => {
+    const m = new Map();
+    (rows || []).forEach((r) => {
+      if (r.month) {
+        monthSet.add(r.month);
+        m.set(r.month, Number(r.cnt || 0));
+      }
+    });
+    return m;
+  };
+  const specMap = toMap(specRows);
+  const editMap = toMap(editRows);
+  const imgMap = toMap(imgRows);
+  const dnaMap = toMap(dnaRows);
+  const months = Array.from(monthSet).sort();
+
+  const monthlySeries = months.map((m) => ({
+    month: m,
+    newSpecimens: specMap.get(m) || 0,
+    editedSpecimens: editMap.get(m) || 0,
+    addedImages: imgMap.get(m) || 0,
+    addedDna: dnaMap.get(m) || 0,
+  }));
+
+  const totals = totalsRes.rows?.[0] || {};
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "VietInsect - VAST";
+  wb.created = new Date();
+
+  const kpiSheet = wb.addWorksheet("KPI_So_Hoa");
+  kpiSheet.addRow(["BÁO CÁO KPI HIỆU SUẤT SỐ HÓA HỆ THỐNG VIETINSECT (F-RP-03)"]);
+  kpiSheet.addRow(["Thời gian trích xuất", formatUtcPlus7(new Date())]);
+  kpiSheet.addRow([
+    "Khoảng thời gian lọc",
+    `${dateFrom || "Từ đầu"} → ${dateTo || "Hiện tại"}`,
+  ]);
+  kpiSheet.addRow([]);
+  kpiSheet.addRow(["Hạng mục tổng lũy kế", "Giá trị hiện tại"]);
+  kpiSheet.addRow(["Tổng mẫu vật số hóa", Number(totals.total_specimens || 0)]);
+  kpiSheet.addRow(["Tổng loài chuẩn hóa (Species)", Number(totals.total_species || 0)]);
+  kpiSheet.addRow(["Mẫu vật có tọa độ GPS", Number(totals.with_gps || 0)]);
+  kpiSheet.addRow(["Tổng hình ảnh đính kèm", Number(totals.total_images || 0)]);
+  kpiSheet.addRow(["Tổng chuỗi DNA phân tử", Number(totals.total_dna || 0)]);
+
+  const monthSheet = wb.addWorksheet("KPI_Theo_Thang");
+  monthSheet.addRow([
+    "Tháng (YYYY-MM)",
+    "Mẫu vật nhập mới",
+    "Lượt chỉnh sửa mẫu vật",
+    "Ảnh bổ sung",
+    "Chuỗi DNA bổ sung",
+  ]);
+  monthlySeries.forEach((r) => {
+    monthSheet.addRow([r.month, r.newSpecimens, r.editedSpecimens, r.addedImages, r.addedDna]);
+  });
+
+  const buf = await wb.xlsx.writeBuffer();
+  return { buffer: Buffer.from(buf), monthlySeries, totals };
+}
+
 module.exports = {
   sanitizeSpreadsheetCell,
   sanitizeDocxText,
@@ -422,4 +536,5 @@ module.exports = {
   getSpeciesChecklistData,
   generateChecklistPdf,
   generateChecklistDocx,
+  generateKpiExcel,
 };

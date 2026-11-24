@@ -14,7 +14,11 @@ function escapeLike(raw) {
  * Áp dụng tập điều kiện lọc chung cho cả findMany, count, và bản đồ GIS.
  */
 function applyFilters(qb, filters, { includePrivate = false, needRegistryJoin = false } = {}) {
-  qb.whereNull("s.deleted_at");
+  if (includePrivate && filters.deletedOnly === true) {
+    qb.whereNotNull("s.deleted_at").andWhereRaw("s.deleted_at >= NOW() - INTERVAL '30 days'");
+  } else {
+    qb.whereNull("s.deleted_at");
+  }
 
   if (!includePrivate) {
     qb.where("s.is_public", true);
@@ -315,6 +319,7 @@ async function findMany(filters, { includePrivate = false } = {}) {
       "h.label_vn as habitat_label_vn",
       "ls.label_vn as life_stage_label_vn",
       "st.label_vn as status_label_vn",
+      "s.deleted_at",
       "s.created_at",
       "s.updated_at",
     );
@@ -816,6 +821,8 @@ async function create(data, adminId) {
         catalog_number: data.catalogNumber || null,
         institution_code: data.institutionCode || null,
         recorded_by: data.recordedBy || null,
+        identified_by: data.identifiedBy || null,
+        date_identified: data.dateIdentified || null,
         occurrence_remarks: data.occurrenceRemarks || null,
       })
       .returning(["specimen_id", "specimen_code"]);
@@ -868,6 +875,8 @@ const REGISTRY_UPDATE_MAP = [
   { key: "catalogNumber", col: "catalog_number" },
   { key: "institutionCode", col: "institution_code" },
   { key: "recordedBy", col: "recorded_by" },
+  { key: "identifiedBy", col: "identified_by" },
+  { key: "dateIdentified", col: "date_identified" },
   { key: "occurrenceRemarks", col: "occurrence_remarks" },
 ];
 
@@ -1043,6 +1052,21 @@ async function softDelete(specimenId, adminId) {
 
 async function restore(specimenId, adminId) {
   return knex.transaction(async (trx) => {
+    const existing = await trx("specimens")
+      .where("specimen_id", specimenId)
+      .whereNotNull("deleted_at")
+      .select("specimen_id", "deleted_at")
+      .first();
+
+    if (!existing) {
+      return { restoredCount: 0, unorphanedDnaCount: 0 };
+    }
+
+    const deletedMs = new Date(existing.deleted_at).getTime();
+    if (Number.isFinite(deletedMs) && Date.now() - deletedMs > 30 * 24 * 60 * 60 * 1000) {
+      return { restoredCount: 0, expired: true, unorphanedDnaCount: 0 };
+    }
+
     const restoredCount = await trx("specimens")
       .where("specimen_id", specimenId)
       .whereNotNull("deleted_at")
@@ -1072,6 +1096,23 @@ async function restore(specimenId, adminId) {
 
     return { restoredCount, unorphanedDnaCount };
   });
+}
+
+async function findChangeHistory(specimenId, { dateFrom, dateTo } = {}) {
+  const qb = knex({ ch: "specimen_change_history" })
+    .leftJoin({ a: "admin_users" }, "ch.changed_by", "a.admin_id")
+    .where("ch.specimen_id", specimenId)
+    .select("ch.*", "a.username as changed_by_username")
+    .orderBy("ch.changed_at", "desc")
+    .limit(200);
+
+  if (dateFrom) {
+    qb.where("ch.changed_at", ">=", dateFrom);
+  }
+  if (dateTo) {
+    qb.where("ch.changed_at", "<=", `${String(dateTo).slice(0, 10)}T23:59:59.999Z`);
+  }
+  return qb;
 }
 
 async function findLookups() {
@@ -1603,6 +1644,7 @@ async function bulkImportRows(rows, adminId) {
           catalog_number: r.catalogNumber ? String(r.catalogNumber).trim() : null,
           institution_code: r.institutionCode ? String(r.institutionCode).trim() : null,
           recorded_by: r.recordedBy ? String(r.recordedBy).trim() : null,
+          identified_by: r.identifiedBy ? String(r.identifiedBy).trim() : null,
           occurrence_remarks: r.occurrenceRemarks || null,
         })
         .returning(["specimen_id"]);
@@ -1610,6 +1652,15 @@ async function bulkImportRows(rows, adminId) {
       const pointExpr =
         lat != null && lon != null
           ? trx.raw("ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography", [lon, lat])
+          : null;
+
+      const gpsAcc =
+        r.gpsAccuracyM != null && r.gpsAccuracyM !== "" && Number.isFinite(Number(r.gpsAccuracyM))
+          ? Number(r.gpsAccuracyM)
+          : null;
+      const elevM =
+        r.elevationM != null && r.elevationM !== "" && Number.isFinite(Number(r.elevationM))
+          ? Number(r.elevationM)
           : null;
 
       await trx("specimens").insert({
@@ -1620,15 +1671,19 @@ async function bulkImportRows(rows, adminId) {
         updated_by: adminId || null,
         gbif_scientific_name: sciName,
         common_name_vn: r.commonNameVn || null,
+        common_name_en: r.commonNameEn || null,
         district: r.district || null,
         commune: r.commune || null,
         locality_detail: r.localityDetail || null,
         collection_point: pointExpr,
+        gps_accuracy_m: gpsAcc,
+        elevation_m: elevM,
         collection_date: colDate,
         sex: r.sex || null,
         individual_count: Number(r.individualCount) || 1,
+        storage_number: r.storageNumber || null,
         notes: r.notes || null,
-        is_public: r.isPublic !== false,
+        is_public: r.isPublic !== false && String(r.isPublic).toLowerCase() !== "false",
       });
 
       insertedCount++;
@@ -1667,6 +1722,7 @@ module.exports = {
   bulkImportRows,
   softDelete,
   restore,
+  findChangeHistory,
   findLookups,
   getStats,
   getAnalytics,

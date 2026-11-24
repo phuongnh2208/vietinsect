@@ -34,7 +34,7 @@ export default function PublicHomePage() {
       {
         title: t("home.card1Title"),
         desc: t("home.card1Desc"),
-        link: "/specimens/search",
+        link: "/search",
         actionText: t("home.card1Action"),
         badge: stats
           ? t("home.card1Badge", { count: formatNumber(stats.totalSpecimens ?? 0, i18n.language) })
@@ -89,9 +89,9 @@ export default function PublicHomePage() {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/specimens/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     } else {
-      navigate("/specimens/search");
+      navigate("/search");
     }
   };
 
@@ -165,7 +165,7 @@ export default function PublicHomePage() {
               <Link to="/dna" className="hero-sublink">
                 {t("navigation.dnaBarcode")}
               </Link>
-              <Link to="/specimens/search" className="hero-sublink highlight">
+              <Link to="/search" className="hero-sublink highlight">
                 {t("home.browseSpecimens")} →
               </Link>
             </div>
@@ -180,7 +180,7 @@ export default function PublicHomePage() {
             <div
               className="stat-box"
               style={{ cursor: "pointer" }}
-              onClick={() => navigate("/specimens/search")}
+              onClick={() => navigate("/search")}
             >
               <span className="stat-label">{t("home.statSpecimens")}</span>
               <strong className="stat-number">

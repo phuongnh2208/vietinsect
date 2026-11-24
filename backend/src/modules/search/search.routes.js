@@ -38,6 +38,7 @@ const searchQuerySchema = Joi.object({
   elevationMax: Joi.number().min(-500).max(9000),
   recordedBy: Joi.string().trim().max(256).allow(""),
   hasGps: Joi.boolean(),
+  hasDna: Joi.boolean(),
 }).custom((val, helpers) => {
   if (val.page * val.limit > MAX_RESULT_WINDOW) {
     return helpers.message(

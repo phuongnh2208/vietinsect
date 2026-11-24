@@ -1,5 +1,5 @@
 import React from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
 import LoginPage from "./modules/auth/pages/LoginPage";
 import ChangePasswordPage from "./modules/auth/pages/ChangePasswordPage";
 import AuthGuard from "./modules/auth/AuthGuard";
@@ -77,9 +77,14 @@ const adminChildRoutes = [
   ...dualContextRoutes.map(({ adminPath, element }) => ({ path: adminPath, element })),
 ];
 
+function LegacySearchRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={`/search${search || ""}`} replace />;
+}
+
 const publicChildRoutes = [
   { index: true, element: <PublicHomePage /> },
-  { path: "specimens/search", element: <SpecimenListPage /> },
+  { path: "specimens/search", element: <LegacySearchRedirect /> },
   ...dualContextRoutes.map(({ publicPath, element }) => ({ path: publicPath, element })),
 ];
 

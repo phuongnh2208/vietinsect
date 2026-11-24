@@ -56,23 +56,22 @@ describe("i18n foundation & LanguageSwitcher", () => {
     const btn = screen.getByTestId("language-switcher-btn");
     expect(btn).toHaveAttribute("data-lang", "vi");
     expect(btn.textContent).toBe("");
-    expect(btn.querySelectorAll("svg")).toHaveLength(1);
+    expect(screen.getByTestId("flag-svg-vi")).toBeInTheDocument();
+    expect(screen.queryByTestId("flag-svg-en")).not.toBeInTheDocument();
 
-    await act(async () => {
-      fireEvent.click(btn);
-    });
+    fireEvent.click(btn);
 
+    expect(await screen.findByTestId("flag-svg-en")).toBeInTheDocument();
     expect(btn).toHaveAttribute("data-lang", "en");
     expect(btn.textContent).toBe("");
-    expect(btn.querySelectorAll("svg")).toHaveLength(1);
+    expect(screen.queryByTestId("flag-svg-vi")).not.toBeInTheDocument();
     expect(i18n.language).toBe("en");
     expect(window.localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe("en");
     expect(document.documentElement.lang).toBe("en");
 
-    await act(async () => {
-      fireEvent.click(btn);
-    });
+    fireEvent.click(btn);
 
+    expect(await screen.findByTestId("flag-svg-vi")).toBeInTheDocument();
     expect(btn).toHaveAttribute("data-lang", "vi");
     expect(i18n.language).toBe("vi");
     expect(window.localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe("vi");

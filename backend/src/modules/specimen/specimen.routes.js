@@ -1,8 +1,14 @@
 const express = require("express");
+const multer = require("multer");
 const router = express.Router();
 const specimenController = require("./specimen.controller");
 const bulkImportJob = require("./bulkImportJob.service");
 const { requireAdmin, optionalAdmin } = require("../../middleware/auth.middleware");
+
+const importFileUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 },
+});
 const {
   validateListSpecimens,
   validateMapQuery,
@@ -32,11 +38,32 @@ router.get("/map", optionalAdmin, validateMapQuery, specimenController.getMapOcc
 // Tìm kiếm & phân trang danh sách mẫu vật (SCR-05 Admin / SCR-15 Public)
 router.get("/", optionalAdmin, validateListSpecimens, specimenController.list);
 
-// Chi tiết 1 mẫu vật (SCR-08)
+// Chi tiết 1 mẫu vật (SCR-08) & Lịch sử chỉnh sửa có lọc thời gian (F-SP-12)
+router.get("/:id/history", requireAdmin, specimenController.getHistory);
 router.get("/:id", optionalAdmin, specimenController.getById);
 
 // Quản trị: tạo mới, nhập hàng loạt, chỉnh sửa hàng loạt, cập nhật, đổi trạng thái công khai đơn lẻ / hàng loạt, xóa mềm
 router.post("/", requireAdmin, validateCreateSpecimen, specimenController.create);
+router.post(
+  "/bulk-import/parse-file",
+  requireAdmin,
+  importFileUpload.single("file"),
+  async (req, res, next) => {
+    try {
+      if (!req.file || !req.file.buffer) {
+        return res.status(400).json({
+          success: false,
+          code: "VALIDATION_ERROR",
+          message: "Vui lòng chọn tệp Excel (.xlsx) để tải lên",
+        });
+      }
+      const parsed = await bulkImportJob.parseImportExcelBuffer(req.file.buffer);
+      return res.json({ success: true, data: parsed });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 router.get("/bulk-import/template", optionalAdmin, async (_req, res, next) => {
   try {
     const buffer = await bulkImportJob.generateImportTemplateExcel();

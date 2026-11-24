@@ -85,8 +85,42 @@ async function bulkImportSpecimens(rows) {
   return data.data;
 }
 
+async function parseImportFile(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  const { data } = await http.post("/specimens/bulk-import/parse-file", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data.data;
+}
+
+async function startAsyncBulkImport(rows) {
+  const { data } = await http.post("/specimens/bulk-import/async", { rows });
+  return data.data;
+}
+
+async function getBulkImportJob(jobId) {
+  const { data } = await http.get(`/specimens/bulk-import/jobs/${jobId}`);
+  return data.data;
+}
+
 async function deleteSpecimen(id) {
-  await http.delete(`/specimens/${id}`);
+  const { data } = await http.delete(`/specimens/${id}`);
+  return data;
+}
+
+async function restoreSpecimen(id) {
+  const { data } = await http.post(`/specimens/${id}/restore`);
+  return data.data;
+}
+
+async function getSpecimenHistory(id, params = {}) {
+  const cleanParams = {};
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") cleanParams[k] = v;
+  });
+  const { data } = await http.get(`/specimens/${id}/history`, { params: cleanParams });
+  return data.data || [];
 }
 
 async function exportSpecimens(params = {}) {
@@ -118,7 +152,12 @@ const specimenService = {
   batchTogglePublic,
   batchUpdateSpecimens,
   bulkImportSpecimens,
+  parseImportFile,
+  startAsyncBulkImport,
+  getBulkImportJob,
   deleteSpecimen,
+  restoreSpecimen,
+  getSpecimenHistory,
 };
 
 export default specimenService;

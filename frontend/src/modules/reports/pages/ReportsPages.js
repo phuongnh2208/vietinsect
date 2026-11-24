@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ResponsiveContainer,
   BarChart,
@@ -36,6 +37,7 @@ function downloadBlob(blob, filename) {
 // 1. ReportsChecklistPage (/reports & /admin/reports - F-RP-01, F-RP-02, F-RP-05, F-RP-06)
 // ============================================================================
 export function ReportsChecklistPage() {
+  const { t } = useTranslation();
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -112,6 +114,24 @@ export function ReportsChecklistPage() {
     setExportingFormat(filename);
     try {
       const res = await http.get(endpoint, { params, responseType: "blob" });
+      if (res.status === 202) {
+        const text = await res.data.text();
+        const parsed = JSON.parse(text);
+        const jobId = parsed?.data?.jobId;
+        if (jobId) {
+          for (let i = 0; i < 60; i += 1) {
+            await new Promise((r) => setTimeout(r, 1000));
+            const st = await http.get(`/reports/jobs/${jobId}`);
+            if (st.data?.data?.status === "done") {
+              const dl = await http.get(`/reports/jobs/${jobId}/download`, { responseType: "blob" });
+              downloadBlob(dl.data, filename);
+              break;
+            }
+            if (st.data?.data?.status === "failed") break;
+          }
+        }
+        return;
+      }
       downloadBlob(res.data, filename);
     } catch (_) {
     } finally {
@@ -157,7 +177,7 @@ export function ReportsChecklistPage() {
   const checklist = analytics?.speciesChecklist || [];
   const selectedProvName =
     lookups.provinces?.find((p) => String(p.id) === String(filters.provinceId))?.nameVn ||
-    "Toàn quốc (34 Tỉnh/Thành phố)";
+    t("reportsPage.allNation", "Toàn quốc (34 Tỉnh/Thành phố)");
   const hasActiveFilters = Boolean(filters.order || filters.provinceId || filters.q);
 
   return (
@@ -186,10 +206,10 @@ export function ReportsChecklistPage() {
         <div className="vi-report-title-block">
           <div>
             <span className="vi-report-eyebrow">
-              <Icon name="report" size={14} /> BÁO CÁO KHOA HỌC & DANH MỤC LOÀI CHUẨN HÓA (CHECKLIST)
+              <Icon name="report" size={14} /> {t("reportsPage.eyebrow")}
             </span>
             <h1 className="vi-report-title">
-              Danh mục Đa dạng Loài Côn trùng — {selectedProvName}
+              {t("reportsPage.titlePrefix")} — {selectedProvName}
             </h1>
             <p className="vi-report-subtitle">
               Phạm vi: <strong>{filters.order ? `Bộ ${filters.order}` : "Toàn bộ 16 Bộ Côn trùng"}</strong> · Chuẩn danh pháp ICZN & Darwin Core Archive (DwC-A).
@@ -231,10 +251,10 @@ export function ReportsChecklistPage() {
             {canManage ? (
               <>
                 <Link to="/admin/reports/kpi" className="vi-rp-btn">
-                  <Icon name="chart" size={14} /> Báo cáo KPI Số hóa
+                  <Icon name="chart" size={14} /> {t("reportsPage.kpiBtn")}
                 </Link>
                 <Link to="/admin/reports/custom" className="vi-rp-btn">
-                  <Icon name="filter" size={14} /> Tùy chỉnh Báo cáo
+                  <Icon name="filter" size={14} /> {t("reportsPage.customBtn")}
                 </Link>
               </>
             ) : (
@@ -554,19 +574,49 @@ export function ReportsChecklistPage() {
 // ============================================================================
 export function DigitizationKpiPage() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith("en");
   const [stats, setStats] = useState(null);
-  const [analytics, setAnalytics] = useState(null);
+  const [monthlySeries, setMonthlySeries] = useState([]);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [loading, setLoading] = useState(true);
+  const [exportingXlsx, setExportingXlsx] = useState(false);
+
+  const loadKpiData = useCallback(() => {
+    setLoading(true);
+    const params = { format: "json" };
+    if (dateFrom) params.dateFrom = dateFrom;
+    if (dateTo) params.dateTo = dateTo;
+    Promise.all([
+      specimenService.getStats(),
+      http.get("/reports/kpi", { params }).then((r) => r.data?.data).catch(() => null),
+    ])
+      .then(([st, kpiRes]) => {
+        setStats(st);
+        setMonthlySeries(kpiRes?.monthlySeries || []);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [dateFrom, dateTo]);
 
   useEffect(() => {
-    Promise.all([specimenService.getStats(), specimenService.getAnalytics({ limit: 50 })])
-      .then(([st, an]) => {
-        setStats(st);
-        setAnalytics(an);
-      })
-      .catch(() => { })
-      .finally(() => setLoading(false));
-  }, []);
+    loadKpiData();
+  }, [loadKpiData]);
+
+  const handleExportKpiExcel = async () => {
+    setExportingXlsx(true);
+    try {
+      const params = { format: "xlsx" };
+      if (dateFrom) params.dateFrom = dateFrom;
+      if (dateTo) params.dateTo = dateTo;
+      const res = await http.get("/reports/kpi", { params, responseType: "blob" });
+      downloadBlob(res.data, `vietinsect-kpi-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch (_) {
+    } finally {
+      setExportingXlsx(false);
+    }
+  };
 
   const kpiTargets = useMemo(() => {
     const totalSpecimens = stats?.totalSpecimens || 0;
@@ -617,24 +667,44 @@ export function DigitizationKpiPage() {
     <section className="page-container">
       <div style={{ marginBottom: 12 }}>
         <button type="button" className="button button-ghost" onClick={() => navigate("/admin/reports")}>
-          <Icon name="arrowLeft" size={14} /> Quay lại
+          <Icon name="arrowLeft" size={14} /> {t("batch.back", "Quay lại")}
         </button>
       </div>
 
       <div className="page-header">
         <div>
           <span className="eyebrow">
-            <Icon name="chart" size={14} /> ĐÁNH GIÁ HIỆU SUẤT SỐ HÓA (KPI REPORT)
+            <Icon name="chart" size={14} /> {t("reportsPage.kpiEyebrow")}
           </span>
-          <h1>Báo cáo Chỉ số Hiệu suất Số hóa Mẫu vật & Phân tử</h1>
-          <p className="subtitle">
-            Theo dõi mức độ hoàn thành chỉ tiêu số hóa mẫu vật bảo tàng, danh lục loài, tọa độ GIS và mã vạch DNA theo
-            kế hoạch đề tài Viện Hàn lâm KH&CN Việt Nam (VAST).
-          </p>
+          <h1>{t("reportsPage.kpiTitle")}</h1>
+          <p className="subtitle">{t("reportsPage.kpiSubtitle")}</p>
         </div>
-        <div className="hero-actions" style={{ marginTop: 0 }}>
+        <div className="hero-actions" style={{ marginTop: 0, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            aria-label="Từ ngày"
+            style={{ padding: "6px 10px", fontSize: 12 }}
+          />
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            aria-label="Đến ngày"
+            style={{ padding: "6px 10px", fontSize: 12 }}
+          />
+          <button
+            type="button"
+            className="button button-secondary"
+            disabled={exportingXlsx}
+            onClick={handleExportKpiExcel}
+          >
+            <Icon name="download" size={14} />{" "}
+            {exportingXlsx ? "..." : t("reportsPage.exportKpiXlsx")}
+          </button>
           <button type="button" className="button button-primary" onClick={() => window.print()}>
-            <Icon name="printer" size={14} /> In Báo cáo KPI Nghiệm thu
+            <Icon name="printer" size={14} /> {t("reportsPage.printKpi")}
           </button>
         </div>
       </div>
@@ -710,6 +780,38 @@ export function DigitizationKpiPage() {
           </table>
         </div>
       </div>
+
+      {monthlySeries.length > 0 && (
+        <div className="card" style={{ padding: 20, marginBottom: 24 }}>
+          <h2 style={{ fontSize: 18, margin: "0 0 14px" }}>
+            {t("reportsPage.monthlyTableTitle", "Bảng Tổng hợp Hiệu suất Số hóa theo Từng Tháng")}
+          </h2>
+          <div className="table-responsive">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>{isEn ? "MONTH" : "THÁNG"}</th>
+                  <th>{isEn ? "NEW SPECIMENS" : "MẪU NHẬP MỚI"}</th>
+                  <th>{isEn ? "EDITED SPECIMENS" : "LƯỢT CHỈNH SỬA"}</th>
+                  <th>{isEn ? "ADDED IMAGES" : "ẢNH BỔ SUNG"}</th>
+                  <th>{isEn ? "ADDED DNA" : "DNA BỔ SUNG"}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthlySeries.map((m) => (
+                  <tr key={m.month}>
+                    <td className="mono" style={{ fontWeight: 700 }}>{m.month}</td>
+                    <td className="mono">{fmtNum(m.newSpecimens)}</td>
+                    <td className="mono">{fmtNum(m.editedSpecimens)}</td>
+                    <td className="mono">{fmtNum(m.addedImages)}</td>
+                    <td className="mono">{fmtNum(m.addedDna)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Breakdown by Order */}
       <div className="card" style={{ padding: 20 }}>

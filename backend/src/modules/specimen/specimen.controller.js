@@ -252,6 +252,19 @@ async function bulkImport(req, res, next) {
   }
 }
 
+async function getHistory(req, res, next) {
+  try {
+    const id = parseIdParam(req.params.id);
+    const items = await specimenService.getSpecimenHistory(id, {
+      dateFrom: req.query?.dateFrom,
+      dateTo: req.query?.dateTo,
+    });
+    res.json({ success: true, data: items });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   list,
   getMapOccurrences,
@@ -260,6 +273,7 @@ module.exports = {
   getAnalytics,
   exportSpecimens,
   getById,
+  getHistory,
   create,
   update,
   togglePublic,

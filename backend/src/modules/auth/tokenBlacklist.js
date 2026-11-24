@@ -65,23 +65,24 @@ async function isUserTokenRevoked(adminId, iatMs) {
   if (!adminId || !iatMs) return false;
   const key = String(adminId);
 
-  const localTs = localUserRevokedBefore.get(key);
-  if (localTs != null && iatMs <= localTs) {
-    return true;
+  const { client, ready } = getRedisState();
+  if (!ready || !client) {
+    if (shouldFailClosed()) throw new AppError(REDIS_UNAVAILABLE);
+    const localTs = localUserRevokedBefore.get(key);
+    return localTs != null && iatMs <= localTs;
   }
 
-  const { client, ready } = getRedisState();
-  if (ready && client) {
-    try {
-      const val = await client.get(`bl:user:${key}`);
-      if (val != null && iatMs <= Number(val)) {
-        return true;
-      }
-    } catch {
-      return false;
+  try {
+    const val = await client.get(`bl:user:${key}`);
+    if (val != null && iatMs <= Number(val)) {
+      return true;
     }
+    const localTs = localUserRevokedBefore.get(key);
+    return localTs != null && iatMs <= localTs;
+  } catch {
+    if (shouldFailClosed()) throw new AppError(REDIS_UNAVAILABLE);
+    return false;
   }
-  return false;
 }
 
 module.exports = {

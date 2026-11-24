@@ -1,5 +1,6 @@
-﻿import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -18,16 +19,16 @@ import {
 import specimenService from "../../specimen/specimen.service";
 import Icon from "../../../components/ui/Icon";
 
-function fmtNum(n) {
-  return Number(n || 0).toLocaleString("vi-VN");
+function fmtNum(n, lang = "vi") {
+  return Number(n || 0).toLocaleString(lang?.startsWith("en") ? "en-US" : "vi-VN");
 }
 
-const MONTH_NAMES = [
-  "T1", "T2", "T3", "T4", "T5", "T6",
-  "T7", "T8", "T9", "T10", "T11", "T12",
-];
+const MONTH_NAMES_VI = ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
+const MONTH_NAMES_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export default function AnalyticsDashboardPage() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith("en");
   const [stats, setStats] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -45,11 +46,14 @@ export default function AnalyticsDashboardPage() {
       setStats(statsRes);
       setAnalytics(analyticsRes);
     } catch (err) {
-      setError(err.response?.data?.error?.message || "Không thể tải dữ liệu phân tích đa chiều.");
+      setError(
+        err.response?.data?.error?.message ||
+          t("analyticsPage.loadError", "Không thể tải dữ liệu phân tích đa chiều.")
+      );
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadData();
@@ -60,25 +64,24 @@ export default function AnalyticsDashboardPage() {
   const withProv = stats?.withProvince || 0;
   const atSpecies = stats?.specimensAtSpeciesRank || 0;
   const publicCnt = stats?.publicSpecimens || 0;
-  const dq = stats?.dataQuality || {};
 
   const completenessData = useMemo(() => {
     if (!totalSpecimens) return [];
     return [
       {
-        name: "Định danh bậc Loài (Species)",
+        name: t("analyticsPage.rankSpecies", "Định danh bậc Loài (Species)"),
         value: atSpecies,
         pct: ((atSpecies / totalSpecimens) * 100).toFixed(1),
         color: "#0F3820",
       },
       {
-        name: "Định danh Giống/Họ/Bộ",
+        name: t("analyticsPage.rankHigher", "Định danh Giống/Họ/Bộ"),
         value: Math.max(0, totalSpecimens - atSpecies),
         pct: (((totalSpecimens - atSpecies) / totalSpecimens) * 100).toFixed(1),
         color: "#86EFAC",
       },
     ];
-  }, [totalSpecimens, atSpecies]);
+  }, [totalSpecimens, atSpecies, t]);
 
   const byYearChart = useMemo(() => {
     const rows = analytics?.byYear || [];
@@ -91,11 +94,12 @@ export default function AnalyticsDashboardPage() {
 
   const byMonthChart = useMemo(() => {
     const map = new Map((analytics?.byMonth || []).map((r) => [Number(r.month), Number(r.specimen_count || 0)]));
-    return MONTH_NAMES.map((label, idx) => ({
+    const names = isEn ? MONTH_NAMES_EN : MONTH_NAMES_VI;
+    return names.map((label, idx) => ({
       month: label,
       specimens: map.get(idx + 1) || 0,
     }));
-  }, [analytics]);
+  }, [analytics, isEn]);
 
   const filteredProvinces = useMemo(() => {
     const rows = analytics?.speciesRichnessByProvince || [];
@@ -111,74 +115,77 @@ export default function AnalyticsDashboardPage() {
     }));
   }, [filteredProvinces]);
 
-  const qualityAuditRows = useMemo(
-    () => [
+  const qualityAuditRows = useMemo(() => {
+    const dq = stats?.dataQuality || {};
+    return [
       {
         id: "QA-01",
-        rule: "Toàn vẹn Tọa độ Lãnh thổ Việt Nam (8.18–23.39°N, 102.14–109.46°E)",
+        rule: t("analyticsPage.qa1Rule", "Toàn vẹn Tọa độ Lãnh thổ Việt Nam (8.18–23.39°N, 102.14–109.46°E)"),
         affected: dq.outOfVnBounds || 0,
         severity: (dq.outOfVnBounds || 0) === 0 ? "PASS" : "WARN",
-        actionLabel: "Kiểm tra Bản đồ GIS",
+        actionLabel: t("analyticsPage.qa1Action", "Kiểm tra Bản đồ GIS"),
         actionTo: "/admin/map",
       },
       {
         id: "QA-02",
-        rule: "Ánh xạ Tỉnh/Thành phố Hành chính (34 tỉnh/thành NQ 202/2025/QH15)",
+        rule: t("analyticsPage.qa2Rule", "Ánh xạ Tỉnh/Thành phố Hành chính (34 tỉnh/thành NQ 202/2025/QH15)"),
         affected: dq.missingProvince || 0,
         severity: (dq.missingProvince || 0) === 0 ? "PASS" : "WARN",
-        actionLabel: "Chỉnh sửa Hàng loạt",
+        actionLabel: t("analyticsPage.qa2Action", "Chỉnh sửa Hàng loạt"),
         actionTo: "/admin/specimens/batch-edit",
       },
       {
         id: "QA-03",
-        rule: "Kiểm tra Ngày thu mẫu Hợp lệ (collection_date <= CURRENT_DATE)",
+        rule: t("analyticsPage.qa3Rule", "Kiểm tra Ngày thu mẫu Hợp lệ (collection_date <= CURRENT_DATE)"),
         affected: dq.futureDates || 0,
         severity: (dq.futureDates || 0) === 0 ? "PASS" : "ERROR",
-        actionLabel: "Rà soát Kho mẫu",
+        actionLabel: t("analyticsPage.qa3Action", "Rà soát Kho mẫu"),
         actionTo: "/admin/specimens",
       },
       {
         id: "QA-04",
-        rule: "Trình tự DNA COI chưa gắn khóa ngoại Mẫu vật (specimen_id IS NULL)",
+        rule: t("analyticsPage.qa4Rule", "Trình tự DNA COI chưa gắn khóa ngoại Mẫu vật (specimen_id IS NULL)"),
         affected: dq.orphanedDna || 0,
         severity: (dq.orphanedDna || 0) === 0 ? "PASS" : "INFO",
-        actionLabel: "Quản lý Kho DNA",
+        actionLabel: t("analyticsPage.qa4Action", "Quản lý Kho DNA"),
         actionTo: "/admin/dna",
       },
       {
         id: "QA-05",
-        rule: "Mẫu vật mới định danh tới bậc Giống / Họ / Bộ (chưa tới Species)",
+        rule: t("analyticsPage.qa5Rule", "Mẫu vật mới định danh tới bậc Giống / Họ / Bộ (chưa tới Species)"),
         affected: dq.higherRankOnly || 0,
         severity: "INFO",
-        actionLabel: "Biên tập Cây Phân loại",
+        actionLabel: t("analyticsPage.qa5Action", "Biên tập Cây Phân loại"),
         actionTo: "/admin/taxonomy/editor",
       },
-    ],
-    [dq]
-  );
+    ];
+  }, [stats, t]);
 
   return (
     <section className="page-container">
       <div className="page-header">
         <div>
           <span className="eyebrow">
-            <Icon name="chart" size={14} /> PHÂN TÍCH ĐA CHIỀU & KIỂM ĐỊNH DỮ LIỆU
+            <Icon name="chart" size={14} />{" "}
+            {t("analyticsPage.eyebrow", "PHÂN TÍCH ĐA CHIỀU & KIỂM ĐỊNH DỮ LIỆU")}
           </span>
-          <h1>Phân tích Đa dạng Sinh học & Chất lượng Dữ liệu</h1>
+          <h1>{t("analyticsPage.title", "Phân tích Đa dạng Sinh học & Chất lượng Dữ liệu")}</h1>
           <p className="subtitle">
-            Phân tích xu hướng số hóa theo thời gian, chỉ số độ giàu loài (Species Richness) trên 34 tỉnh/thành phố và
-            kiểm định tự động độ hoàn thiện chuẩn Darwin Core.
+            {t(
+              "analyticsPage.subtitle",
+              "Phân tích xu hướng số hóa theo thời gian, chỉ số độ giàu loài (Species Richness) trên 34 tỉnh/thành phố và kiểm định tự động độ hoàn thiện chuẩn Darwin Core."
+            )}
           </p>
         </div>
         <div className="hero-actions" style={{ marginTop: 0 }}>
           <button type="button" className="button button-ghost" onClick={loadData} disabled={loading}>
-            <Icon name="refresh" size={14} /> Làm mới phân tích
+            <Icon name="refresh" size={14} /> {t("analyticsPage.refresh", "Làm mới phân tích")}
           </button>
           <Link to="/admin/reports" className="button button-secondary">
-            <Icon name="report" size={14} /> Xuất Báo cáo Danh mục
+            <Icon name="report" size={14} /> {t("analyticsPage.exportReports", "Xuất Báo cáo Danh mục")}
           </Link>
           <Link to="/admin/ai/sdm" className="button button-primary">
-            <Icon name="spark" size={14} /> Mô hình Phân bố SDM
+            <Icon name="spark" size={14} /> {t("analyticsPage.sdmBtn", "Mô hình Phân bố SDM")}
           </Link>
         </div>
       </div>
@@ -187,7 +194,7 @@ export default function AnalyticsDashboardPage() {
         <div className="alert-error" style={{ marginBottom: 16 }}>
           <span>{error}</span>
           <button type="button" className="button button-secondary" onClick={loadData}>
-            Thử lại
+            {t("common.retry", "Thử lại")}
           </button>
         </div>
       )}
@@ -196,7 +203,7 @@ export default function AnalyticsDashboardPage() {
       <div className="stats-grid" style={{ marginBottom: 24 }}>
         <article className="stat-card">
           <div className="stat-card-top">
-            <span className="stat-label">ĐỘ HOÀN THIỆN TỌA ĐỘ GPS</span>
+            <span className="stat-label">{t("analyticsPage.kpiGps", "ĐỘ HOÀN THIỆN TỌA ĐỘ GPS")}</span>
             <span className="stat-icon-box">
               <Icon name="pin" size={16} />
             </span>
@@ -205,39 +212,41 @@ export default function AnalyticsDashboardPage() {
             {totalSpecimens ? `${((withCoords / totalSpecimens) * 100).toFixed(1)}%` : "—"}
           </strong>
           <span className="stat-sub" style={{ color: "#15803D", fontWeight: 700 }}>
-            {fmtNum(withCoords)} / {fmtNum(totalSpecimens)} mẫu có PostGIS Point
+            {fmtNum(withCoords, i18n.language)} / {fmtNum(totalSpecimens, i18n.language)}{" "}
+            {t("analyticsPage.kpiGpsSub", "mẫu có PostGIS Point")}
           </span>
         </article>
 
         <article className="stat-card">
           <div className="stat-card-top">
-            <span className="stat-label">ĐỊNH DANH BẬC LOÀI (SPECIES)</span>
+            <span className="stat-label">{t("analyticsPage.kpiSpecies", "ĐỊNH DANH BẬC LOÀI (SPECIES)")}</span>
             <span className="stat-icon-box">
               <Icon name="leaf" size={16} />
             </span>
           </div>
-          <strong className="stat-value">{fmtNum(stats?.taxa?.species)}</strong>
+          <strong className="stat-value">{fmtNum(stats?.taxa?.species, i18n.language)}</strong>
           <span className="stat-sub">
-            {fmtNum(atSpecies)} mẫu gắn trực tiếp bậc Loài ({totalSpecimens ? ((atSpecies / totalSpecimens) * 100).toFixed(1) : 0}%)
+            {fmtNum(atSpecies, i18n.language)} {t("analyticsPage.kpiSpeciesSub", "mẫu gắn trực tiếp bậc Loài")} (
+            {totalSpecimens ? ((atSpecies / totalSpecimens) * 100).toFixed(1) : 0}%)
           </span>
         </article>
 
         <article className="stat-card">
           <div className="stat-card-top">
-            <span className="stat-label">ĐỘ PHỦ HÀNH CHÍNH</span>
+            <span className="stat-label">{t("analyticsPage.kpiProv", "ĐỘ PHỦ HÀNH CHÍNH")}</span>
             <span className="stat-icon-box">
               <Icon name="map" size={16} />
             </span>
           </div>
-          <strong className="stat-value">{fmtNum(stats?.provincesCovered)} / 34</strong>
+          <strong className="stat-value">{fmtNum(stats?.provincesCovered, i18n.language)} / 34</strong>
           <span className="stat-sub" style={{ color: "#15803D", fontWeight: 700 }}>
-            {fmtNum(withProv)} mẫu đã chuẩn hóa Tỉnh/Thành
+            {fmtNum(withProv, i18n.language)} {t("analyticsPage.kpiProvSub", "mẫu đã chuẩn hóa Tỉnh/Thành")}
           </span>
         </article>
 
         <article className="stat-card">
           <div className="stat-card-top">
-            <span className="stat-label">TỶ LỆ DỮ LIỆU MỞ (OPEN DATA)</span>
+            <span className="stat-label">{t("analyticsPage.kpiOpen", "TỶ LỆ DỮ LIỆU MỞ (OPEN DATA)")}</span>
             <span className="stat-icon-box">
               <Icon name="globe" size={16} />
             </span>
@@ -246,7 +255,8 @@ export default function AnalyticsDashboardPage() {
             {totalSpecimens ? `${((publicCnt / totalSpecimens) * 100).toFixed(1)}%` : "—"}
           </strong>
           <span className="stat-sub">
-            {fmtNum(publicCnt)} mẫu công khai · {fmtNum(stats?.dnaCount)} mã vạch DNA COI
+            {fmtNum(publicCnt, i18n.language)} {t("analyticsPage.kpiOpenSub", "mẫu công khai")} ·{" "}
+            {fmtNum(stats?.dnaCount, i18n.language)} DNA COI
           </span>
         </article>
       </div>
@@ -262,9 +272,11 @@ export default function AnalyticsDashboardPage() {
       >
         <div className="card" style={{ padding: 20 }}>
           <div style={{ marginBottom: 14 }}>
-            <span className="eyebrow">BIỂU ĐỒ XU HƯỚNG THU MẪU & ĐA DẠNG LOÀI THEO NĂM</span>
+            <span className="eyebrow">
+              {t("analyticsPage.yearEyebrow", "BIỂU ĐỒ XU HƯỚNG THU MẪU & ĐA DẠNG LOÀI THEO NĂM")}
+            </span>
             <h2 style={{ fontSize: 18, margin: "4px 0 0" }}>
-              Diễn biến Số lượng Mẫu vật & Số Loài Ghi nhận
+              {t("analyticsPage.yearTitle", "Diễn biến Số lượng Mẫu vật & Số Loài Ghi nhận")}
             </h2>
           </div>
           <div style={{ width: "100%", height: 300 }}>
@@ -277,8 +289,10 @@ export default function AnalyticsDashboardPage() {
                   <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#1D4ED8" }} />
                   <Tooltip
                     formatter={(val, name) => [
-                      `${fmtNum(val)}`,
-                      name === "specimens" ? "Mẫu vật thu thập" : "Số loài ghi nhận",
+                      `${fmtNum(val, i18n.language)}`,
+                      name === "specimens"
+                        ? t("analyticsPage.collectedSpecimens", "Mẫu vật thu thập")
+                        : t("analyticsPage.recordedSpecies", "Số loài ghi nhận"),
                     ]}
                   />
                   <Legend />
@@ -286,7 +300,7 @@ export default function AnalyticsDashboardPage() {
                     yAxisId="left"
                     type="monotone"
                     dataKey="specimens"
-                    name="Mẫu vật thu thập"
+                    name={t("analyticsPage.collectedSpecimens", "Mẫu vật thu thập")}
                     stroke="#0F3820"
                     fill="#DCFCE7"
                     strokeWidth={2}
@@ -295,7 +309,7 @@ export default function AnalyticsDashboardPage() {
                     yAxisId="right"
                     type="monotone"
                     dataKey="species"
-                    name="Số loài ghi nhận"
+                    name={t("analyticsPage.recordedSpecies", "Số loài ghi nhận")}
                     stroke="#1D4ED8"
                     fill="#DBEAFE"
                     strokeWidth={2}
@@ -303,16 +317,20 @@ export default function AnalyticsDashboardPage() {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div style={{ padding: 48, textAlign: "center", color: "#525252" }}>Đang tải biểu đồ năm...</div>
+              <div style={{ padding: 48, textAlign: "center", color: "#525252" }}>
+                {t("common.loading", "Đang tải...")}
+              </div>
             )}
           </div>
         </div>
 
         <div className="card" style={{ padding: 20 }}>
           <div style={{ marginBottom: 14 }}>
-            <span className="eyebrow">PHÂN BỐ MÙA VỤ THU MẪU (PHENOLOGY) & CẤU TRÚC ĐỊNH DANH</span>
+            <span className="eyebrow">
+              {t("analyticsPage.monthEyebrow", "PHÂN BỐ MÙA VỤ THU MẪU (PHENOLOGY) & CẤU TRÚC ĐỊNH DANH")}
+            </span>
             <h2 style={{ fontSize: 18, margin: "4px 0 0" }}>
-              Cường độ Thu thập theo 12 Tháng & Tỷ lệ Bậc Phân loại
+              {t("analyticsPage.monthTitle", "Cường độ Thu thập theo 12 Tháng & Tỷ lệ Bậc Phân loại")}
             </h2>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 12, alignItems: "center" }}>
@@ -322,7 +340,7 @@ export default function AnalyticsDashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" />
                   <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#111111" }} />
                   <YAxis tick={{ fontSize: 11, fill: "#111111" }} />
-                  <Tooltip formatter={(v) => [`${fmtNum(v)} mẫu vật`, "Số mẫu"]} />
+                  <Tooltip formatter={(v) => [`${fmtNum(v, i18n.language)}`, t("specimen.specimens", "Số mẫu")]} />
                   <Bar dataKey="specimens" fill="#15803D" />
                 </BarChart>
               </ResponsiveContainer>
@@ -344,7 +362,7 @@ export default function AnalyticsDashboardPage() {
                       <Cell key={entry.name} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v) => [`${fmtNum(v)} mẫu`, "Số lượng"]} />
+                  <Tooltip formatter={(v) => [`${fmtNum(v, i18n.language)}`, t("specimen.specimens", "Số lượng")]} />
                   <Legend verticalAlign="bottom" height={48} wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>
@@ -366,17 +384,22 @@ export default function AnalyticsDashboardPage() {
           }}
         >
           <div>
-            <span className="eyebrow">CHỈ SỐ ĐA DẠNG SINH HỌC KHÔNG GIAN</span>
+            <span className="eyebrow">
+              {t("analyticsPage.richnessEyebrow", "CHỈ SỐ ĐA DẠNG SINH HỌC KHÔNG GIAN")}
+            </span>
             <h2 style={{ fontSize: 18, margin: "4px 0 0" }}>
-              Độ giàu Loài (Species Richness) & Mật độ Mẫu vật theo 34 Tỉnh / Thành phố
+              {t(
+                "analyticsPage.richnessTitle",
+                "Độ giàu Loài (Species Richness) & Mật độ Mẫu vật theo 34 Tỉnh / Thành phố"
+              )}
             </h2>
           </div>
           <div style={{ display: "flex", gap: 6 }}>
             {[
-              { id: "ALL", label: "Toàn quốc (34)" },
-              { id: "Miền Bắc", label: "Miền Bắc" },
-              { id: "Miền Trung", label: "Miền Trung" },
-              { id: "Miền Nam", label: "Miền Nam" },
+              { id: "ALL", label: t("analyticsPage.regionAll", "Toàn quốc (34)") },
+              { id: "Miền Bắc", label: t("analyticsPage.regionNorth", "Miền Bắc") },
+              { id: "Miền Trung", label: t("analyticsPage.regionCentral", "Miền Trung") },
+              { id: "Miền Nam", label: t("analyticsPage.regionSouth", "Miền Nam") },
             ].map((reg) => (
               <button
                 key={reg.id}
@@ -404,12 +427,14 @@ export default function AnalyticsDashboardPage() {
                 <YAxis type="category" dataKey="name" width={125} tick={{ fontSize: 11, fill: "#111111", fontWeight: 600 }} />
                 <Tooltip
                   formatter={(v, name) => [
-                    `${fmtNum(v)}`,
-                    name === "speciesCount" ? "Số loài ghi nhận (Richness)" : "Tổng mẫu vật",
+                    `${fmtNum(v, i18n.language)}`,
+                    name === "speciesCount"
+                      ? t("analyticsPage.recordedSpecies", "Số loài ghi nhận")
+                      : t("specimen.totalSpecimens", "Tổng mẫu vật"),
                   ]}
                 />
                 <Legend />
-                <Bar dataKey="speciesCount" name="Số loài (Species Richness)" fill="#0F3820" />
+                <Bar dataKey="speciesCount" name={t("analyticsPage.speciesRichness", "Số loài (Species Richness)")} fill="#0F3820" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -419,10 +444,10 @@ export default function AnalyticsDashboardPage() {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>TỈNH / THÀNH PHỐ</th>
-                  <th>VÙNG</th>
-                  <th>SỐ LOÀI</th>
-                  <th>SỐ MẪU VẬT</th>
+                  <th>{t("specimen.province", "TỈNH / THÀNH PHỐ")}</th>
+                  <th>{t("analyticsPage.colRegion", "VÙNG")}</th>
+                  <th>{t("analyticsPage.colSpecies", "SỐ LOÀI")}</th>
+                  <th>{t("analyticsPage.colSpecimens", "SỐ MẪU VẬT")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -439,9 +464,9 @@ export default function AnalyticsDashboardPage() {
                     </td>
                     <td style={{ fontSize: 12 }}>{p.region || "—"}</td>
                     <td className="mono" style={{ fontWeight: 800, color: "#15803D" }}>
-                      {fmtNum(p.species_count)}
+                      {fmtNum(p.species_count, i18n.language)}
                     </td>
-                    <td className="mono">{fmtNum(p.specimen_count)}</td>
+                    <td className="mono">{fmtNum(p.specimen_count, i18n.language)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -453,20 +478,22 @@ export default function AnalyticsDashboardPage() {
       {/* Row 3: Automated Data Quality Audit Table (F-AI-04) */}
       <div className="card" style={{ padding: 20 }}>
         <div style={{ marginBottom: 14 }}>
-          <span className="eyebrow">KIỂM ĐỊNH CHẤT LƯỢNG DỮ LIỆU TỰ ĐỘNG</span>
+          <span className="eyebrow">
+            {t("analyticsPage.qaEyebrow", "KIỂM ĐỊNH CHẤT LƯỢNG DỮ LIỆU TỰ ĐỘNG")}
+          </span>
           <h2 style={{ fontSize: 18, margin: "4px 0 0" }}>
-            Bảng Kiểm tra Ràng buộc Toàn vẹn Darwin Core & Không gian PostGIS
+            {t("analyticsPage.qaTitle", "Bảng Kiểm tra Ràng buộc Toàn vẹn Darwin Core & Không gian PostGIS")}
           </h2>
         </div>
         <div className="table-responsive">
           <table className="data-table">
             <thead>
               <tr>
-                <th>MÃ QUY TẮC</th>
-                <th>TIÊU CHÍ KIỂM ĐỊNH CHẤT LƯỢNG</th>
-                <th>TRẠNG THÁI</th>
-                <th>BẢN GHI CẦN LƯU Ý</th>
-                <th>THAO TÁC XỬ LÝ</th>
+                <th>{t("analyticsPage.qaColCode", "MÃ QUY TẮC")}</th>
+                <th>{t("analyticsPage.qaColRule", "TIÊU CHÍ KIỂM ĐỊNH CHẤT LƯỢNG")}</th>
+                <th>{t("analyticsPage.qaColStatus", "TRẠNG THÁI")}</th>
+                <th>{t("analyticsPage.qaColAffected", "BẢN GHI CẦN LƯU Ý")}</th>
+                <th>{t("analyticsPage.qaColAction", "THAO TÁC XỬ LÝ")}</th>
               </tr>
             </thead>
             <tbody>
@@ -500,11 +527,11 @@ export default function AnalyticsDashboardPage() {
                             : "#B91C1C",
                       }}
                     >
-                      {row.severity === "PASS" ? "ĐẠT CHUẨN 100%" : row.severity}
+                      {row.severity === "PASS" ? t("analyticsPage.qaPass", "ĐẠT CHUẨN 100%") : row.severity}
                     </span>
                   </td>
                   <td className="mono" style={{ fontWeight: 700 }}>
-                    {fmtNum(row.affected)} bản ghi
+                    {fmtNum(row.affected, i18n.language)} {t("analyticsPage.recordsUnit", "bản ghi")}
                   </td>
                   <td>
                     <Link to={row.actionTo} className="button button-ghost" style={{ padding: "4px 10px", fontSize: 12 }}>

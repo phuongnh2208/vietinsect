@@ -5,7 +5,7 @@ import BrandLogo from "../ui/BrandLogo";
 import LanguageSwitcher from "../ui/LanguageSwitcher";
 
 const publicNavItems = [
-  { labelKey: "navigation.specimenSearch", path: "/specimens/search" },
+  { labelKey: "navigation.specimenSearch", path: "/search" },
   { labelKey: "navigation.gisMap", path: "/map" },
   { labelKey: "navigation.taxonomyTree", path: "/taxonomy" },
   { labelKey: "navigation.dnaBarcode", path: "/dna" },
@@ -36,9 +36,6 @@ export default function PublicLayout() {
                 </NavLink>
               ))}
               <LanguageSwitcher variant="single" />
-              <Link to="/login" className="header-login-btn">
-                Login
-              </Link>
             </div>
           </nav>
         </div>
@@ -60,7 +57,7 @@ export default function PublicLayout() {
           <div className="footer-links-grid">
             <div className="footer-col">
               <h4>{t("footer.dataExploration")}</h4>
-              <Link to="/specimens/search">{t("footer.digitalSpecimens")}</Link>
+              <Link to="/search">{t("footer.digitalSpecimens")}</Link>
               <Link to="/taxonomy">{t("footer.taxonomyTree")}</Link>
               <Link to="/dna">{t("footer.dnaRepository")}</Link>
               <Link to="/media">{t("footer.mediaLibrary")}</Link>
